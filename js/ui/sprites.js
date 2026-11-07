@@ -37,5 +37,18 @@
     return '<g class="sprite"' + (opacity != null ? ' opacity="' + opacity + '"' : '') + '>' + parts + '</g>';
   }
 
+  // Ilustrasi SVG (assets/): gambar di peta (<image>) dan ikon HTML (<img>); jatuh ke emoji/pixel bila aset tidak ada.
+  const A = function () { return NT.assets || { sprite: {}, comm: {} }; };
+  NT.ui.art = {
+    map: function (name, cx, cy, size, opacity) {
+      const src = A().sprite[name];
+      if (!src) return path(name, cx, cy, Math.max(1, Math.round(size / 24)), opacity);
+      return '<image class="art" href="' + src + '" x="' + (cx - size / 2).toFixed(1) + '" y="' + (cy - size * 0.62).toFixed(1) + '" width="' + size + '" height="' + size + '"' +
+        (opacity != null ? ' opacity="' + opacity + '"' : '') + '/>';
+    },
+    sprite: function (id, cls) { const s = A().sprite[id]; return s ? '<img class="art-ico ' + (cls || '') + '" src="' + s + '" alt="">' : ''; },
+    comm: function (id, cls) { const s = A().comm[id]; return s ? '<img class="art-ico ' + (cls || '') + '" src="' + s + '" alt="">' : ''; }
+  };
+
   NT.ui.sprites = { path: path, names: Object.keys(SPRITES) };
 })((window.NT = window.NT || {}));

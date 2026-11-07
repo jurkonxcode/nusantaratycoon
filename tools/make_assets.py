@@ -168,9 +168,7 @@ def s_pelabuhan():
               '<rect x="14" y="66" width="12" height="18" fill="#f1e3c0" opacity="0"/><circle cx="108" cy="80" r="3" fill="#2b2f33"/>')
 
 def s_kapal():
-    return svg(128, 128, '<ellipse cx="64" cy="116" rx="46" ry="6" fill="#062c3b" opacity=".2"/>'
-               '<path d="M0 102Q16 96 32 102T64 102 96 102 128 102V128H0Z" fill="#1a8a9c"/>' + pinisi(-122, -149, .62) + '<path d="M0 108Q16 102 32 108T64 108 96 108 128 108V128H0Z" fill="#0f6f84"/>',
-               vb='0 0 128 128')
+    return svg(128, 128, pinisi(-122, -149, .62) + '<path d="M40 109Q64 116 92 108" stroke="#ffffff" stroke-width="3" fill="none" opacity=".75" stroke-linecap="round"/>')
 
 def s_tol():
     return sp('<path d="M0 96H128V128H0Z" fill="#6fb552"/><path d="M0 70L128 70 128 100 0 100Z" fill="#4a4e55"/><path d="M0 70H128V74H0Z" fill="#6b6f77"/>'
@@ -239,4 +237,10 @@ if __name__ == '__main__':
         out(f'commodities/{n}.svg', f())
     out('social/banner.svg', cover(1280, 320, 210, True)); out('social/og-image.svg', cover(1200, 630, 330, True))
     out('../manifest.webmanifest', webmanifest())
+    import base64, glob
+    def uri(f): return 'data:image/svg+xml;base64,' + base64.b64encode(open(f, 'rb').read()).decode()
+    grp = lambda d: ',\n    '.join('%s: "%s"' % (os.path.basename(f)[:-4], uri(f)) for f in sorted(glob.glob(os.path.join(ROOT, d, '*.svg'))))
+    js = ('/* DIBUAT OTOMATIS oleh tools/make_assets.py, jangan diedit. Gambar SVG sebagai data URI (jalan juga di dist satu file). */\n(function (NT) {\n  NT.assets = {\n  sprite: {\n    '
+          + grp('sprites') + '\n  },\n  comm: {\n    ' + grp('commodities') + '\n  }\n  };\n})((window.NT = window.NT || {}));\n')
+    open(os.path.join(ROOT, '..', 'js', 'ui', 'assets.js'), 'w').write(js)
     print('Aset SVG dibuat di', os.path.abspath(ROOT))

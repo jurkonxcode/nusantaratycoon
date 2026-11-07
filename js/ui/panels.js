@@ -54,14 +54,14 @@
       if (job) {
         return '' +
         '<div class="row building">' +
-          '<div class="row-icon working">' + b.icon + '</div>' +
+          '<div class="row-icon working">' + (NT.ui.art.sprite(b.id) || b.icon) + '</div>' +
           '<div class="row-main"><b>Membangun ' + b.name + '…</b>' + jobBox(job, 'lalu ' + F.num(b.baseRate, 1) + '/menit') + '</div>' +
           '<div class="row-actions">' + speedBtn(job, now) + '</div>' +
         '</div>';
       }
       return '' +
       '<div class="row">' +
-        '<div class="row-icon">' + b.icon + '</div>' +
+        '<div class="row-icon">' + (NT.ui.art.sprite(b.id) || b.icon) + '</div>' +
         '<div class="row-main"><b>' + b.name + '</b>' +
           '<small>Menghasilkan ' + c.name + ' (' + F.num(b.baseRate, 1) + '/menit pada Lv 1)</small></div>' +
         '<div class="row-actions">' +
@@ -73,7 +73,7 @@
     const cap = E.capacity(state, id, now);
     return '' +
     '<div class="row' + (job ? ' building' : '') + '">' +
-      '<div class="row-icon working">' + b.icon + '</div>' +
+      '<div class="row-icon working">' + (NT.ui.art.sprite(b.id) || b.icon) + '</div>' +
       '<div class="row-main">' +
         '<b>' + b.name + ' <span class="lvl">Lv ' + lvl + '</span>' + (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
         '<small>' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/menit <span data-live="bmult" data-id="' + id + '"></span></small>' +
@@ -98,7 +98,7 @@
     const dur = maxed ? 0 : E.infraDuration(regionId, lvl);
     return '' +
     '<div class="row' + (job ? ' building' : '') + '">' +
-      '<div class="row-icon' + (job ? ' working' : '') + '">' + inf.icon + '</div>' +
+      '<div class="row-icon' + (job ? ' working' : '') + '">' + (NT.ui.art.sprite(inf.id) || inf.icon) + '</div>' +
       '<div class="row-main"><b>' + inf.name + ' <span class="lvl">Lv ' + lvl + '/' + inf.maxLevel + '</span>' +
         (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
         '<small>' + inf.desc + '</small>' + (job ? jobBox(job, 'naik ke Lv ' + job.to) : '') + '</div>' +
@@ -123,7 +123,7 @@
     } else if (!state.regions[r.id].unlocked) {
       const list = r.buildings.map(function (bid) {
         const b = D.buildings[bid];
-        return '<li>' + b.icon + ' ' + b.name + ' <span class="muted">→ ' + D.commodities[b.produces].name + '</span></li>';
+        return '<li>' + (NT.ui.art.sprite(b.id, 'sm') || b.icon) + ' ' + b.name + ' <span class="muted">→ ' + D.commodities[b.produces].name + '</span></li>';
       }).join('');
       html = '<div class="card"><h2>🔒 ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
         '<ul class="plain">' + list + '</ul>' +
@@ -155,7 +155,7 @@
       return '' +
       '<div class="goods">' +
         '<div class="goods-head">' +
-          '<div class="row-icon">' + c.icon + '</div>' +
+          '<div class="row-icon">' + (NT.ui.art.comm(c.id) || c.icon) + '</div>' +
           '<div class="row-main"><b>' + c.name + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
           '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>' +
         '</div>' +
@@ -296,7 +296,7 @@
     const labels = 'JFMAMJJASOND'.split('').map(function (c) { return '<span>' + c + '</span>'; }).join('');
     const rows = Object.keys(D.commodities).map(function (cid) {
       const c = D.commodities[cid];
-      return '<div><b>' + c.icon + ' ' + c.name + '</b>' + calendar(cid, now) +
+      return '<div><b>' + (NT.ui.art.comm(c.id, 'sm') || c.icon) + ' ' + c.name + '</b>' + calendar(cid, now) +
         '<div class="cal-labels">' + labels + '</div><small class="muted">' + c.seasonNote + '</small></div>';
     }).join('');
     return '<div class="card"><h2>Dunia nyata</h2>' +
@@ -496,7 +496,7 @@
     // Kartu target berikutnya dan jumlah tukang
     const goal = E.nextGoal(state);
     if (goal) {
-      $('goal-ico').textContent = goal.icon;
+      $('goal-ico').innerHTML = (goal.kind === 'building' || goal.kind === 'infra') ? (NT.ui.art.sprite(goal.id, 'sm') || goal.icon) : goal.icon;
       $('goal-title').textContent = goal.label + ' · ' + F.money(goal.cost);
       $('goal-bar').style.width = Math.min(100, state.cash / goal.cost * 100) + '%';
       const inc = E.incomePerMin(state, now);

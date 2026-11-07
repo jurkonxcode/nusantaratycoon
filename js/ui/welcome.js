@@ -47,7 +47,7 @@
     if (items.length) {
       body += '<h3>Siap dikumpulkan</h3><ul class="wb-list">' + items.map(function (r) {
         const c = D.commodities[r.cid];
-        return '<li><span class="wb-ico">' + c.icon + '</span><span class="wb-name">' + esc(c.name) + '</span>' +
+        return '<li><span class="wb-ico">' + (NT.ui.art.comm(r.cid, 'sm') || c.icon) + '</span><span class="wb-name">' + esc(c.name) + '</span>' +
           '<b>+' + F.num(r.qty) + '</b>' + (r.full ? '<span class="tag paceklik">gudang penuh</span>' : '') + '</li>';
       }).join('') + '</ul>';
       if (anyFull) {

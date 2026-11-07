@@ -93,7 +93,7 @@
       const there = pts.map(function (p, k) { return (k ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join('');
       const back = pts.slice(0, -1).reverse().map(function (p) { return 'L' + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join('');
       return '<g class="ship"><animateMotion dur="' + (70 + i * 14) + 's" repeatCount="indefinite" path="' + there + back + '"/>' +
-        NT.ui.sprites.path('kapal', 0, 0, 2) + '</g>';
+        NT.ui.art.map('kapal', 0, 4, 40) + '</g>';
     }).join('');
   }
 
@@ -191,22 +191,22 @@
       const lvl = (state.buildings[bid] && state.buildings[bid].level) || 0;
       const p = pt(m.slots[bid]);
       const job = NT.economy.jobFor(state, 'b:' + bid);
-      out += NT.ui.sprites.path(bid, p.x, p.y, lvl >= 3 ? 3 : 2, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
+      out += NT.ui.art.map(bid, p.x, p.y + 8, lvl >= 3 ? 62 : 52, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
       if (lvl) {
-        out += '<g class="bubble" data-id="' + bid + '" transform="translate(' + p.x + ',' + (p.y - 28) + ')"><g class="bob">' +
+        out += '<g class="bubble" data-id="' + bid + '" transform="translate(' + p.x + ',' + (p.y - 34) + ')"><g class="bob">' +
           '<circle r="12" class="bubble-bg"/><text class="bubble-ico" text-anchor="middle" dy="5">📦</text></g></g>';
       }
-      if (job) out += jobBadge(p.x, p.y + 26, job.key);
+      if (job) out += jobBadge(p.x, p.y + 30, job.key);
     });
     const tolJob = NT.economy.jobFor(state, 'i:' + r.id + ':tol');
     if (tolJob) { const pp = pt(m.pin); out += jobBadge(pp.x, pp.y + 32, tolJob.key); }
 
     if (m.port) {
       const p = pt(m.port);
-      out += NT.ui.sprites.path('pelabuhan', p.x, p.y, port >= 3 ? 3 : 2, port ? null : 0.28);
-      if (port > 0) out += NT.ui.sprites.path('kapal', p.x + 16 + port * 2, p.y + 2, 2);
+      out += NT.ui.art.map('pelabuhan', p.x, p.y + 8, port >= 3 ? 68 : 58, port ? null : 0.28);
+      if (port > 0) out += NT.ui.art.map('kapal', p.x + 34 + port * 2, p.y + 16, 34);
       const portJob = NT.economy.jobFor(state, 'i:' + r.id + ':pelabuhan');
-      if (portJob) out += jobBadge(p.x, p.y + 26, portJob.key);
+      if (portJob) out += jobBadge(p.x, p.y + 34, portJob.key);
     }
     return out;
   }
