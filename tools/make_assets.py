@@ -225,6 +225,15 @@ def webmanifest():
             '  "icons": [\n    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },\n    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },\n'
             '    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }\n  ]\n}\n')
 
+# ------------------------------------------------------------------ Ilustrasi v2 (lebih realistis, lihat tools/art_v2.py)
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import art_v2 as _v2
+s_sawah, s_batik, s_kopi, s_karet, s_kakao, s_cengkeh = _v2.s_sawah, _v2.s_batik, _v2.s_kopi, _v2.s_karet, _v2.s_kakao, _v2.s_cengkeh
+s_pelabuhan, s_kapal, s_tol = _v2.s_pelabuhan, _v2.s_kapal, _v2.s_tol
+i_padi, i_batik, i_kopi, i_karet, i_kakao, i_cengkeh, i_koin = _v2.i_padi, _v2.i_batik, _v2.i_kopi, _v2.i_karet, _v2.i_kakao, _v2.i_cengkeh, _v2.i_koin
+kawung_tile = _v2.kawung_tile
+
 if __name__ == '__main__':
     out('logo/logo-mark.svg', logo_mark())
     out('logo/logo-horizontal.svg', logo_horizontal(False)); out('logo/logo-horizontal-dark.svg', logo_horizontal(True))
