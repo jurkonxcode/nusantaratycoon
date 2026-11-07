@@ -287,31 +287,33 @@ def s_cengkeh():
 
 def s_pelabuhan():
     d = SDEFS
-    d += lg('sea', [(0, '#3fb0bd'), (.5, '#1a8a9c'), (1, '#0d5f78')]) + lg('quay', [(0, '#c9c4b8'), (1, '#8d8777')])
-    d += lg('crane', [(0, '#ef6a4f'), (1, '#b53a2b')], 0, 0, 1, 0) + lg('wh', [(0, '#e8e1cf'), (1, '#b7ad92')], 0, 0, 1, 0)
-    o = base(58, 118)
-    o += '<rect x="0" y="92" width="128" height="36" fill="url(#sea)"/>'
-    o += ''.join(f'<path d="M{x} {y}q6 -3 12 0" stroke="#d9f4f2" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".55"/>' for x, y in [(6, 108), (34, 112), (68, 110), (96, 114), (20, 120), (80, 121)])
-    # dermaga beton + tiang
-    o += '<path d="M0 82H128V96H0Z" fill="url(#quay)"/><path d="M0 82H128V85H0Z" fill="#e6e2d6"/><path d="M0 95H128" stroke="#5f5a4d" stroke-width="1.2" opacity=".6"/>'
-    o += ''.join(f'<path d="M{x} 86V96" stroke="#6f6a5c" stroke-width="1" opacity=".5"/>' for x in range(10, 128, 18))
-    o += ''.join(f'<rect x="{x}" y="79" width="4" height="4" rx="1.4" fill="#2b2f33"/>' for x in (32, 96))
+    d += rg('bay', [(0, '#2fa5b6', .85), (.7, '#1a8a9c', .55), (1, '#1a8a9c', 0)], .5, .5, .5)
+    d += lg('quay', [(0, '#d4cfc3'), (1, '#9a9484')]) + lg('crane', [(0, '#ef6a4f'), (1, '#b53a2b')], 0, 0, 1, 0)
+    d += lg('wh', [(0, '#ece5d3'), (1, '#b7ad92')], 0, 0, 1, 0)
+    # teluk kecil berair lembut (tanpa tepi persegi) + riak
+    o = '<ellipse cx="64" cy="106" rx="62" ry="17" fill="url(#bay)"/>'
+    o += ''.join(f'<path d="M{x} {y}q6 -3 12 0" stroke="#e3f8f6" stroke-width="1.3" fill="none" stroke-linecap="round" opacity=".6"/>' for x, y in [(8, 108), (30, 114), (74, 113), (100, 108), (54, 118)])
+    # dermaga beton bersisi tebal + tiang pancang ke air
+    o += '<path d="M8 98L16 84H116L122 98Z" fill="#7d7766"/><path d="M8 98L16 84H116L122 98Q64 104 8 98Z" fill="url(#quay)"/>'
+    o += '<path d="M16 84H116" stroke="#f0ece0" stroke-width="1.6"/><path d="M8 98Q64 104 122 98V102Q64 108 8 102Z" fill="#5f5a4d"/>'
+    o += ''.join(f'<path d="M{x} 99V106" stroke="#4a4538" stroke-width="2.2" stroke-linecap="round"/>' for x in (22, 46, 70, 94, 114))
+    o += ''.join(f'<rect x="{x}" y="86" width="4" height="4" rx="1.4" fill="#2b2f33"/>' for x in (24, 100))
     # gudang
-    o += ('<rect x="6" y="56" width="34" height="27" fill="url(#wh)"/><path d="M3 57L23 44 43 57Z" fill="#6f7a86"/><path d="M23 44L43 57H36L23 48Z" fill="#4f5a66"/>'
-          '<rect x="14" y="66" width="12" height="17" fill="#4a5560"/><path d="M14 66H26M14 72H26M14 78H26" stroke="#6f7a86" stroke-width=".8"/>')
-    # peti kemas bertumpuk dengan alur
+    o += ('<rect x="10" y="60" width="34" height="25" fill="url(#wh)"/><path d="M6 61L27 47 48 61Z" fill="#6f7a86"/><path d="M27 47L48 61H41L27 51Z" fill="#4f5a66"/>'
+          '<rect x="19" y="68" width="12" height="17" fill="#4a5560"/><path d="M19 71H31M19 75H31M19 79H31" stroke="#6f7a86" stroke-width=".8"/>')
+    # peti kemas
     def cont(x, y, c, c2):
         return (f'<rect x="{x}" y="{y}" width="21" height="10" fill="{c}" stroke="{c2}" stroke-width=".7"/>'
                 + ''.join(f'<path d="M{x + 3 + i * 3.2:.1f} {y + 1}V{y + 9}" stroke="{c2}" stroke-width=".6" opacity=".7"/>' for i in range(6))
                 + f'<path d="M{x} {y + .6}H{x + 21}" stroke="#ffffff" stroke-width=".8" opacity=".4"/>')
-    o += cont(70, 72, '#d4503f', '#8e2a1f') + cont(92, 72, '#3a8fd1', '#1f5a8c') + cont(70, 62, '#e8a93a', '#a8741a') + cont(92, 62, '#3d9a58', '#1f6a38') + cont(81, 52, '#d4503f', '#8e2a1f')
-    # derek (crane) merah
-    o += ('<path d="M44 82V34H51V82Z" fill="url(#crane)"/><path d="M62 82V34H66V82Z" fill="url(#crane)"/>'
-          '<path d="M44 40H66M44 52L66 40M44 64L66 52M44 76L66 64" stroke="#b53a2b" stroke-width="1.1" fill="none"/>'
-          '<path d="M30 30H100L106 36H30Z" fill="url(#crane)"/><path d="M30 30H100" stroke="#ffb7a4" stroke-width="1.1"/>'
-          '<path d="M55 30L38 16M55 30L88 22" stroke="#7c2a1f" stroke-width="1.2"/><path d="M38 16L55 30" stroke="#b53a2b" stroke-width="1.5"/>'
-          '<path d="M86 36V58" stroke="#2a2a2a" stroke-width="1.3"/><rect x="81" y="56" width="11" height="3" fill="#f0b83a"/>'
-          '<rect x="41" y="82" width="15" height="3" fill="#7c2a1f"/><rect x="58" y="82" width="12" height="3" fill="#7c2a1f"/>')
+    o += cont(74, 74, '#d4503f', '#8e2a1f') + cont(96, 74, '#3a8fd1', '#1f5a8c') + cont(74, 64, '#e8a93a', '#a8741a') + cont(96, 64, '#3d9a58', '#1f6a38') + cont(85, 54, '#d4503f', '#8e2a1f')
+    # derek
+    o += ('<path d="M50 85V36H57V85Z" fill="url(#crane)"/><path d="M66 85V36H70V85Z" fill="url(#crane)"/>'
+          '<path d="M50 42H70M50 54L70 42M50 66L70 54M50 78L70 66" stroke="#b53a2b" stroke-width="1.1" fill="none"/>'
+          '<path d="M34 32H104L110 38H34Z" fill="url(#crane)"/><path d="M34 32H104" stroke="#ffb7a4" stroke-width="1.1"/>'
+          '<path d="M59 32L42 18M59 32L92 24" stroke="#7c2a1f" stroke-width="1.2"/><path d="M42 18L59 32" stroke="#b53a2b" stroke-width="1.5"/>'
+          '<path d="M90 38V58" stroke="#2a2a2a" stroke-width="1.3"/><rect x="85" y="56" width="11" height="3" fill="#f0b83a"/>'
+          '<rect x="47" y="85" width="15" height="3" fill="#7c2a1f"/><rect x="64" y="85" width="12" height="3" fill="#7c2a1f"/>')
     return svg(128, 128, d, o)
 
 
@@ -319,8 +321,8 @@ def s_kapal():
     d = SDEFS
     d += lg('sea', [(0, '#2aa0b3'), (1, '#0d5f78')]) + lg('hull', [(0, '#8a5a32'), (.5, '#6b4122'), (1, '#3f2412')])
     d += lg('sail', [(0, '#fffaf0'), (.6, '#efe3c4'), (1, '#cdbb92')], 0, 0, 1, 1) + lg('sail2', [(0, '#fdf4de'), (1, '#d4c29a')], 0, 0, 1, 1)
-    o = '<ellipse cx="64" cy="108" rx="52" ry="8" fill="url(#sh)"/>'
-    o += '<path d="M0 98Q32 92 64 98T128 98V128H0Z" fill="url(#sea)"/>'
+    d += rg('bay', [(0, '#2aa0b3', .9), (.65, '#14788f', .6), (1, '#14788f', 0)], .5, .5, .5)
+    o = '<ellipse cx="64" cy="106" rx="62" ry="15" fill="url(#bay)"/>'
     # layar
     o += ('<path d="M47 16L47 80Q34 84 20 80Q26 44 47 16Z" fill="url(#sail)" stroke="#a89466" stroke-width=".7"/>'
           '<path d="M47 16Q33 40 22 78M47 40Q36 58 26 79M47 60Q40 70 32 80" stroke="#b7a57a" stroke-width=".6" fill="none" opacity=".7"/>'
@@ -337,8 +339,7 @@ def s_kapal():
           '<path d="M12 80L96 82" stroke="#f6d77a" stroke-width=".7" opacity=".7" transform="translate(0 -1.2)"/>'
           '<rect x="12" y="68" width="22" height="13" rx="1.5" fill="#a8794a" stroke="#4a3118" stroke-width=".8"/><path d="M10 68L23 60L36 68Z" fill="#6b3b17"/><rect x="18" y="72" width="4" height="4" fill="#2a4a6a"/><rect x="25" y="72" width="4" height="4" fill="#2a4a6a"/>')
     # ombak & busa
-    o += ('<path d="M0 104Q16 99 32 104T64 104 96 104 128 104V128H0Z" fill="#0f6f87" opacity=".85"/>'
-          '<path d="M8 103Q24 99 40 103T74 103 108 102" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".85"/>'
+    o += ('<path d="M10 104Q26 99 42 104T76 104 112 102" stroke="#ffffff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".85"/>'
           '<path d="M20 112Q40 108 60 112T100 112" stroke="#bfeaee" stroke-width="1.6" fill="none" opacity=".5"/>')
     return svg(128, 128, d, o)
 

@@ -69,12 +69,24 @@
 
   function pt(lonlat) { return NT.raster.toPx(lonlat[0], lonlat[1]); }
 
+  // Kedalaman pulau: bayangan jatuh di laut, buih pantai, dan sisi tebing (pulau tampak terangkat dari laut).
+  function depthMarkup(id) {
+    const d = NT.ui.terrain.pathOf(id);
+    return '<g class="island-depth">' +
+      '<path class="id-shadow" d="' + d + '" transform="translate(2.5,6)"/>' +
+      '<path class="id-foam" d="' + d + '"/>' +
+      '<path class="id-side2" d="' + d + '" transform="translate(0,3.6)"/>' +
+      '<path class="id-side" d="' + d + '" transform="translate(0,1.8)"/>' +
+    '</g>';
+  }
+
   function islandMarkup(grid, r) {
     const pin = pt(r.map.pin), label = pt(r.map.label);
     const text = r.short || r.name;
     const lw = Math.round(text.length * 9.6 + 20);
     return '' +
       '<g class="island" data-region="' + r.id + '" tabindex="0" role="button" aria-label="' + r.name + '">' +
+        depthMarkup(r.id) +
         '<g class="island-land">' + NT.ui.terrain.landMarkup(r.id) + '</g>' +
         '<g class="dyn" data-dyn="' + r.id + '"></g>' +
         '<g class="island-tag"><rect class="label-bg" x="' + (label.x - lw / 2) + '" y="' + (label.y - 17) + '" width="' + lw + '" height="25" rx="7"/>' +
@@ -93,7 +105,7 @@
       const there = pts.map(function (p, k) { return (k ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join('');
       const back = pts.slice(0, -1).reverse().map(function (p) { return 'L' + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join('');
       return '<g class="ship"><animateMotion dur="' + (70 + i * 14) + 's" repeatCount="indefinite" path="' + there + back + '"/>' +
-        NT.ui.art.map('kapal', 0, 4, 40) + '</g>';
+        NT.ui.art.map('kapal', 0, 4, 32) + '</g>';
     }).join('');
   }
 
@@ -141,10 +153,9 @@
 
     return '' +
     '<svg class="map-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peta Nusantara">' +
-      T.defs() +
+      T.defs() + '<defs><filter id="soft" x="-4%" y="-4%" width="108%" height="108%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>' +
       '<rect class="px-deep" width="' + W + '" height="' + H + '"/>' + seaImg +
-      graticule(W, H) + neighbor + seaLabels(grid) + islands +
-      '<g class="ships">' + shipsMarkup() + '</g>' + compass(cp.x, cp.y) +
+      graticule(W, H) + neighbor + seaLabels(grid) + '<g class="ships">' + shipsMarkup() + '</g>' + islands + compass(cp.x, cp.y) +
     '</svg>';
   }
 
@@ -187,27 +198,40 @@
       out += '<path class="road" d="' + ends.map(function (e) { return linePath(c0, e, width); }).join('') + '"/>';
     }
 
+    // Semua objek diurutkan menurut posisi y (yang di utara digambar dulu), lencana dan gelembung selalu di atas.
+    const items = [], top = [];
+    // Sprite berdiri dengan titik tanahnya (sekitar 84% tinggi gambar) tepat di koordinat slot.
+    // Sedikit perspektif: makin ke selatan sedikit lebih besar.
+    const gy = NT.raster.grid().H * S;
+    function put(name, p, size, opacity) {
+      const k = 0.92 + 0.16 * Math.min(1, Math.max(0, p.y / gy));
+      const sz = Math.round(size * k);
+      items.push({ y: p.y, svg: NT.ui.art.map(name, p.x, p.y + 4 - sz * 0.22, sz, opacity) });
+    }
+
     Object.keys(m.slots || {}).forEach(function (bid) {
       const lvl = (state.buildings[bid] && state.buildings[bid].level) || 0;
       const p = pt(m.slots[bid]);
       const job = NT.economy.jobFor(state, 'b:' + bid);
-      out += NT.ui.art.map(bid, p.x, p.y + 8, lvl >= 3 ? 62 : 52, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
+      put(bid, p, lvl >= 3 ? 46 : 40, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
       if (lvl) {
-        out += '<g class="bubble" data-id="' + bid + '" transform="translate(' + p.x + ',' + (p.y - 34) + ')"><g class="bob">' +
-          '<circle r="12" class="bubble-bg"/><text class="bubble-ico" text-anchor="middle" dy="5">📦</text></g></g>';
+        top.push('<g class=\"bubble\" data-id=\"' + bid + '\" transform=\"translate(' + p.x + ',' + (p.y - 38) + ')\"><g class=\"bob\">' +
+          '<circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g>');
       }
-      if (job) out += jobBadge(p.x, p.y + 30, job.key);
+      if (job) top.push(jobBadge(p.x, p.y + 12, job.key));
     });
     const tolJob = NT.economy.jobFor(state, 'i:' + r.id + ':tol');
-    if (tolJob) { const pp = pt(m.pin); out += jobBadge(pp.x, pp.y + 32, tolJob.key); }
+    if (tolJob) { const pp = pt(m.pin); top.push(jobBadge(pp.x, pp.y + 32, tolJob.key)); }
 
     if (m.port) {
       const p = pt(m.port);
-      out += NT.ui.art.map('pelabuhan', p.x, p.y + 8, port >= 3 ? 68 : 58, port ? null : 0.28);
-      if (port > 0) out += NT.ui.art.map('kapal', p.x + 34 + port * 2, p.y + 16, 34);
+      put('pelabuhan', p, port >= 3 ? 50 : 44, port ? null : 0.28);
+      if (port > 0) put('kapal', { x: p.x - 28 - port * 2, y: p.y + 12 }, 28);
       const portJob = NT.economy.jobFor(state, 'i:' + r.id + ':pelabuhan');
-      if (portJob) out += jobBadge(p.x, p.y + 34, portJob.key);
+      if (portJob) top.push(jobBadge(p.x, p.y + 16, portJob.key));
     }
+    items.sort(function (a, b) { return a.y - b.y; });
+    out += items.map(function (it) { return it.svg; }).join('') + top.join('');
     return out;
   }
 

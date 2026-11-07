@@ -566,5 +566,14 @@ img.brand-logo { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 2p
 .art-ico { display: block; width: 100%; height: 100%; object-fit: contain; }
 img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-align: -.35em; }
 .goal-ico .art-ico, .wb-ico .art-ico { width: 30px; height: 30px; margin: 0 auto; }
-.art { pointer-events: none; }
+.art { pointer-events: none; filter: drop-shadow(0 1.5px 1px rgba(2, 24, 34, .5)); }
+.island-depth { pointer-events: none; }
+.id-shadow { fill: #021822; opacity: .42; filter: url(#soft); }
+.id-foam { fill: none; stroke: #eafcff; stroke-width: 4; stroke-linejoin: round; opacity: .3; filter: url(#soft); }
+.id-side { fill: #8a7650; stroke: #8a7650; stroke-width: 1; }
+.id-side2 { fill: #4b3b25; stroke: #4b3b25; stroke-width: 1; }
+.island.locked .id-side, .island.soon .id-side { fill: #8d9082; stroke: #8d9082; }
+.island.locked .id-side2, .island.soon .id-side2 { fill: #5d6158; stroke: #5d6158; }
+.island.soon .island-depth { opacity: .6; }
+.calm .id-shadow, .calm .id-foam { filter: none; }
 .row-icon .art-ico { width: 36px; height: 36px; }

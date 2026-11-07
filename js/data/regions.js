@@ -24,8 +24,8 @@
       demand: { padi: 0.9, batik: 1.1, kopi: 1.3, karet: 1.2, kakao: 1.1, cengkeh: 1.4 },
       hub: { name: 'Jakarta (Tanjung Priok)', lon: 106.85, lat: -6.1 },
       map: {
-        pin: [110.5, -7.3], label: [110.5, -9.4], port: [106.7, -5.4],
-        slots: { sawah: [108.2, -7.0], sentra_batik: [112.2, -7.5] }
+        pin: [110.5, -7.3], label: [110.5, -9.4], port: [106.0, -5.7],
+        slots: { sawah: [108.4, -7.0], sentra_batik: [112.8, -7.6] }
       }
     },
     sulawesi: {
@@ -34,8 +34,8 @@
       demand: { padi: 1.2, batik: 1.3, kopi: 1.2, karet: 1.1, kakao: 0.9, cengkeh: 0.9 },
       hub: { name: 'Makassar', lon: 119.4, lat: -5.13 },
       map: {
-        pin: [120.2, -2.3], label: [122.0, -5.9], port: [118.8, -5.1],
-        slots: { kebun_kakao: [119.6, -3.6], kebun_cengkeh: [124.0, 1.05] }
+        pin: [120.4, -1.6], label: [122.0, -5.9], port: [117.8, -5.0],
+        slots: { kebun_kakao: [119.8, -3.8], kebun_cengkeh: [124.0, 1.05] }
       }
     },
     kalimantan: {
