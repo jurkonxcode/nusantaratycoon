@@ -4,6 +4,7 @@
 
   let ctx = null;
   let muted = false;
+  let volume = 1;
   try { muted = localStorage.getItem('nt-muted') === '1'; } catch (e) { /* abaikan */ }
 
   function audio() {
@@ -25,7 +26,7 @@
     o.type = type || 'square';
     o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol || 0.05, t + 0.01);
+    g.gain.exponentialRampToValueAtTime((vol || 0.05) * volume, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(a.destination);
     o.start(t); o.stop(t + dur + 0.03);
@@ -48,7 +49,15 @@
     return muted;
   }
 
+  function calm() { return document.body.classList.contains('calm'); }
+
+  function setMuted(m) {
+    muted = !!m;
+    try { localStorage.setItem('nt-muted', muted ? '1' : '0'); } catch (e) { /* abaikan */ }
+  }
+
   function floatText(x, y, text, cls) {
+    if (calm()) return;
     const el = document.createElement('div');
     el.className = 'floaty ' + (cls || '');
     el.textContent = text;
@@ -63,6 +72,7 @@
   }
 
   function confetti(x, y) {
+    if (calm()) return;
     const colors = ['#f0c25f', '#d9a441', '#6fbf5a', '#2d8fd0', '#e98aa8', '#c8472f'];
     for (let i = 0; i < 28; i++) {
       const p = document.createElement('i');
@@ -99,7 +109,7 @@
   }
 
   NT.ui.fx = {
-    sfx: sfx, toggleMute: toggleMute, isMuted: function () { return muted; },
+    sfx: sfx, toggleMute: toggleMute, setMuted: setMuted, setVolume: function (v) { volume = v; }, isMuted: function () { return muted; },
     floatText: floatText, floatFromRect: floatFromRect, confetti: confetti, setCash: setCash
   };
 })((window.NT = window.NT || {}));

@@ -399,6 +399,73 @@ ul.plain { list-style: none; padding-left: 0; }
   .stats { gap: 6px; }
 }
 
+/* ===== Pengaturan ===== */
+
+#tab-settings { max-width: 720px; margin: 0 auto; }
+.set-card { padding-bottom: 8px; }
+.set-card h2 { margin-bottom: 2px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-top: 1px solid var(--line); }
+.set-card h2 + .set-row { border-top: 0; }
+.set-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.set-text b { font-size: 15px; }
+.set-text small { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.set-ctl { flex: none; }
+.set-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.set-buttons .btn { display: inline-block; }
+.segs.mini { margin: 0; justify-content: flex-end; }
+.segs.mini .seg { padding: 6px 11px; font-size: 13px; }
+.set-danger { display: block; }
+.reset-confirm p { margin: 0 0 10px; font-size: 14px; }
+
+/* Tombol geser (toggle) */
+.switch {
+  position: relative; width: 50px; height: 30px; border-radius: 999px; border: 0; padding: 0; cursor: pointer;
+  background: #c9c2ad; transition: background .15s;
+}
+.switch i {
+  position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3); transition: transform .15s;
+}
+.switch.on { background: var(--green); }
+.switch.on i { transform: translateX(20px); }
+.switch:focus-visible, .seg:focus-visible, label.btn:focus-within { outline: 3px solid var(--sea-500); outline-offset: 2px; }
+
+@media (max-width: 520px) {
+  .set-row { flex-direction: column; align-items: stretch; gap: 10px; }
+  .set-ctl { align-self: flex-start; }
+  .segs.mini { justify-content: flex-start; }
+  .set-row:has(> .set-ctl > .switch) { flex-direction: row; align-items: center; }
+}
+
+/* Mode hemat animasi dan ukuran teks */
+.calm *, .calm *::before, .calm *::after { animation: none !important; transition: none !important; }
+.calm .ship, .calm .sparkle { display: none; }
+body.text-large main { zoom: 1.12; }
+body.text-xlarge main { zoom: 1.25; }
+
+/* ===== Layar sambutan ===== */
+
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px;
+  background: rgba(5, 31, 42, .62); backdrop-filter: blur(2px);
+}
+.modal {
+  width: 100%; max-width: 440px; max-height: calc(100vh - 32px); overflow-y: auto;
+  background: var(--card); border-radius: 16px; padding: 22px; border: 1px solid var(--line);
+  box-shadow: 0 20px 60px rgba(3, 25, 35, .45);
+}
+.modal h2 { margin: 0 0 4px; font-family: Georgia, serif; font-size: 23px; color: var(--sea-800); }
+.modal h3 { margin: 18px 0 6px; font-size: 14px; color: var(--sea-700); }
+.modal p { margin: 4px 0; }
+.wb-list { list-style: none; margin: 0; padding: 0; }
+.wb-list li { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); }
+.wb-list li:first-child { border-top: 0; }
+.wb-ico { flex: none; width: 32px; text-align: center; font-size: 20px; }
+.wb-name { flex: 1; min-width: 0; }
+.wb-list b { font-variant-numeric: tabular-nums; color: var(--green); }
+.modal-actions { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.modal-actions .btn.wide { margin-top: 0; }
+
 </style>
 </head>
 <body>
@@ -424,7 +491,7 @@ ul.plain { list-style: none; padding-left: 0; }
         <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
         <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
         <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
-        <button class="tab mini" id="btn-mute" data-action="mute" aria-label="Suara">🔊</button>
+        <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan">⚙️</button>
       </nav>
     </div>
   </header>
@@ -459,6 +526,7 @@ ul.plain { list-style: none; padding-left: 0; }
       </section>
       <section id="tab-market" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
+      <section id="tab-settings" class="tab-panel"></section>
     </main>
   </div>
 
@@ -842,7 +910,10 @@ ul.plain { list-style: none; padding-left: 0; }
     }).format(n);
   }
 
+  let compactOn = true;
+
   function compact(n) {
+    if (!compactOn) return num(n, 0);
     const a = Math.abs(n);
     if (a >= 1e12) return num(n / 1e12, 2) + ' T';
     if (a >= 1e9) return num(n / 1e9, 2) + ' M';
@@ -851,6 +922,7 @@ ul.plain { list-style: none; padding-left: 0; }
   }
 
   NT.fmt = {
+    setCompact: function (on) { compactOn = !!on; },
     num: num,
     compact: compact,
     // Kas / jumlah uang besar
@@ -1792,6 +1864,7 @@ ul.plain { list-style: none; padding-left: 0; }
 
   let ctx = null;
   let muted = false;
+  let volume = 1;
   try { muted = localStorage.getItem('nt-muted') === '1'; } catch (e) { /* abaikan */ }
 
   function audio() {
@@ -1813,7 +1886,7 @@ ul.plain { list-style: none; padding-left: 0; }
     o.type = type || 'square';
     o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(vol || 0.05, t + 0.01);
+    g.gain.exponentialRampToValueAtTime((vol || 0.05) * volume, t + 0.01);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(a.destination);
     o.start(t); o.stop(t + dur + 0.03);
@@ -1836,7 +1909,15 @@ ul.plain { list-style: none; padding-left: 0; }
     return muted;
   }
 
+  function calm() { return document.body.classList.contains('calm'); }
+
+  function setMuted(m) {
+    muted = !!m;
+    try { localStorage.setItem('nt-muted', muted ? '1' : '0'); } catch (e) { /* abaikan */ }
+  }
+
   function floatText(x, y, text, cls) {
+    if (calm()) return;
     const el = document.createElement('div');
     el.className = 'floaty ' + (cls || '');
     el.textContent = text;
@@ -1851,6 +1932,7 @@ ul.plain { list-style: none; padding-left: 0; }
   }
 
   function confetti(x, y) {
+    if (calm()) return;
     const colors = ['#f0c25f', '#d9a441', '#6fbf5a', '#2d8fd0', '#e98aa8', '#c8472f'];
     for (let i = 0; i < 28; i++) {
       const p = document.createElement('i');
@@ -1887,8 +1969,78 @@ ul.plain { list-style: none; padding-left: 0; }
   }
 
   NT.ui.fx = {
-    sfx: sfx, toggleMute: toggleMute, isMuted: function () { return muted; },
+    sfx: sfx, toggleMute: toggleMute, setMuted: setMuted, setVolume: function (v) { volume = v; }, isMuted: function () { return muted; },
     floatText: floatText, floatFromRect: floatFromRect, confetti: confetti, setCash: setCash
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Pengaturan pemain (suara, tampilan, permainan). Disimpan di browser ini saja (localStorage),
+ * terpisah dari data game, jadi tidak ikut tersimpan di cloud dan tidak mengubah struktur save.
+ */
+(function (NT) {
+  NT.ui = NT.ui || {};
+  const KEY = 'nt-settings';
+
+  // Pilihan untuk tiap pengaturan: [nilai, label]. Urutan = urutan tombol di panel.
+  const OPTIONS = {
+    volume: [['pelan', 'Pelan'], ['sedang', 'Sedang'], ['keras', 'Keras']],
+    textSize: [['normal', 'Normal'], ['large', 'Besar'], ['xlarge', 'Sangat besar']],
+    confirm: [['off', 'Mati'], ['half', 'Biaya ≥ 50% kas'], ['most', 'Biaya ≥ 80% kas']]
+  };
+  const VOLUME = { pelan: 0.4, sedang: 1, keras: 1.8 };
+  const CONFIRM_FRAC = { off: 0, half: 0.5, most: 0.8 };
+
+  const DEFAULTS = { sfx: true, volume: 'sedang', textSize: 'normal', calm: false, confirm: 'off', compact: true };
+  let cfg = Object.assign({}, DEFAULTS);
+
+  function valid(key, val) {
+    if (typeof DEFAULTS[key] === 'boolean') return typeof val === 'boolean';
+    return !!OPTIONS[key] && OPTIONS[key].some(function (o) { return o[0] === val; });
+  }
+
+  function load() {
+    let raw = null;
+    try { raw = JSON.parse(localStorage.getItem(KEY)); } catch (e) { /* abaikan */ }
+    if (raw && typeof raw === 'object') {
+      Object.keys(DEFAULTS).forEach(function (k) { if (valid(k, raw[k])) cfg[k] = raw[k]; });
+    } else {
+      // Pemain lama: hormati pilihan bisu dari versi sebelumnya.
+      try { if (localStorage.getItem('nt-muted') === '1') cfg.sfx = false; } catch (e) { /* abaikan */ }
+    }
+  }
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) { /* abaikan */ } }
+
+  function apply() {
+    NT.ui.fx.setMuted(!cfg.sfx);
+    NT.ui.fx.setVolume(VOLUME[cfg.volume] || 1);
+    NT.fmt.setCompact(cfg.compact);
+    const cl = document.body.classList;
+    cl.toggle('calm', cfg.calm);
+    cl.toggle('text-large', cfg.textSize === 'large');
+    cl.toggle('text-xlarge', cfg.textSize === 'xlarge');
+  }
+
+  function set(key, raw) {
+    const val = raw === 'true' ? true : (raw === 'false' ? false : raw);
+    if (!(key in DEFAULTS) || !valid(key, val)) return false;
+    cfg[key] = val;
+    save();
+    apply();
+    return true;
+  }
+
+  load();
+  NT.ui.settings = {
+    options: OPTIONS,
+    get: function (key) { return cfg[key]; },
+    set: set,
+    apply: apply,
+    // Bagian dari kas yang memicu konfirmasi pembelian (0 = tidak pernah).
+    confirmFraction: function () { return CONFIRM_FRAC[cfg.confirm] || 0; }
   };
 })((window.NT = window.NT || {}));
 
@@ -2231,7 +2383,7 @@ ul.plain { list-style: none; padding-left: 0; }
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa' };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -2439,9 +2591,71 @@ ul.plain { list-style: none; padding-left: 0; }
       worldCard() +
       '<div class="card"><h2>Gelar peradaban</h2><p><b data-live="rank-big"></b></p>' +
         '<div class="bar"><i data-live="rank-bar"></i></div><small class="muted" data-live="rank-next"></small></div>' +
-      '<div class="card"><h2>Rencana pengembangan</h2><ul class="plain">' + roadmap + '</ul></div>' +
-      '<div class="card"><h2>Penyimpanan</h2><p class="muted">' + driver.label + '</p>' +
-        '<button class="btn danger" data-action="reset">Mulai ulang game</button></div>';
+      '<div class="card"><h2>Rencana pengembangan</h2><ul class="plain">' + roadmap + '</ul></div>';
+  }
+
+  /* ---------- Tab pengaturan ---------- */
+
+  function setRow(title, desc, control) {
+    return '<div class="set-row"><div class="set-text"><b>' + title + '</b><small>' + desc + '</small></div>' +
+      '<div class="set-ctl">' + control + '</div></div>';
+  }
+
+  function toggle(key, on, label) {
+    return '<button class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + label + '" ' +
+      'data-action="setting" data-key="' + key + '" data-value="' + (!on) + '"><i></i></button>';
+  }
+
+  function choice(key, current) {
+    return '<div class="segs mini" role="group">' + NT.ui.settings.options[key].map(function (o) {
+      return '<button class="seg' + (o[0] === current ? ' on' : '') + '" aria-pressed="' + (o[0] === current) + '" ' +
+        'data-action="setting" data-key="' + key + '" data-value="' + o[0] + '">' + o[1] + '</button>';
+    }).join('') + '</div>';
+  }
+
+  function renderSettings() {
+    const S = NT.ui.settings;
+    const driver = NT.getStorage();
+    const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest('#tab-settings');
+    const keep = focused ? [document.activeElement.getAttribute('data-key'), document.activeElement.getAttribute('data-value')] : null;
+
+    const reset = view.resetArmed
+      ? '<div class="reset-confirm"><p><b>Hapus semua kemajuan?</b> Ini tidak bisa dibatalkan. Ekspor dulu bila ingin menyimpan cadangan.</p>' +
+        '<div class="set-buttons"><button class="btn danger" data-action="reset">Ya, hapus semuanya</button>' +
+        '<button class="btn" data-action="reset-cancel">Batal</button></div></div>'
+      : '<button class="btn danger" data-action="reset-ask">Mulai ulang game</button>';
+
+    $('tab-settings').innerHTML =
+      '<div class="card set-card"><h2>Suara</h2>' +
+        setRow('Efek suara', 'Bunyi saat mengumpulkan, menjual, dan membangun.', toggle('sfx', S.get('sfx'), 'Efek suara')) +
+        setRow('Volume', 'Seberapa keras efek suara terdengar.', choice('volume', S.get('volume'))) +
+      '</div>' +
+      '<div class="card set-card"><h2>Tampilan</h2>' +
+        setRow('Ukuran teks', 'Perbesar tulisan dan tombol agar lebih mudah dibaca.', choice('textSize', S.get('textSize'))) +
+        setRow('Hemat animasi', 'Matikan gerakan, konfeti, dan kapal di peta. Cocok untuk HP yang berat.', toggle('calm', S.get('calm'), 'Hemat animasi')) +
+      '</div>' +
+      '<div class="card set-card"><h2>Permainan</h2>' +
+        setRow('Konfirmasi pembelian mahal', 'Tanya dulu sebelum membangun atau membuka wilayah yang menghabiskan sebagian besar kas.', choice('confirm', S.get('confirm'))) +
+        setRow('Angka ringkas', 'Tampilkan 1,2 jt, bukan 1.200.000.', toggle('compact', S.get('compact'), 'Angka ringkas')) +
+      '</div>' +
+      '<div class="card set-card"><h2>Data</h2>' +
+        setRow('Penyimpanan', driver.label + '.', '') +
+        setRow('Cadangan', 'Simpan kemajuanmu ke file, atau pulihkan dari file cadangan.',
+          '<div class="set-buttons"><button class="btn" data-action="export">Ekspor</button>' +
+          '<label class="btn" for="import-file">Impor</label>' +
+          '<input type="file" id="import-file" accept=".json,application/json" hidden></div>') +
+        '<div class="set-row set-danger">' + reset + '</div>' +
+      '</div>' +
+      '<div class="card set-card"><h2>Bantuan</h2>' +
+        setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di tab Info.',
+          '<button class="btn" data-action="tab" data-id="about">Buka Info</button>') +
+      '</div>';
+
+    if (keep) {
+      const sel = '#tab-settings [data-key="' + keep[0] + '"][data-value="' + keep[1] + '"]';
+      const next = document.querySelector(sel) || document.querySelector('#tab-settings [data-key="' + keep[0] + '"]');
+      if (next) next.focus();
+    }
   }
 
   /* ---------- Chip wilayah ---------- */
@@ -2495,6 +2709,7 @@ ul.plain { list-style: none; padding-left: 0; }
     renderRegion(state, now);
     renderMarket(state, now);
     renderAbout(state);
+    renderSettings();
     tick(state, now);
   }
 
@@ -2506,7 +2721,6 @@ ul.plain { list-style: none; padding-left: 0; }
     const sc = E.score(state);
     const rk = E.rank(sc);
     NT.ui.fx.setCash($('stat-cash'), state.cash);
-    $('btn-mute').textContent = NT.ui.fx.isMuted() ? '🔇' : '🔊';
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
 
@@ -2641,6 +2855,100 @@ ul.plain { list-style: none; padding-left: 0; }
 
 </script>
   <script>
+/* Layar "Selamat datang kembali": ringkasan apa yang terjadi selama pemain pergi. */
+(function (NT) {
+  NT.ui = NT.ui || {};
+  const D = NT.data;
+  const E = NT.economy;
+  const F = NT.fmt;
+  let open = null;   // { el, prevFocus, onKey }
+
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function jobName(j) {
+    const what = j.kind === 'building' ? D.buildings[j.id].name : D.infra[j.id].name + ' ' + D.regions[j.region].name;
+    return what + (j.kind === 'building' && j.from === 0 ? ' selesai dibangun' : ' naik ke Lv ' + j.to);
+  }
+
+  // Hasil yang menunggu, dijumlahkan per komoditas. "full" = ada gudang yang sudah penuh (produksi berhenti).
+  function waiting(state, now) {
+    const byCom = {};
+    Object.keys(state.buildings).forEach(function (id) {
+      const cid = D.buildings[id].produces;
+      const p = E.pending(state, id, now);
+      const row = byCom[cid] || (byCom[cid] = { qty: 0, full: false });
+      row.qty += p;
+      if (p >= E.capacity(state, id, now) - 0.001) row.full = true;
+    });
+    return Object.keys(byCom).map(function (cid) {
+      return { cid: cid, qty: Math.floor(byCom[cid].qty), full: byCom[cid].full };
+    }).filter(function (r) { return r.qty >= 1; });
+  }
+
+  function close() {
+    if (!open) return;
+    document.removeEventListener('keydown', open.onKey);
+    if (open.el.parentNode) open.el.parentNode.removeChild(open.el);
+    if (open.prevFocus && open.prevFocus.focus) open.prevFocus.focus();
+    open = null;
+  }
+
+  // Mengembalikan true bila layar ditampilkan (ada sesuatu yang layak dilaporkan).
+  function show(state, awayMs, finished, now) {
+    if (open) return false;
+    const items = waiting(state, now);
+    if (!items.length && !(finished && finished.length)) return false;
+
+    const anyFull = items.some(function (r) { return r.full; });
+    let body = '';
+    if (items.length) {
+      body += '<h3>Siap dikumpulkan</h3><ul class="wb-list">' + items.map(function (r) {
+        const c = D.commodities[r.cid];
+        return '<li><span class="wb-ico">' + c.icon + '</span><span class="wb-name">' + esc(c.name) + '</span>' +
+          '<b>+' + F.num(r.qty) + '</b>' + (r.full ? '<span class="tag paceklik">gudang penuh</span>' : '') + '</li>';
+      }).join('') + '</ul>';
+      if (anyFull) {
+        body += '<p class="muted small">Gudang yang penuh berhenti berproduksi. Gudang terisi penuh setelah ' +
+          NT.config.storageHours + ' jam, jadi kumpulkan lebih sering atau naikkan level bangunan.</p>';
+      }
+    }
+    if (finished && finished.length) {
+      body += '<h3>Selesai saat kamu pergi</h3><ul class="wb-list">' + finished.map(function (j) {
+        return '<li><span class="wb-ico">✅</span><span class="wb-name">' + esc(jobName(j)) + '</span></li>';
+      }).join('') + '</ul>';
+    }
+
+    const actions = items.length
+      ? '<button class="btn primary wide" data-action="collect-all" data-close>📦 Kumpulkan semua hasil</button>' +
+        '<button class="btn wide" data-close>Nanti saja</button>'
+      : '<button class="btn primary wide" data-close>Lanjut bermain</button>';
+
+    const el = document.createElement('div');
+    el.className = 'modal-backdrop';
+    el.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="wb-title">' +
+      '<h2 id="wb-title">Selamat datang kembali!</h2>' +
+      '<p class="muted">Kamu pergi selama <b>' + F.duration(awayMs) + '</b>.</p>' + body +
+      '<div class="modal-actions">' + actions + '</div></div>';
+    document.body.appendChild(el);
+
+    const onKey = function (e) { if (e.key === 'Escape') close(); };
+    open = { el: el, prevFocus: document.activeElement, onKey: onKey };
+    document.addEventListener('keydown', onKey);
+    el.addEventListener('click', function (e) {
+      // Klik di luar kotak menutup; tombol bertanda data-close menutup setelah aksinya jalan.
+      if (e.target === el) close();
+      else if (e.target.closest('[data-close]')) setTimeout(close, 0);
+    });
+    const first = el.querySelector('.btn');
+    if (first) first.focus();
+    return true;
+  }
+
+  NT.ui.welcome = { show: show, close: close };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
 /* Titik masuk: memuat data, menyambungkan aksi pemain, menjalankan loop. */
 (function (NT) {
   const E = NT.economy;
@@ -2655,11 +2963,19 @@ ul.plain { list-style: none; padding-left: 0; }
   // Jika memuat gagal, jangan menyimpan agar progres cloud tidak tertimpa.
   let loadFailed = false;
 
+  const AWAY_MS = 2 * 60000;   // pergi lebih lama dari ini = tampilkan layar sambutan
+  const SEEN_KEY = 'nt-lastseen';
+  const COST_ACTIONS = { 'upgrade-building': 1, 'upgrade-infra': 1, unlock: 1, speedup: 1 };
+
   function now() { return Date.now(); }
+
+  function readSeen() { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch (e) { return 0; } }
+  function touchSeen() { try { localStorage.setItem(SEEN_KEY, String(now())); } catch (e) { /* abaikan */ } }
 
   /* ---------- Simpan ---------- */
 
   function persist() {
+    touchSeen();
     if (loadFailed) return Promise.resolve();
     return storage.save(state).then(function (ok) {
       if (ok === false && !saveErrorShown) {
@@ -2698,7 +3014,26 @@ ul.plain { list-style: none; padding-left: 0; }
   }
 
   const actions = {
-    mute: function () { NT.ui.fx.toggleMute(); return { silent: true }; },
+    setting: function (el) {
+      if (NT.ui.settings.set(el.getAttribute('data-key'), el.getAttribute('data-value'))) NT.ui.fx.sfx('click');
+      return { silent: true };
+    },
+
+    export: function () {
+      const data = JSON.stringify({ game: 'nusantara-tycoon', exportedAt: new Date().toISOString(), state: state }, null, 2);
+      const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nusantara-tycoon-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      return { ok: true, message: 'Cadangan disimpan ke file.', sfx: 'coin' };
+    },
+
+    'reset-ask': function () { P.view.resetArmed = true; return { silent: true }; },
+    'reset-cancel': function () { P.view.resetArmed = false; return { silent: true }; },
 
     speedup: function (el) {
       const res = E.speedup(state, el.getAttribute('data-key'), now());
@@ -2708,6 +3043,7 @@ ul.plain { list-style: none; padding-left: 0; }
 
     tab: function (el) {
       P.view.tab = el.getAttribute('data-id');
+      P.view.resetArmed = false;
       return { silent: true };
     },
 
@@ -2774,7 +3110,9 @@ ul.plain { list-style: none; padding-left: 0; }
     },
 
     reset: function () {
-      if (!window.confirm('Mulai ulang dari awal? Semua kemajuan akan hilang.')) return { silent: true };
+      if (!P.view.resetArmed) return { silent: true };
+      P.view.resetArmed = false;
+      try { localStorage.removeItem(SEEN_KEY); } catch (e) { /* abaikan */ }
       state = NT.state.createInitialState(now());
       P.view.region = 'jawa';
       P.view.market = 'jawa';
@@ -2791,6 +3129,12 @@ ul.plain { list-style: none; padding-left: 0; }
     const rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
     const early = E.settle(state, now()); // pastikan pembangunan yang waktunya habis sudah diterapkan
     if (early.length) celebrate(early);
+    if (COST_ACTIONS[name]) {
+      const frac = NT.ui.settings.confirmFraction();
+      const cost = Number(el.getAttribute('data-cost')) || 0;
+      if (frac && cost > 0 && cost >= state.cash * frac &&
+          !window.confirm('Keluarkan ' + F.money(cost) + ' (' + Math.round(cost / state.cash * 100) + '% dari kasmu)?')) return;
+    }
     const res = fn(el);
     if (!res.silent) {
       if (res.ok) {
@@ -2805,6 +3149,30 @@ ul.plain { list-style: none; padding-left: 0; }
       }
     }
     if (!res.skipRender) P.renderAll(state, now());
+  }
+
+  /* ---------- Impor cadangan ---------- */
+
+  function importFile(file, input) {
+    const reader = new FileReader();
+    reader.onload = function () {
+      input.value = '';
+      let obj = null;
+      try { obj = JSON.parse(reader.result); } catch (e) { /* ditangani di bawah */ }
+      const saved = obj && obj.state ? obj.state : obj;
+      if (!saved || typeof saved !== 'object' || !Number.isFinite(Number(saved.cash)) || !saved.buildings || typeof saved.buildings !== 'object') {
+        toast('File ini bukan cadangan Nusantara Tycoon yang valid.', 'warn');
+        return;
+      }
+      if (!window.confirm('Timpa kemajuan sekarang dengan isi file ini?')) return;
+      state = NT.state.normalize(saved, now());
+      loadFailed = false;
+      persist();
+      P.renderAll(state, now());
+      toast('Cadangan dipulihkan.', 'ok');
+    };
+    reader.onerror = function () { toast('File tidak bisa dibaca.', 'warn'); };
+    reader.readAsText(file);
   }
 
   function selectRegion(id) {
@@ -2832,8 +3200,21 @@ ul.plain { list-style: none; padding-left: 0; }
       if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); }
     });
 
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.id === 'import-file' && e.target.files && e.target.files[0]) importFile(e.target.files[0], e.target);
+    });
+
+    // Kembali ke tab setelah lama: tampilkan ringkasan seperti saat membuka game.
+    let hiddenAt = 0;
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) persist();
+      if (document.hidden) { hiddenAt = now(); persist(); return; }
+      if (!hiddenAt || !state) return;
+      const t = now(), away = t - hiddenAt;
+      hiddenAt = 0;
+      if (away < AWAY_MS) return;
+      const done = E.settle(state, t);
+      if (!NT.ui.welcome.show(state, away, done, t) && done.length) celebrate(done, true);
+      P.renderAll(state, t);
     });
     window.addEventListener('pagehide', persist);
   }
@@ -2841,6 +3222,7 @@ ul.plain { list-style: none; padding-left: 0; }
   /* ---------- Mulai ---------- */
 
   async function start() {
+    const lastSeen = readSeen();   // dibaca sebelum apa pun menimpanya
     storage = NT.getStorage();
 
     let saved = null;
@@ -2855,21 +3237,16 @@ ul.plain { list-style: none; padding-left: 0; }
     state = NT.state.normalize(saved, t);
     const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
 
+    NT.ui.settings.apply();
     NT.ui.map.mount();
     bindEvents();
     P.renderAll(state, t);
 
-    if (finishedAway.length) celebrate(finishedAway, true);
-
-    // Sambutan kembali bila pemain pergi cukup lama.
-    if (saved) {
-      const away = t - Math.min.apply(null, Object.keys(state.buildings).map(function (id) {
-        return state.buildings[id].lastCollected;
-      }));
-      if (away > 2 * 60000) {
-        toast('Selamat datang kembali! ' + F.duration(away) + ' berlalu, hasil bumi menunggu di kebunmu.', 'ok');
-      }
-    }
+    // Layar sambutan bila pemain pergi cukup lama; bila tidak, cukup toast untuk pembangunan yang selesai.
+    const away = lastSeen ? t - lastSeen : 0;
+    const welcomed = saved && away > AWAY_MS && NT.ui.welcome.show(state, away, finishedAway, t);
+    if (!welcomed && finishedAway.length) celebrate(finishedAway, true);
+    touchSeen();
 
     setInterval(function () {
       const t2 = now();

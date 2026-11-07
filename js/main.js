@@ -12,11 +12,19 @@
   // Jika memuat gagal, jangan menyimpan agar progres cloud tidak tertimpa.
   let loadFailed = false;
 
+  const AWAY_MS = 2 * 60000;   // pergi lebih lama dari ini = tampilkan layar sambutan
+  const SEEN_KEY = 'nt-lastseen';
+  const COST_ACTIONS = { 'upgrade-building': 1, 'upgrade-infra': 1, unlock: 1, speedup: 1 };
+
   function now() { return Date.now(); }
+
+  function readSeen() { try { return Number(localStorage.getItem(SEEN_KEY)) || 0; } catch (e) { return 0; } }
+  function touchSeen() { try { localStorage.setItem(SEEN_KEY, String(now())); } catch (e) { /* abaikan */ } }
 
   /* ---------- Simpan ---------- */
 
   function persist() {
+    touchSeen();
     if (loadFailed) return Promise.resolve();
     return storage.save(state).then(function (ok) {
       if (ok === false && !saveErrorShown) {
@@ -55,7 +63,26 @@
   }
 
   const actions = {
-    mute: function () { NT.ui.fx.toggleMute(); return { silent: true }; },
+    setting: function (el) {
+      if (NT.ui.settings.set(el.getAttribute('data-key'), el.getAttribute('data-value'))) NT.ui.fx.sfx('click');
+      return { silent: true };
+    },
+
+    export: function () {
+      const data = JSON.stringify({ game: 'nusantara-tycoon', exportedAt: new Date().toISOString(), state: state }, null, 2);
+      const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'nusantara-tycoon-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+      return { ok: true, message: 'Cadangan disimpan ke file.', sfx: 'coin' };
+    },
+
+    'reset-ask': function () { P.view.resetArmed = true; return { silent: true }; },
+    'reset-cancel': function () { P.view.resetArmed = false; return { silent: true }; },
 
     speedup: function (el) {
       const res = E.speedup(state, el.getAttribute('data-key'), now());
@@ -65,6 +92,7 @@
 
     tab: function (el) {
       P.view.tab = el.getAttribute('data-id');
+      P.view.resetArmed = false;
       return { silent: true };
     },
 
@@ -131,7 +159,9 @@
     },
 
     reset: function () {
-      if (!window.confirm('Mulai ulang dari awal? Semua kemajuan akan hilang.')) return { silent: true };
+      if (!P.view.resetArmed) return { silent: true };
+      P.view.resetArmed = false;
+      try { localStorage.removeItem(SEEN_KEY); } catch (e) { /* abaikan */ }
       state = NT.state.createInitialState(now());
       P.view.region = 'jawa';
       P.view.market = 'jawa';
@@ -148,6 +178,12 @@
     const rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
     const early = E.settle(state, now()); // pastikan pembangunan yang waktunya habis sudah diterapkan
     if (early.length) celebrate(early);
+    if (COST_ACTIONS[name]) {
+      const frac = NT.ui.settings.confirmFraction();
+      const cost = Number(el.getAttribute('data-cost')) || 0;
+      if (frac && cost > 0 && cost >= state.cash * frac &&
+          !window.confirm('Keluarkan ' + F.money(cost) + ' (' + Math.round(cost / state.cash * 100) + '% dari kasmu)?')) return;
+    }
     const res = fn(el);
     if (!res.silent) {
       if (res.ok) {
@@ -162,6 +198,30 @@
       }
     }
     if (!res.skipRender) P.renderAll(state, now());
+  }
+
+  /* ---------- Impor cadangan ---------- */
+
+  function importFile(file, input) {
+    const reader = new FileReader();
+    reader.onload = function () {
+      input.value = '';
+      let obj = null;
+      try { obj = JSON.parse(reader.result); } catch (e) { /* ditangani di bawah */ }
+      const saved = obj && obj.state ? obj.state : obj;
+      if (!saved || typeof saved !== 'object' || !Number.isFinite(Number(saved.cash)) || !saved.buildings || typeof saved.buildings !== 'object') {
+        toast('File ini bukan cadangan Nusantara Tycoon yang valid.', 'warn');
+        return;
+      }
+      if (!window.confirm('Timpa kemajuan sekarang dengan isi file ini?')) return;
+      state = NT.state.normalize(saved, now());
+      loadFailed = false;
+      persist();
+      P.renderAll(state, now());
+      toast('Cadangan dipulihkan.', 'ok');
+    };
+    reader.onerror = function () { toast('File tidak bisa dibaca.', 'warn'); };
+    reader.readAsText(file);
   }
 
   function selectRegion(id) {
@@ -189,8 +249,21 @@
       if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); }
     });
 
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.id === 'import-file' && e.target.files && e.target.files[0]) importFile(e.target.files[0], e.target);
+    });
+
+    // Kembali ke tab setelah lama: tampilkan ringkasan seperti saat membuka game.
+    let hiddenAt = 0;
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden) persist();
+      if (document.hidden) { hiddenAt = now(); persist(); return; }
+      if (!hiddenAt || !state) return;
+      const t = now(), away = t - hiddenAt;
+      hiddenAt = 0;
+      if (away < AWAY_MS) return;
+      const done = E.settle(state, t);
+      if (!NT.ui.welcome.show(state, away, done, t) && done.length) celebrate(done, true);
+      P.renderAll(state, t);
     });
     window.addEventListener('pagehide', persist);
   }
@@ -198,6 +271,7 @@
   /* ---------- Mulai ---------- */
 
   async function start() {
+    const lastSeen = readSeen();   // dibaca sebelum apa pun menimpanya
     storage = NT.getStorage();
 
     let saved = null;
@@ -212,21 +286,16 @@
     state = NT.state.normalize(saved, t);
     const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
 
+    NT.ui.settings.apply();
     NT.ui.map.mount();
     bindEvents();
     P.renderAll(state, t);
 
-    if (finishedAway.length) celebrate(finishedAway, true);
-
-    // Sambutan kembali bila pemain pergi cukup lama.
-    if (saved) {
-      const away = t - Math.min.apply(null, Object.keys(state.buildings).map(function (id) {
-        return state.buildings[id].lastCollected;
-      }));
-      if (away > 2 * 60000) {
-        toast('Selamat datang kembali! ' + F.duration(away) + ' berlalu, hasil bumi menunggu di kebunmu.', 'ok');
-      }
-    }
+    // Layar sambutan bila pemain pergi cukup lama; bila tidak, cukup toast untuk pembangunan yang selesai.
+    const away = lastSeen ? t - lastSeen : 0;
+    const welcomed = saved && away > AWAY_MS && NT.ui.welcome.show(state, away, finishedAway, t);
+    if (!welcomed && finishedAway.length) celebrate(finishedAway, true);
+    touchSeen();
 
     setInterval(function () {
       const t2 = now();

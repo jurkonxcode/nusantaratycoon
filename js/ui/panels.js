@@ -8,7 +8,7 @@
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa' };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -216,9 +216,71 @@
       worldCard() +
       '<div class="card"><h2>Gelar peradaban</h2><p><b data-live="rank-big"></b></p>' +
         '<div class="bar"><i data-live="rank-bar"></i></div><small class="muted" data-live="rank-next"></small></div>' +
-      '<div class="card"><h2>Rencana pengembangan</h2><ul class="plain">' + roadmap + '</ul></div>' +
-      '<div class="card"><h2>Penyimpanan</h2><p class="muted">' + driver.label + '</p>' +
-        '<button class="btn danger" data-action="reset">Mulai ulang game</button></div>';
+      '<div class="card"><h2>Rencana pengembangan</h2><ul class="plain">' + roadmap + '</ul></div>';
+  }
+
+  /* ---------- Tab pengaturan ---------- */
+
+  function setRow(title, desc, control) {
+    return '<div class="set-row"><div class="set-text"><b>' + title + '</b><small>' + desc + '</small></div>' +
+      '<div class="set-ctl">' + control + '</div></div>';
+  }
+
+  function toggle(key, on, label) {
+    return '<button class="switch' + (on ? ' on' : '') + '" role="switch" aria-checked="' + on + '" aria-label="' + label + '" ' +
+      'data-action="setting" data-key="' + key + '" data-value="' + (!on) + '"><i></i></button>';
+  }
+
+  function choice(key, current) {
+    return '<div class="segs mini" role="group">' + NT.ui.settings.options[key].map(function (o) {
+      return '<button class="seg' + (o[0] === current ? ' on' : '') + '" aria-pressed="' + (o[0] === current) + '" ' +
+        'data-action="setting" data-key="' + key + '" data-value="' + o[0] + '">' + o[1] + '</button>';
+    }).join('') + '</div>';
+  }
+
+  function renderSettings() {
+    const S = NT.ui.settings;
+    const driver = NT.getStorage();
+    const focused = document.activeElement && document.activeElement.closest && document.activeElement.closest('#tab-settings');
+    const keep = focused ? [document.activeElement.getAttribute('data-key'), document.activeElement.getAttribute('data-value')] : null;
+
+    const reset = view.resetArmed
+      ? '<div class="reset-confirm"><p><b>Hapus semua kemajuan?</b> Ini tidak bisa dibatalkan. Ekspor dulu bila ingin menyimpan cadangan.</p>' +
+        '<div class="set-buttons"><button class="btn danger" data-action="reset">Ya, hapus semuanya</button>' +
+        '<button class="btn" data-action="reset-cancel">Batal</button></div></div>'
+      : '<button class="btn danger" data-action="reset-ask">Mulai ulang game</button>';
+
+    $('tab-settings').innerHTML =
+      '<div class="card set-card"><h2>Suara</h2>' +
+        setRow('Efek suara', 'Bunyi saat mengumpulkan, menjual, dan membangun.', toggle('sfx', S.get('sfx'), 'Efek suara')) +
+        setRow('Volume', 'Seberapa keras efek suara terdengar.', choice('volume', S.get('volume'))) +
+      '</div>' +
+      '<div class="card set-card"><h2>Tampilan</h2>' +
+        setRow('Ukuran teks', 'Perbesar tulisan dan tombol agar lebih mudah dibaca.', choice('textSize', S.get('textSize'))) +
+        setRow('Hemat animasi', 'Matikan gerakan, konfeti, dan kapal di peta. Cocok untuk HP yang berat.', toggle('calm', S.get('calm'), 'Hemat animasi')) +
+      '</div>' +
+      '<div class="card set-card"><h2>Permainan</h2>' +
+        setRow('Konfirmasi pembelian mahal', 'Tanya dulu sebelum membangun atau membuka wilayah yang menghabiskan sebagian besar kas.', choice('confirm', S.get('confirm'))) +
+        setRow('Angka ringkas', 'Tampilkan 1,2 jt, bukan 1.200.000.', toggle('compact', S.get('compact'), 'Angka ringkas')) +
+      '</div>' +
+      '<div class="card set-card"><h2>Data</h2>' +
+        setRow('Penyimpanan', driver.label + '.', '') +
+        setRow('Cadangan', 'Simpan kemajuanmu ke file, atau pulihkan dari file cadangan.',
+          '<div class="set-buttons"><button class="btn" data-action="export">Ekspor</button>' +
+          '<label class="btn" for="import-file">Impor</label>' +
+          '<input type="file" id="import-file" accept=".json,application/json" hidden></div>') +
+        '<div class="set-row set-danger">' + reset + '</div>' +
+      '</div>' +
+      '<div class="card set-card"><h2>Bantuan</h2>' +
+        setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di tab Info.',
+          '<button class="btn" data-action="tab" data-id="about">Buka Info</button>') +
+      '</div>';
+
+    if (keep) {
+      const sel = '#tab-settings [data-key="' + keep[0] + '"][data-value="' + keep[1] + '"]';
+      const next = document.querySelector(sel) || document.querySelector('#tab-settings [data-key="' + keep[0] + '"]');
+      if (next) next.focus();
+    }
   }
 
   /* ---------- Chip wilayah ---------- */
@@ -272,6 +334,7 @@
     renderRegion(state, now);
     renderMarket(state, now);
     renderAbout(state);
+    renderSettings();
     tick(state, now);
   }
 
@@ -283,7 +346,6 @@
     const sc = E.score(state);
     const rk = E.rank(sc);
     NT.ui.fx.setCash($('stat-cash'), state.cash);
-    $('btn-mute').textContent = NT.ui.fx.isMuted() ? '🔇' : '🔊';
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
 

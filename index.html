@@ -30,7 +30,7 @@
         <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
         <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
         <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
-        <button class="tab mini" id="btn-mute" data-action="mute" aria-label="Suara">🔊</button>
+        <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan">⚙️</button>
       </nav>
     </div>
   </header>
@@ -65,6 +65,7 @@
       </section>
       <section id="tab-market" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
+      <section id="tab-settings" class="tab-panel"></section>
     </main>
   </div>
 
@@ -88,9 +89,11 @@
   <script src="js/storage/index.js"></script>
   <script src="js/ui/toast.js"></script>
   <script src="js/ui/fx.js"></script>
+  <script src="js/ui/settings.js"></script>
   <script src="js/ui/sprites.js"></script>
   <script src="js/ui/map.js"></script>
   <script src="js/ui/panels.js"></script>
+  <script src="js/ui/welcome.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

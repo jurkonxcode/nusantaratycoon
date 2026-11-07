@@ -7,7 +7,10 @@
     }).format(n);
   }
 
+  let compactOn = true;
+
   function compact(n) {
+    if (!compactOn) return num(n, 0);
     const a = Math.abs(n);
     if (a >= 1e12) return num(n / 1e12, 2) + ' T';
     if (a >= 1e9) return num(n / 1e9, 2) + ' M';
@@ -16,6 +19,7 @@
   }
 
   NT.fmt = {
+    setCompact: function (on) { compactOn = !!on; },
     num: num,
     compact: compact,
     // Kas / jumlah uang besar
