@@ -14,56 +14,85 @@
 
   /* ---------- Panel wilayah ---------- */
 
+  function jobBox(job, note) {
+    return '<div class="bar job"><i data-live="jobbar" data-key="' + job.key + '"></i></div>' +
+      '<small>🔨 <b data-live="jobtime" data-key="' + job.key + '"></b> · ' + note + '</small>';
+  }
+
+  function speedBtn(job, now) {
+    const cost = E.speedupCost(job, now);
+    return '<button class="btn primary" data-action="speedup" data-key="' + job.key + '" data-cost="' + cost + '">⚡ Percepat · ' +
+      '<span data-live="speedcost" data-key="' + job.key + '">' + F.money(cost) + '</span></button>';
+  }
+
   function buildingRow(state, id, now) {
     const b = D.buildings[id];
     const c = D.commodities[b.produces];
     const lvl = E.buildingLevel(state, id);
     const cost = E.buildingCost(id, lvl);
     const rate = E.productionRate(state, id, now);
+    const job = E.jobFor(state, 'b:' + id);
+    const dur = E.buildDuration(id, lvl);
+    const time = dur ? ' · ⏱ ' + F.short(dur) : '';
 
     if (!lvl) {
+      if (job) {
+        return '' +
+        '<div class="row building">' +
+          '<div class="row-icon working">' + b.icon + '</div>' +
+          '<div class="row-main"><b>Membangun ' + b.name + '…</b>' + jobBox(job, 'lalu ' + F.num(b.baseRate, 1) + '/menit') + '</div>' +
+          '<div class="row-actions">' + speedBtn(job, now) + '</div>' +
+        '</div>';
+      }
       return '' +
       '<div class="row">' +
         '<div class="row-icon">' + b.icon + '</div>' +
         '<div class="row-main"><b>' + b.name + '</b>' +
           '<small>Menghasilkan ' + c.name + ' (' + F.num(b.baseRate, 1) + '/menit pada Lv 1)</small></div>' +
         '<div class="row-actions">' +
-          '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">Bangun · ' + F.money(cost) + '</button>' +
+          '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">Bangun · ' + F.money(cost) + time + '</button>' +
         '</div>' +
       '</div>';
     }
 
     const cap = E.capacity(state, id, now);
     return '' +
-    '<div class="row">' +
-      '<div class="row-icon">' + b.icon + '</div>' +
+    '<div class="row' + (job ? ' building' : '') + '">' +
+      '<div class="row-icon working">' + b.icon + '</div>' +
       '<div class="row-main">' +
-        '<b>' + b.name + ' <span class="lvl">Lv ' + lvl + '</span></b>' +
+        '<b>' + b.name + ' <span class="lvl">Lv ' + lvl + '</span>' + (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
         '<small>' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/menit <span data-live="bmult" data-id="' + id + '"></span></small>' +
         '<div class="bar"><i data-live="bar" data-id="' + id + '"></i></div>' +
         '<small><span data-live="pending" data-id="' + id + '">0</span> / ' + F.num(cap) + ' siap dikumpulkan</small>' +
+        (job ? jobBox(job, 'naik ke Lv ' + job.to) : '') +
       '</div>' +
       '<div class="row-actions">' +
         '<button class="btn" data-action="collect" data-id="' + id + '">Kumpulkan</button>' +
-        '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">⬆ ' + F.money(cost) + '</button>' +
+        (job ? speedBtn(job, now)
+             : '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">⬆ ' + F.money(cost) + time + '</button>') +
       '</div>' +
     '</div>';
   }
 
-  function infraRow(state, regionId, infraId) {
+  function infraRow(state, regionId, infraId, now) {
     const inf = D.infra[infraId];
     const lvl = E.infraLevel(state, regionId, infraId);
     const maxed = lvl >= inf.maxLevel;
     const cost = maxed ? 0 : E.infraCost(regionId, infraId, lvl);
+    const job = E.jobFor(state, 'i:' + regionId + ':' + infraId);
+    const dur = maxed ? 0 : E.infraDuration(regionId, lvl);
     return '' +
-    '<div class="row">' +
-      '<div class="row-icon">' + inf.icon + '</div>' +
-      '<div class="row-main"><b>' + inf.name + ' <span class="lvl">Lv ' + lvl + '/' + inf.maxLevel + '</span></b>' +
-        '<small>' + inf.desc + '</small></div>' +
+    '<div class="row' + (job ? ' building' : '') + '">' +
+      '<div class="row-icon' + (job ? ' working' : '') + '">' + inf.icon + '</div>' +
+      '<div class="row-main"><b>' + inf.name + ' <span class="lvl">Lv ' + lvl + '/' + inf.maxLevel + '</span>' +
+        (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
+        '<small>' + inf.desc + '</small>' + (job ? jobBox(job, 'naik ke Lv ' + job.to) : '') + '</div>' +
       '<div class="row-actions">' +
         (maxed
           ? '<span class="maxed">MAKS</span>'
-          : '<button class="btn primary" data-action="upgrade-infra" data-region="' + regionId + '" data-id="' + infraId + '" data-cost="' + cost + '">⬆ ' + F.money(cost) + '</button>') +
+          : (job ? speedBtn(job, now)
+                 : '<button class="btn primary" data-action="upgrade-infra" data-region="' + regionId + '" data-id="' + infraId + '" data-cost="' + cost + '">⬆ ' + F.money(cost) +
+                   (dur ? ' · ⏱ ' + F.short(dur) : '') + '</button>')) +
       '</div>' +
     '</div>';
   }
@@ -88,7 +117,7 @@
     } else {
       html = '<div class="card"><h2>' + r.icon + ' ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
         '<h3>Produksi</h3>' + r.buildings.map(function (bid) { return buildingRow(state, bid, now); }).join('') +
-        '<h3>Infrastruktur</h3>' + Object.keys(D.infra).map(function (iid) { return infraRow(state, r.id, iid); }).join('') +
+        '<h3>Infrastruktur</h3>' + Object.keys(D.infra).map(function (iid) { return infraRow(state, r.id, iid, now); }).join('') +
         '</div>';
     }
     host.innerHTML = html;
@@ -253,7 +282,8 @@
   function tick(state, now) {
     const sc = E.score(state);
     const rk = E.rank(sc);
-    $('stat-cash').textContent = F.money(state.cash);
+    NT.ui.fx.setCash($('stat-cash'), state.cash);
+    $('btn-mute').textContent = NT.ui.fx.isMuted() ? '🔇' : '🔊';
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
 
@@ -263,6 +293,54 @@
       $('world-banner').innerHTML = wh;
       each('[data-live="world-now"]', function (el) { el.innerHTML = '<p>' + wh + '</p>'; });
     }
+
+    // Timer pembangunan
+    each('[data-live="jobbar"]', function (el) {
+      const j = E.jobFor(state, el.getAttribute('data-key'));
+      if (j) el.style.width = Math.max(0, Math.min(100, (now - j.startedAt) / (j.endsAt - j.startedAt) * 100)) + '%';
+    });
+    each('[data-live="jobtime"]', function (el) {
+      const j = E.jobFor(state, el.getAttribute('data-key'));
+      if (j) el.textContent = F.clock(j.endsAt - now);
+    });
+    each('[data-live="speedcost"]', function (el) {
+      const j = E.jobFor(state, el.getAttribute('data-key'));
+      if (!j) return;
+      const c = E.speedupCost(j, now);
+      el.textContent = F.money(c);
+      el.parentNode.setAttribute('data-cost', c);
+    });
+
+    // Kartu target berikutnya dan jumlah tukang
+    const goal = E.nextGoal(state);
+    if (goal) {
+      $('goal-ico').textContent = goal.icon;
+      $('goal-title').textContent = goal.label + ' · ' + F.money(goal.cost);
+      $('goal-bar').style.width = Math.min(100, state.cash / goal.cost * 100) + '%';
+      const inc = E.incomePerMin(state, now);
+      $('goal-eta').textContent = state.cash >= goal.cost ? '✅ Kas cukup, ayo bangun!'
+        : (inc > 0 ? '≈ ' + F.duration((goal.cost - state.cash) / inc * 60000) + ' lagi jika semua hasil dijual' : '');
+    } else {
+      $('goal-title').textContent = 'Semua target tercapai';
+    }
+    const busy = (state.jobs || []).length;
+    $('builders').textContent = '🔨 ' + busy + '/' + NT.config.maxBuilders;
+    $('builders').classList.toggle('busy', busy >= NT.config.maxBuilders);
+
+    // Tombol Kumpulkan berdenyut bila gudang sudah separuh penuh
+    let anyReady = false;
+    each('[data-action="collect"]', function (el) {
+      const id = el.getAttribute('data-id');
+      const ready = E.pending(state, id, now) >= Math.max(1, E.capacity(state, id, now) * 0.5);
+      el.classList.toggle('ready', ready);
+      anyReady = anyReady || ready;
+    });
+    Object.keys(state.buildings).forEach(function (id) {
+      if (E.pending(state, id, now) >= Math.max(1, E.capacity(state, id, now) * 0.5)) anyReady = true;
+    });
+    const all = document.querySelector('.collect-all');
+    if (all) all.classList.toggle('ready', anyReady);
+    NT.ui.map.tickJobs(state, now);
 
     // Tombol berbiaya: nonaktif bila kas kurang
     each('[data-cost]', function (el) {

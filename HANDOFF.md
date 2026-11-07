@@ -335,3 +335,18 @@ Tempel ini di awal percakapan baru (sertakan zip repo atau tautan repo bila dimi
 - Prototipe dibuat dengan folder terpisah agar mudah dikembangkan dan dipisahkan (data, logika, penyimpanan, tampilan).
 - Prototipe selesai, diunggah ke repo lewat Codespaces, lalu dihubungkan ke Supabase. Ditemukan dan diperbaiki
   celah "gagal memuat lalu menimpa progres". Pemilik mulai menyukai game ini.
+
+## 16. Sesi 3: timer pembangunan dan rasa-main (7 November 2026)
+
+Permintaan pemilik: visual belum terasa "nagih", dan upgrade level seharusnya punya timer yang menyesuaikan.
+
+- **State baru:** `state.jobs[]` = `{ key ('b:<id>' | 'i:<wilayah>:<infra>'), kind, id, region, from, to, startedAt, endsAt, cost }`.
+  `normalize()` membuang job rusak. Tidak perlu migrasi: save lama otomatis `jobs: []`.
+- **Aturan (`core/economy.js`):** `upgradeBuilding/upgradeInfra` memotong kas lalu mengantre job (durasi dari `buildDuration/infraDuration`),
+  `settle(state, now)` menerapkan job yang selesai pada `endsAt` (aman dipanggil belakangan; sisa pecahan produksi dipertahankan lewat
+  `rebase`), `speedup(state, key, now)` membayar `cost x 0,4 x sisa/total`. Dengan `buildTimeEnabled: false` upgrade kembali instan (dipakai tes lama).
+- **Wajib saat memindah ke server (tahap C):** `settle` dan `speedup` ikut jadi Postgres function memakai `now()` server.
+- **UI:** `ui/fx.js` (angka melayang, confetti, suara WebAudio, kas bergulir), kartu target, baris dengan timer dan tombol Percepat,
+  lencana dan gelembung 📦 di `ui/map.js` (`tickJobs`). Gelembung bisa diketuk untuk `collect`.
+- **Tes:** `tests/jobs.test.js` (10 tes). Uji browser headless (Playwright, 18 pengecekan) dijalankan manual di sesi ini, skripnya belum ada di repo.
+- **Belum:** keseimbangan angka timer lewat bermain lama, sprite bangunan yang berubah per level di peta selain ukuran, misi harian, pencapaian.

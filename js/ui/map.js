@@ -117,6 +117,13 @@
     return d;
   }
 
+  // Lencana pembangunan: palu bergoyang dan bar progres (lebar diisi tiap detik oleh tickJobs).
+  function jobBadge(x, y, key) {
+    return '<g class="jobbadge" transform="translate(' + x + ',' + y + ')"><text class="hammer" text-anchor="middle" dy="-4">🔨</text>' +
+      '<rect class="jb-bg" x="-14" y="2" width="28" height="5" rx="2"/>' +
+      '<rect class="jb-fill" data-job="' + key + '" x="-14" y="2" width="0" height="5" rx="2"/></g>';
+  }
+
   function dynMarkup(r, rs, state) {
     if (r.comingSoon || !rs.unlocked) return '';
     const m = r.map;
@@ -135,13 +142,23 @@
     Object.keys(m.slots || {}).forEach(function (bid) {
       const lvl = (state.buildings[bid] && state.buildings[bid].level) || 0;
       const p = pt(m.slots[bid]);
-      out += NT.ui.sprites.path(bid, p.x, p.y, lvl >= 3 ? 3 : 2, lvl ? null : 0.28);
+      const job = NT.economy.jobFor(state, 'b:' + bid);
+      out += NT.ui.sprites.path(bid, p.x, p.y, lvl >= 3 ? 3 : 2, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
+      if (lvl) {
+        out += '<g class="bubble" data-id="' + bid + '" transform="translate(' + p.x + ',' + (p.y - 28) + ')"><g class="bob">' +
+          '<circle r="12" class="bubble-bg"/><text class="bubble-ico" text-anchor="middle" dy="5">📦</text></g></g>';
+      }
+      if (job) out += jobBadge(p.x, p.y + 26, job.key);
     });
+    const tolJob = NT.economy.jobFor(state, 'i:' + r.id + ':tol');
+    if (tolJob) { const pp = pt(m.pin); out += jobBadge(pp.x, pp.y + 32, tolJob.key); }
 
     if (m.port) {
       const p = pt(m.port);
       out += NT.ui.sprites.path('pelabuhan', p.x, p.y, port >= 3 ? 3 : 2, port ? null : 0.28);
       if (port > 0) out += NT.ui.sprites.path('kapal', p.x + 16 + port * 2, p.y + 2, 2);
+      const portJob = NT.economy.jobFor(state, 'i:' + r.id + ':pelabuhan');
+      if (portJob) out += jobBadge(p.x, p.y + 26, portJob.key);
     }
     return out;
   }
@@ -165,11 +182,27 @@
 
       const sig = !rs ? '' : JSON.stringify([unlocked, rs.infra, (r.buildings || []).map(function (b) {
         return state.buildings[b] ? state.buildings[b].level : 0;
-      })]);
+      }), (state.jobs || []).filter(function (j) { return j.region === id; }).map(function (j) { return j.key; })]);
       if (signatures[id] !== sig) {
         signatures[id] = sig;
         el.querySelector('.dyn').innerHTML = rs ? dynMarkup(r, rs, state) : '';
       }
+    });
+  }
+
+  // Tiap detik: isi bar progres pembangunan dan tampilkan gelembung 📦 di bangunan yang hasilnya siap.
+  function tickJobs(state, now) {
+    document.querySelectorAll('#map [data-job]').forEach(function (el) {
+      const j = NT.economy.jobFor(state, el.getAttribute('data-job'));
+      if (!j) return;
+      const k = Math.max(0, Math.min(1, (now - j.startedAt) / (j.endsAt - j.startedAt)));
+      el.setAttribute('width', (28 * k).toFixed(1));
+    });
+    document.querySelectorAll('#map .bubble').forEach(function (el) {
+      const id = el.getAttribute('data-id');
+      const cap = NT.economy.capacity(state, id, now) || 1;
+      const p = NT.economy.pending(state, id, now);
+      el.classList.toggle('on', p >= 1 && p / cap >= 0.2);
     });
   }
 
@@ -190,6 +223,7 @@
       if (host) host.innerHTML = build();
     },
     update: update,
+    tickJobs: tickJobs,
     focus: focus
   };
 })((window.NT = window.NT || {}));

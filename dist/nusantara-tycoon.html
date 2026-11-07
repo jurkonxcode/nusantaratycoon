@@ -1,0 +1,2765 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b3d4f">
+  <title>Nusantara Tycoon</title>
+  <style>
+/* Nusantara Tycoon: tema laut tropis dengan aksen emas batik. */
+
+:root {
+  --sea-900: #062c3b;
+  --sea-800: #0b3d4f;
+  --sea-700: #0f566b;
+  --sea-500: #1a8a9c;
+  --sand: #f6ecd7;
+  --sand-dark: #e8d9b8;
+  --ink: #1d2a2f;
+  --muted: #5d6e73;
+  --gold: #d9a441;
+  --gold-dark: #a8751c;
+  --green: #2f8f4e;
+  --red: #c0453a;
+  --card: #fffaf0;
+  --radius: 14px;
+  --shadow: 0 6px 18px rgba(6, 44, 59, .18);
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; }
+
+body {
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: var(--ink);
+  background: linear-gradient(180deg, var(--sea-900) 0%, var(--sea-800) 220px, var(--sand) 220px);
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Pita batik di atas halaman */
+.batik-strip {
+  height: 10px;
+  background:
+    radial-gradient(circle at 50% 50%, var(--gold) 0 2px, transparent 3px) 0 0 / 14px 10px,
+    linear-gradient(90deg, #6b3b17, #8a4f1f, #6b3b17);
+}
+
+#app { max-width: 760px; margin: 0 auto; padding: 0 12px 40px; }
+
+/* Header */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 4px 10px; color: #fff;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand-logo { font-size: 30px; }
+.brand h1 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 20px; letter-spacing: .3px; }
+.brand p { margin: 2px 0 0; font-size: 12px; color: var(--gold); font-weight: 700; }
+.stats { display: flex; gap: 8px; }
+.stat {
+  background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 12px; padding: 6px 10px; text-align: right; min-width: 86px;
+}
+.stat span { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .8px; opacity: .75; }
+.stat b { font-size: 15px; font-variant-numeric: tabular-nums; }
+
+/* Tab */
+.tabs { display: flex; gap: 6px; margin: 4px 0 12px; }
+.tab {
+  flex: 1; border: 0; padding: 10px 6px; border-radius: 12px; font: inherit; font-weight: 700; font-size: 14px;
+  color: #cfe6ec; background: rgba(255, 255, 255, .08); cursor: pointer;
+}
+.tab.on { background: var(--sand); color: var(--sea-800); box-shadow: var(--shadow); }
+
+.tab-panel { display: none; }
+.tab-panel.on { display: block; }
+
+/* Peta */
+.map-card {
+  position: relative; border-radius: 18px; overflow: hidden;
+  border: 3px solid var(--gold); box-shadow: var(--shadow); background: var(--sea-800);
+}
+.map-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.map-svg { display: block; width: 100%; min-width: 760px; height: auto; image-rendering: pixelated; }
+.collect-all { margin-top: 10px; box-shadow: var(--shadow); }
+
+/* Laut */
+.px-deep { fill: #0e5575; }
+.px-sea.s1 { fill: #2a9aa8; }
+.px-sea.s2 { fill: #1b7f93; }
+.px-sea.s3 { fill: #146a82; }
+.sparkle { fill: #fff; opacity: .16; animation: twinkle 3.4s steps(2, end) infinite; }
+.sparkle.b { animation-delay: -1.7s; }
+@keyframes twinkle { 50% { opacity: 0; } }
+
+/* Daratan */
+.px-neighbor { fill: #6f8f68; opacity: .7; }
+.px-sand { fill: #ecd9a0; }
+.px-grass { fill: #79b95a; }
+.px-forest { fill: #4f9a4a; }
+.px-dark { fill: #3c7f40; }
+.island.locked .px-sand { fill: #cfc3a0; }
+.island.locked .px-grass { fill: #aab08c; }
+.island.locked .px-forest { fill: #97a07f; }
+.island.locked .px-dark { fill: #868f70; }
+.island.soon .island-land { opacity: .5; }
+.island.soon .px-sand { fill: #cfc8b0; }
+.island.soon .px-grass { fill: #a3a893; }
+.island.soon .px-forest { fill: #939985; }
+.island.soon .px-dark { fill: #858b78; }
+
+.island { cursor: pointer; outline: none; }
+.island:hover .island-land, .island:focus-visible .island-land { filter: brightness(1.12); }
+.island.selected .island-land { filter: drop-shadow(0 0 2px #ffd36b) drop-shadow(0 0 5px #ffd36b); }
+.island-label {
+  font: 700 15px "Trebuchet MS", system-ui, sans-serif; fill: #fff; paint-order: stroke; stroke: rgba(3, 30, 40, .85);
+  stroke-width: 4px; stroke-linejoin: round; pointer-events: none; letter-spacing: .3px;
+}
+.island.soon .island-label { opacity: .8; font-size: 13px; }
+.road { fill: #5b5f66; }
+.ship { pointer-events: none; }
+
+.pin-dot { fill: #fffaf0; stroke: var(--gold-dark); stroke-width: 3; }
+.pin-icon { font-size: 17px; pointer-events: none; }
+.island.locked .pin-dot, .island.soon .pin-dot { fill: #d9ddd9; stroke: #7b867e; }
+.pin-pulse { fill: none; stroke: var(--gold); stroke-width: 2; opacity: 0; }
+.island.selected .pin-pulse { animation: pulse 1.8s ease-out infinite; }
+@keyframes pulse {
+  0% { r: 15; opacity: .9; }
+  100% { r: 30; opacity: 0; }
+}
+
+/* Chip wilayah (cara cepat memilih di layar kecil) */
+.region-chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 8px 10px; background: var(--sea-900); scrollbar-width: none; }
+.region-chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; border: 1px solid rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .08); color: #e3f1f5;
+  font: inherit; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 999px; cursor: pointer; white-space: nowrap;
+}
+.chip.on { background: var(--gold); border-color: var(--gold-dark); color: #3a2605; }
+.chip.soon { opacity: .55; }
+
+/* Banner dunia nyata */
+.world-banner {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin: 0 0 10px; padding: 8px 12px;
+  background: var(--sea-700); border: 1px solid rgba(255, 255, 255, .18); border-radius: 12px;
+  color: #eaf5f8; font-size: 13px; box-shadow: var(--shadow);
+}
+.world-banner .evt { flex-basis: 100%; color: #ffe29a; font-weight: 700; }
+.world-banner .evt.good { color: #b8f0b8; }
+.tag { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; vertical-align: middle; margin-left: 4px; }
+.tag.raya { background: #dff3d6; color: #1f6b34; }
+.tag.paceklik { background: #fbe3d8; color: #9a3a1a; }
+.mult.up { color: var(--green); font-weight: 800; }
+.mult.down { color: var(--red); font-weight: 800; }
+.cal { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin: 4px 0 10px; }
+.cal i { display: block; height: 14px; border-radius: 3px; background: #ddd2b6; }
+.cal i.hi { background: #6fbf6f; }
+.cal i.lo { background: #e7b9a4; }
+.cal i.now { outline: 2px solid var(--sea-800); outline-offset: 1px; }
+.cal-labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; font-size: 9px; text-align: center; color: var(--muted); margin-top: -6px; margin-bottom: 8px; }
+
+/* Kartu dan baris */
+.card {
+  background: var(--card); border-radius: var(--radius); padding: 14px; margin-top: 12px;
+  box-shadow: var(--shadow); border: 1px solid var(--sand-dark);
+}
+.card h2 { margin: 0 0 4px; font-family: Georgia, serif; font-size: 19px; color: var(--sea-800); }
+.card h3 {
+  margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--gold-dark);
+}
+.muted { color: var(--muted); }
+.small { font-size: 12px; }
+p { line-height: 1.45; }
+
+.row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px dashed var(--sand-dark); }
+.row:first-of-type { border-top: 0; }
+.row-icon {
+  flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 22px;
+  background: linear-gradient(145deg, #fff, var(--sand));
+  border: 1px solid var(--sand-dark);
+}
+.row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.row-main small { color: var(--muted); font-size: 12px; }
+.row-actions { display: flex; flex-direction: column; gap: 6px; }
+.lvl {
+  display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px;
+  background: var(--sea-700); color: #fff; vertical-align: middle;
+}
+.maxed { font-size: 12px; font-weight: 800; color: var(--green); padding: 0 8px; }
+
+.bar { height: 8px; border-radius: 999px; background: var(--sand-dark); overflow: hidden; margin: 3px 0; }
+.bar i { display: block; height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #6fbf6f, var(--green)); transition: width .9s linear; }
+.bar.full i { background: linear-gradient(90deg, var(--gold), var(--gold-dark)); }
+
+/* Tombol */
+.btn {
+  border: 1px solid var(--sand-dark); background: #fff; color: var(--sea-800);
+  font: inherit; font-weight: 700; font-size: 13px; padding: 8px 12px; border-radius: 10px; cursor: pointer;
+  white-space: nowrap;
+}
+.btn.primary { background: linear-gradient(180deg, #f0c25f, var(--gold)); border-color: var(--gold-dark); color: #3a2605; }
+.btn.danger { background: #fff; border-color: var(--red); color: var(--red); }
+.btn.wide { width: 100%; padding: 12px; font-size: 15px; margin-top: 8px; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(.4); }
+.btn:focus-visible, .tab:focus-visible, .seg:focus-visible { outline: 3px solid var(--sea-500); outline-offset: 2px; }
+
+ul.plain, ol.plain { margin: 8px 0 0; padding-left: 20px; line-height: 1.7; }
+ul.plain { list-style: none; padding-left: 0; }
+
+/* Pasar */
+.segs { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.seg {
+  border: 1px solid var(--sand-dark); background: #fff; padding: 7px 12px; border-radius: 999px;
+  font: inherit; font-weight: 700; font-size: 13px; color: var(--sea-800); cursor: pointer;
+}
+.seg.on { background: var(--sea-700); color: #fff; border-color: var(--sea-700); }
+
+.goods { background: var(--card); border: 1px solid var(--sand-dark); border-radius: var(--radius); padding: 12px; margin-top: 10px; box-shadow: var(--shadow); }
+.goods-head { display: flex; align-items: center; gap: 10px; }
+.goods-stock { text-align: right; }
+.goods-stock b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+.goods-stock small { color: var(--muted); font-size: 11px; }
+.goods-price { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; margin: 10px 0 4px; font-size: 14px; }
+.goods-best { font-size: 12px; color: var(--sea-700); min-height: 16px; }
+.goods-actions { display: flex; gap: 8px; margin-top: 8px; }
+.goods-actions .btn { flex: 1; }
+.trend { font-size: 12px; font-weight: 800; }
+.trend.up { color: var(--green); }
+.trend.down { color: var(--red); }
+
+/* Toast */
+#toasts {
+  position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; z-index: 20; padding: 0 12px;
+}
+.toast {
+  background: var(--sea-900); color: #fff; padding: 10px 16px; border-radius: 12px; font-size: 14px; max-width: 460px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35); border-left: 5px solid var(--green); animation: pop .22s ease-out;
+}
+.toast.warn { border-left-color: var(--gold); }
+.toast.out { opacity: 0; transform: translateY(8px); transition: all .45s; }
+@keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.96); } }
+
+@media (max-width: 520px) {
+  .brand h1 { font-size: 17px; }
+  .stat { min-width: 72px; padding: 5px 8px; }
+  .stat b { font-size: 13px; }
+  .row { flex-wrap: wrap; }
+  .row-actions { flex-direction: row; width: 100%; }
+  .row-actions .btn { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sparkle, .pin-pulse, .bar i { animation: none !important; transition: none !important; }
+}
+.muted-light { opacity: .75; font-weight: 400; }
+
+/* ===== Rasa-main: target, timer pembangunan, efek ===== */
+
+.tab.mini { flex: none; width: 46px; padding: 10px 0; }
+
+/* Kartu target berikutnya */
+.goal {
+  margin: 0 0 10px; padding: 10px 12px; border-radius: 14px; color: #fff; box-shadow: var(--shadow);
+  background: linear-gradient(135deg, var(--sea-700), var(--sea-800)); border: 1px solid rgba(255, 255, 255, .2);
+}
+.goal-top { display: flex; align-items: center; gap: 10px; }
+.goal-ico { font-size: 26px; filter: drop-shadow(0 2px 2px rgba(0, 0, 0, .3)); }
+.goal-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.goal-text small { font-size: 10px; text-transform: uppercase; letter-spacing: .9px; opacity: .7; }
+.goal-text b { font-size: 14px; line-height: 1.25; }
+.builders { font-weight: 800; font-size: 13px; background: rgba(255, 255, 255, .14); padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+.builders.busy { background: var(--gold); color: #3a2605; }
+.goalbar { background: rgba(0, 0, 0, .3); height: 10px; margin: 8px 0 4px; }
+.goalbar i { background: linear-gradient(90deg, #ffe08a, var(--gold)); transition: width .6s ease; }
+.goal small#goal-eta { font-size: 12px; opacity: .85; }
+
+/* Baris sedang dibangun */
+.row.building { background: linear-gradient(90deg, rgba(217, 164, 65, .14), transparent 70%); border-radius: 10px; }
+.bar.job { height: 10px; background: #e9dcb8; }
+.bar.job i { background: repeating-linear-gradient(-45deg, #f0c25f 0 8px, #d9a441 8px 16px); background-size: 22px 22px; animation: stripes .8s linear infinite; transition: width 1s linear; }
+@keyframes stripes { to { background-position: 22px 0; } }
+.lvl.next { background: var(--gold); color: #3a2605; }
+.row-icon.working { animation: bob 2.4s ease-in-out infinite; }
+.row.building .row-icon.working { animation: hammer .7s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-3px); } }
+@keyframes hammer { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+
+/* Tombol: lebih "empuk" dan berdenyut saat ada hasil siap */
+.btn { box-shadow: 0 2px 0 rgba(0, 0, 0, .12); transition: transform .08s, box-shadow .08s, filter .15s; }
+.btn.primary { box-shadow: 0 3px 0 var(--gold-dark); }
+.btn:active:not(:disabled) { transform: translateY(2px); box-shadow: none; }
+.btn.ready { animation: ready 1.3s ease-in-out infinite; border-color: var(--green); }
+.collect-all.ready { animation: ready 1.3s ease-in-out infinite; }
+@keyframes ready { 50% { transform: scale(1.04); filter: brightness(1.12) saturate(1.2); } }
+
+/* Kas */
+.stat b.up { animation: cashUp .6s ease-out; }
+.stat b.down { animation: cashDown .6s ease-out; }
+@keyframes cashUp { 0% { color: #8dff9d; transform: scale(1.18); } 100% { color: #fff; transform: scale(1); } }
+@keyframes cashDown { 0% { color: #ff9a8a; } 100% { color: #fff; } }
+
+/* Peta: gelembung hasil siap dan lencana pembangunan */
+.bubble { opacity: 0; pointer-events: none; cursor: pointer; transition: opacity .25s; }
+.bubble.on { opacity: 1; pointer-events: all; }
+.bubble .bob { animation: bobSvg 1.1s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes bobSvg { 50% { transform: translateY(-4px); } }
+.bubble-bg { fill: #fffaf0; stroke: var(--gold-dark); stroke-width: 2.5; }
+.bubble-ico { font-size: 13px; pointer-events: none; }
+.jb-bg { fill: rgba(0, 0, 0, .55); }
+.jb-fill { fill: #f0c25f; }
+.hammer { font-size: 14px; animation: hammerSvg .7s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 90%; }
+@keyframes hammerSvg { 0%, 100% { transform: rotate(-14deg); } 50% { transform: rotate(14deg); } }
+
+/* Angka melayang dan confetti */
+.floaty {
+  position: fixed; z-index: 30; pointer-events: none; transform: translate(-50%, 0); font-weight: 900; font-size: 20px;
+  color: #fff; text-shadow: 0 2px 0 rgba(0, 0, 0, .55), 0 0 8px rgba(0, 0, 0, .35); animation: floatUp 1.2s ease-out forwards;
+}
+.floaty.gold { color: #ffe08a; font-size: 24px; }
+@keyframes floatUp { 0% { opacity: 0; transform: translate(-50%, 8px) scale(.7); } 15% { opacity: 1; transform: translate(-50%, -6px) scale(1.15); } 100% { opacity: 0; transform: translate(-50%, -64px) scale(1); } }
+.confetti {
+  position: fixed; z-index: 30; width: 8px; height: 12px; pointer-events: none; border-radius: 2px;
+  animation: burst 1.1s cubic-bezier(.2, .7, .3, 1) forwards;
+}
+@keyframes burst { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), calc(var(--dy) + 90px)) rotate(var(--rot)); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .row-icon.working, .btn.ready, .collect-all.ready, .bubble .bob, .hammer, .bar.job i, .floaty, .confetti { animation: none !important; }
+}
+
+/* Header ringkas di layar sempit: angka kas tidak turun baris */
+.stat b { white-space: nowrap; }
+@media (max-width: 520px) {
+  .brand-logo { font-size: 24px; }
+  .brand h1 { font-size: 15px; line-height: 1.15; }
+  .stats { gap: 6px; }
+}
+
+</style>
+</head>
+<body>
+  <div class="batik-strip" aria-hidden="true"></div>
+
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">🏝️</span>
+        <div>
+          <h1>Nusantara Tycoon</h1>
+          <p id="rank-name">Desa Rintisan</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><span>Kas</span><b id="stat-cash">Rp 0</b></div>
+        <div class="stat"><span>Peradaban</span><b id="stat-score">0</b></div>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
+      <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
+      <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
+      <button class="tab mini" id="btn-mute" data-action="mute" aria-label="Suara">🔊</button>
+    </nav>
+
+    <main>
+      <section id="tab-map" class="tab-panel">
+        <div class="goal" id="goal">
+          <div class="goal-top">
+            <span class="goal-ico" id="goal-ico">🎯</span>
+            <div class="goal-text"><small>Target berikutnya</small><b id="goal-title">…</b></div>
+            <div class="builders" id="builders" title="Tukang yang sedang bekerja"></div>
+          </div>
+          <div class="bar goalbar"><i id="goal-bar"></i></div>
+          <small id="goal-eta"></small>
+        </div>
+        <div id="world-banner" class="world-banner"></div>
+        <div class="map-card">
+          <div class="map-scroll"><div id="map"></div></div>
+          <div id="region-chips" class="region-chips"></div>
+        </div>
+        <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
+        <div id="region-panel"></div>
+      </section>
+      <section id="tab-market" class="tab-panel"></section>
+      <section id="tab-about" class="tab-panel"></section>
+    </main>
+  </div>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+/* Pengaturan global game. Ubah angka di sini untuk menyeimbangkan ekonomi. */
+(function (NT) {
+  NT.config = {
+    // 'local' = disimpan di browser. 'supabase' = disimpan di cloud (lihat README).
+    storage: 'supabase',
+    saveKey: 'nusantara-tycoon-save-v1',
+    supabase: { url: 'https://siqrhhllukvykpcqucty.supabase.co', anonKey: 'sb_publishable_V3dCHHNr7gZs6wxsW7swQQ_w9cT5fam' },
+
+    autosaveMs: 5000,
+
+    // Produksi
+    storageHours: 2,          // gudang bangunan penuh setelah N jam
+    tolBonusPerLevel: 0.2,    // +20% produksi per level tol
+
+    // Waktu pembangunan: makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama.
+    buildTimeEnabled: true,
+    buildBaseSec: 10,         // detik untuk upgrade pertama bangunan termurah
+    buildGrowth: 1.9,         // durasi x1,9 tiap level
+    buildTierExp: 0.25,       // pengali tier = (biayaDasar / 60) ^ eksponen
+    infraBaseSec: 30,
+    infraGrowth: 2.3,
+    infraRegionExp: 0.3,
+    maxBuilders: 2,           // jumlah pembangunan yang bisa berjalan bersamaan
+    speedupCostShare: 0.4,    // biaya percepat = 40% biaya upgrade x sisa waktu / total waktu
+
+    // Biaya
+    upgradeGrowth: 1.55,      // kenaikan biaya tiap level
+
+    // Dunia nyata
+    priceScale: 40000,        // Rp nyata per 1 Rp di dalam game (harga = harga nyata / skala)
+    seaFreightRpPerKgKm: 1.0, // perkiraan ongkos kapal antar-pulau, Rp nyata per kg per km
+    routeDetour: 1.25,        // rute laut lebih panjang dari garis lurus
+    seasonsEnabled: true,     // musim mengikuti bulan kalender nyata (zona WIB)
+    seasonMonthShift: 0,      // untuk uji: geser bulan (0 = bulan nyata)
+    eventsEnabled: true,      // peristiwa acak (banjir, El Nino, dll.)
+    eventSlotHours: 8,        // peristiwa berganti tiap N jam (sama untuk semua pemain)
+    eventChance: 0.45,        // peluang ada peristiwa di tiap jendela waktu
+
+    // Pasar
+    portDiscountPerLevel: 0.15,
+    maxShippingDiscount: 0.75,
+    marketDecayPerMin: 0.08,  // tekanan pasokan turun 8% per menit
+    maxMarketDrop: 0.55,      // harga paling banyak turun 55% karena banjir pasokan
+    priceWaveAmplitude: 0.10  // fluktuasi harga +-10%
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Komoditas. Harga game = harga nyata per satuan / config.priceScale.
+ * 1 satuan = 1 karung 50 kg (batik: 10 lembar kain, sekitar 4 kg).
+ * realRpPerKg adalah PERKIRAAN kasar (2025-2026) untuk menjaga rasio antar komoditas, bukan kurs resmi.
+ * Harga komoditas nyata sangat bergejolak; ubah angkanya di sini bila ingin menyesuaikan.
+ *   - Padi: acuan pemerintah (HPP gabah kering panen) Rp 6.500/kg.
+ *   - Kopi, kakao, cengkeh, karet: kisaran kasar harga tingkat petani/pengepul.
+ *
+ * season.prod  = pengali produksi per bulan (Jan..Des), season.price = pengali harga per bulan.
+ * Tabel dinormalkan di world.js sehingga rata-rata setahun = 1 (musim hanya menggeser waktu, bukan total).
+ * marketDepth = berapa unit yang bisa diserap pasar sebelum harga mulai jatuh.
+ */
+(function (NT) {
+  NT.data = NT.data || {};
+
+  function make(o) {
+    o.pricePerUnitRp = o.realRpPerKg * o.unitKg;
+    o.basePrice = Math.round(o.pricePerUnitRp / NT.config.priceScale * 10) / 10;
+    return o;
+  }
+
+  NT.data.commodities = {
+    padi: make({
+      id: 'padi', name: 'Padi', icon: '🌾', region: 'jawa', realRpPerKg: 6500, unitKg: 50, marketDepth: 300,
+      seasonNote: 'Panen raya Mar-Apr, panen gadu Jul-Sep, paceklik Okt-Jan',
+      season: {
+        prod:  [0.8, 1.0, 1.4, 1.4, 1.0, 0.9, 1.1, 1.2, 1.1, 0.8, 0.7, 0.7],
+        price: [1.15, 1.0, 0.85, 0.85, 0.95, 1.0, 0.95, 0.95, 1.0, 1.1, 1.15, 1.15]
+      }
+    }),
+    batik: make({
+      id: 'batik', name: 'Batik', icon: '👘', region: 'jawa', realRpPerKg: 625000, unitKg: 4, marketDepth: 60,
+      seasonNote: 'Permintaan naik jelang Lebaran, Hari Batik (2 Okt), dan akhir tahun; sulit dijemur saat hujan',
+      season: {
+        prod:  [0.9, 0.9, 1.0, 1.0, 1.0, 1.05, 1.05, 1.05, 1.05, 1.0, 0.95, 0.9],
+        price: [1.05, 1.05, 1.15, 1.05, 1.0, 0.95, 0.95, 0.95, 1.0, 1.15, 1.0, 1.1]
+      }
+    }),
+    kopi: make({
+      id: 'kopi', name: 'Kopi', icon: '☕', region: 'sumatra', realRpPerKg: 75000, unitKg: 50, marketDepth: 100,
+      seasonNote: 'Panen raya Mei-Agu',
+      season: {
+        prod:  [0.6, 0.6, 0.7, 0.9, 1.3, 1.5, 1.5, 1.3, 0.9, 0.7, 0.6, 0.6],
+        price: [1.1, 1.1, 1.05, 1.0, 0.92, 0.88, 0.88, 0.92, 1.0, 1.05, 1.1, 1.1]
+      }
+    }),
+    karet: make({
+      id: 'karet', name: 'Karet', icon: '🛞', region: 'sumatra', realRpPerKg: 17000, unitKg: 50, marketDepth: 150,
+      seasonNote: 'Getah turun saat gugur daun (Feb-Apr) dan hujan lebat; puncak Agu-Okt',
+      season: {
+        prod:  [0.75, 0.65, 0.65, 0.8, 0.95, 1.05, 1.15, 1.2, 1.2, 1.15, 0.95, 0.8],
+        price: [1.05, 1.08, 1.08, 1.03, 1.0, 0.97, 0.95, 0.93, 0.93, 0.95, 1.0, 1.04]
+      }
+    }),
+    kakao: make({
+      id: 'kakao', name: 'Kakao', icon: '🍫', region: 'sulawesi', realRpPerKg: 110000, unitKg: 50, marketDepth: 80,
+      seasonNote: 'Panen utama Apr-Jul, panen kecil Okt-Des',
+      season: {
+        prod:  [0.8, 0.8, 0.9, 1.2, 1.3, 1.3, 1.2, 1.0, 0.8, 1.0, 1.0, 0.9],
+        price: [1.05, 1.05, 1.03, 0.95, 0.92, 0.92, 0.95, 1.0, 1.05, 1.0, 1.0, 1.03]
+      }
+    }),
+    cengkeh: make({
+      id: 'cengkeh', name: 'Cengkeh', icon: '🌿', region: 'sulawesi', realRpPerKg: 130000, unitKg: 50, marketDepth: 60,
+      seasonNote: 'Panen Jun-Okt (puncak Jul-Sep), sisanya sepi',
+      season: {
+        prod:  [0.5, 0.5, 0.5, 0.6, 0.8, 1.3, 1.7, 1.8, 1.6, 1.1, 0.6, 0.5],
+        price: [1.1, 1.1, 1.1, 1.08, 1.05, 0.98, 0.9, 0.88, 0.9, 0.98, 1.05, 1.1]
+      }
+    })
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Peristiwa dunia nyata yang muncul bergantian (deterministik dari jam, jadi sama untuk semua pemain).
+ * months: bulan 1-12 saat peristiwa ini masuk akal (null = kapan saja).
+ * weight: seberapa sering dibanding peristiwa lain.
+ * prod.commodity / prod.region: pengali produksi; price: pengali harga per komoditas.
+ */
+(function (NT) {
+  NT.data = NT.data || {};
+
+  NT.data.events = [
+    { id: 'banjir_jawa', icon: '🌊', name: 'Banjir di Jawa', months: [11, 12, 1, 2, 3], weight: 3,
+      desc: 'Sawah dan sentra batik terendam. Produksi Jawa turun, harga beras naik.',
+      prod: { region: { jawa: 0.5 } }, price: { padi: 1.15 } },
+    { id: 'banjir_sumatra', icon: '🌊', name: 'Banjir di Sumatra', months: [11, 12, 1, 2], weight: 2,
+      desc: 'Jalan kebun terputus. Produksi Sumatra turun.',
+      prod: { region: { sumatra: 0.55 } }, price: { kopi: 1.1, karet: 1.1 } },
+    { id: 'el_nino', icon: '☀️', name: 'El Niño: kemarau panjang', months: [6, 7, 8, 9, 10], weight: 3,
+      desc: 'Hujan tak turun. Panen padi, kopi, dan kakao merosot, harga naik.',
+      prod: { commodity: { padi: 0.7, kopi: 0.8, kakao: 0.75, cengkeh: 0.9 } },
+      price: { padi: 1.25, kopi: 1.2, kakao: 1.2 } },
+    { id: 'panen_melimpah', icon: '🌾', name: 'Panen raya melimpah', months: [3, 4], weight: 3,
+      desc: 'Gabah berlimpah. Produksi padi naik tapi harganya tertekan.',
+      prod: { commodity: { padi: 1.2 } }, price: { padi: 0.85 } },
+    { id: 'gempa_sulawesi', icon: '🏚️', name: 'Gempa di Sulawesi', months: null, weight: 1,
+      desc: 'Kerusakan kebun dan jalan. Produksi Sulawesi turun sementara.',
+      prod: { region: { sulawesi: 0.6 } }, price: {} },
+    { id: 'ekspor_kopi', icon: '📈', name: 'Lonjakan permintaan kopi dunia', months: null, weight: 2,
+      desc: 'Pembeli luar negeri berebut kopi Nusantara.',
+      prod: {}, price: { kopi: 1.4 } },
+    { id: 'karet_jatuh', icon: '📉', name: 'Harga karet dunia jatuh', months: null, weight: 2,
+      desc: 'Permintaan industri ban melemah.',
+      prod: {}, price: { karet: 0.7 } },
+    { id: 'kakao_gagal', icon: '📈', name: 'Gagal panen kakao di Afrika Barat', months: null, weight: 2,
+      desc: 'Pasokan dunia seret, harga kakao melonjak.',
+      prod: {}, price: { kakao: 1.5 } },
+    { id: 'festival_batik', icon: '🎉', name: 'Pekan batik dan bazar', months: [9, 10, 12], weight: 2,
+      desc: 'Wisatawan dan pejabat berburu batik.',
+      prod: {}, price: { batik: 1.4 } },
+    { id: 'rokok_cengkeh', icon: '🏭', name: 'Pabrik rokok kretek menyerap cengkeh', months: [7, 8, 9], weight: 2,
+      desc: 'Pabrik menimbun stok jelang akhir tahun.',
+      prod: {}, price: { cengkeh: 1.3 } }
+  ];
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/* Bangunan penghasil komoditas dan infrastruktur wilayah. */
+(function (NT) {
+  NT.data = NT.data || {};
+
+  // baseRate = unit (karung 50 kg) per menit pada level 1. Komoditas mahal berlaju kecil: itu cerminan
+  // hasil panen per hektare yang nyata (padi berton-ton, cengkeh hanya ratusan kilo).
+  // baseCost = harga membangun (level 0 -> 1).
+  NT.data.buildings = {
+    sawah:         { id: 'sawah',         name: 'Sawah',          icon: '🌾', region: 'jawa',     produces: 'padi',    baseCost: 60,   baseRate: 6 },
+    sentra_batik:  { id: 'sentra_batik',  name: 'Sentra Batik',   icon: '👘', region: 'jawa',     produces: 'batik',   baseCost: 400,  baseRate: 1 },
+    kebun_kopi:    { id: 'kebun_kopi',    name: 'Kebun Kopi',     icon: '☕', region: 'sumatra',  produces: 'kopi',    baseCost: 900,  baseRate: 0.7 },
+    kebun_karet:   { id: 'kebun_karet',   name: 'Kebun Karet',    icon: '🛞', region: 'sumatra',  produces: 'karet',   baseCost: 700,  baseRate: 3 },
+    kebun_kakao:   { id: 'kebun_kakao',   name: 'Kebun Kakao',    icon: '🍫', region: 'sulawesi', produces: 'kakao',   baseCost: 2000, baseRate: 0.65 },
+    kebun_cengkeh: { id: 'kebun_cengkeh', name: 'Kebun Cengkeh',  icon: '🌿', region: 'sulawesi', produces: 'cengkeh', baseCost: 3000, baseRate: 0.75 }
+  };
+
+  NT.data.infra = {
+    tol: {
+      id: 'tol', name: 'Jalan Tol', icon: '🛣️', baseCost: 500, maxLevel: 5,
+      desc: '+20% produksi semua bangunan di wilayah ini per level'
+    },
+    pelabuhan: {
+      id: 'pelabuhan', name: 'Pelabuhan', icon: '⚓', baseCost: 400, maxLevel: 5,
+      desc: '-15% ongkos kirim dari dan ke wilayah ini per level'
+    }
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Wilayah. demand = pengali harga jual di pasar wilayah itu (default 1).
+ * hub = kota pelabuhan utama (dipakai menghitung jarak dan ongkir secara nyata).
+ * map.pin / label / port / slots = posisi di peta dalam [bujur, lintang]; bentuk pulau ada di data/geo.js.
+ * comingSoon = wilayah yang belum bisa dimainkan (kerangka untuk pengembangan berikutnya).
+ */
+(function (NT) {
+  NT.data = NT.data || {};
+
+  NT.data.regions = {
+    sumatra: {
+      id: 'sumatra', name: 'Sumatra', icon: '☕', tagline: 'Kebun kopi dan karet di tanah Andalas',
+      unlockCost: 600, infraCostFactor: 1.5, buildings: ['kebun_kopi', 'kebun_karet'],
+      demand: { padi: 1.3, batik: 1.4, kopi: 0.9, karet: 0.9, kakao: 1.1, cengkeh: 1.2 },
+      hub: { name: 'Medan (Belawan)', lon: 98.7, lat: 3.78 },
+      map: {
+        pin: [101.3, 0.1], label: [100.9, -1.7], port: [99.6, 4.2],
+        slots: { kebun_kopi: [97.7, 3.4], kebun_karet: [103.9, -2.7] }
+      }
+    },
+    jawa: {
+      id: 'jawa', name: 'Jawa', icon: '🌾', tagline: 'Lumbung padi dan pusat batik', start: true,
+      unlockCost: 0, infraCostFactor: 1, buildings: ['sawah', 'sentra_batik'],
+      demand: { padi: 0.9, batik: 1.1, kopi: 1.3, karet: 1.2, kakao: 1.1, cengkeh: 1.4 },
+      hub: { name: 'Jakarta (Tanjung Priok)', lon: 106.85, lat: -6.1 },
+      map: {
+        pin: [110.5, -7.3], label: [110.5, -9.4], port: [106.7, -5.4],
+        slots: { sawah: [108.2, -7.0], sentra_batik: [112.2, -7.5] }
+      }
+    },
+    sulawesi: {
+      id: 'sulawesi', name: 'Sulawesi', icon: '🍫', tagline: 'Kakao dan cengkeh dari tanah Celebes',
+      unlockCost: 2000, infraCostFactor: 2.5, buildings: ['kebun_kakao', 'kebun_cengkeh'],
+      demand: { padi: 1.2, batik: 1.3, kopi: 1.2, karet: 1.1, kakao: 0.9, cengkeh: 0.9 },
+      hub: { name: 'Makassar', lon: 119.4, lat: -5.13 },
+      map: {
+        pin: [120.2, -2.3], label: [122.0, -5.9], port: [118.8, -5.1],
+        slots: { kebun_kakao: [119.6, -3.6], kebun_cengkeh: [124.0, 1.05] }
+      }
+    },
+    kalimantan: {
+      id: 'kalimantan', name: 'Kalimantan', icon: '🌳', tagline: 'Hutan dan tambang (segera hadir)', comingSoon: true,
+      hub: { name: 'Balikpapan', lon: 116.8, lat: -1.27 },
+      map: { pin: [113.8, 0.0], label: [113.8, -2.4] }
+    },
+    bali_nusra: {
+      id: 'bali_nusra', name: 'Bali & Nusa Tenggara', short: 'Nusa Tenggara', icon: '🏖️', tagline: 'Garam dan pariwisata (segera hadir)', comingSoon: true,
+      hub: { name: 'Denpasar (Benoa)', lon: 115.2, lat: -8.75 },
+      map: { pin: [120.5, -8.7], label: [120.5, -10.9] }
+    },
+    maluku: {
+      id: 'maluku', name: 'Maluku', icon: '🌶️', tagline: 'Pala dan cengkeh (segera hadir)', comingSoon: true,
+      hub: { name: 'Ambon', lon: 128.18, lat: -3.7 },
+      map: { pin: [129.0, -3.1], label: [129.0, -5.1] }
+    },
+    papua: {
+      id: 'papua', name: 'Papua', icon: '⛰️', tagline: 'Tembaga dan kopi (segera hadir)', comingSoon: true,
+      hub: { name: 'Jayapura', lon: 140.7, lat: -2.5 },
+      map: { pin: [137.5, -4.0], label: [137.5, -6.2] }
+    }
+  };
+
+  // Jarak antar wilayah dihitung dari koordinat hub (lihat economy.distanceKm).
+
+  // Gelar berdasarkan skor peradaban.
+  NT.data.ranks = [
+    { min: 0,    name: 'Desa Rintisan' },
+    { min: 150,  name: 'Kota Dagang' },
+    { min: 400,  name: 'Kabupaten Maju' },
+    { min: 900,  name: 'Provinsi Makmur' },
+    { min: 1800, name: 'Negara Maritim' },
+    { min: 3500, name: 'Peradaban Nusantara' }
+  ];
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Geografi peta pixel art. Poligon pulau dalam [bujur, lintang] (derajat), digambar dari ingatan
+ * dengan simpul kasar, jadi bentuknya PERKIRAAN (cukup untuk resolusi 1 sel = 0,3 derajat, sekitar 33 km).
+ * Perbaiki dengan menggeser simpul bila ada pulau yang terlihat janggal. Tes tests/geo.test.js menjaga
+ * agar pin, bangunan, dan hub tetap jatuh di daratan wilayahnya.
+ */
+(function (NT) {
+  NT.data = NT.data || {};
+
+  NT.data.geo = {
+    // Batas peta dan ukuran sel.
+    lon0: 95, lon1: 141.6, lat0: 7.3, lat1: -11.5, cellDeg: 0.3, cellPx: 6,
+
+    polygons: {
+      sumatra: [
+        [[95.2, 5.6], [96.5, 5.3], [97.7, 5.0], [98.3, 4.0], [99.5, 3.2], [100.4, 2.3], [101.4, 2.0], [102.3, 1.3],
+         [103.1, 0.5], [103.7, 0.1], [104.2, -0.9], [104.2, -1.8], [104.9, -2.4], [105.4, -3.0], [105.9, -4.2],
+         [105.9, -5.4], [105.8, -5.85], [105.1, -5.8], [104.6, -5.4], [103.9, -4.8], [103.4, -4.2], [102.3, -3.8],
+         [101.6, -2.9], [101.0, -2.1], [100.4, -1.0], [99.6, -0.2], [99.1, 0.6], [98.7, 1.6], [97.8, 2.4],
+         [96.1, 4.1], [95.4, 5.0]],
+        [[105.1, -1.5], [106.1, -2.0], [106.8, -2.6], [106.0, -3.0], [105.2, -2.3]],           // Bangka
+        [[107.5, -2.6], [108.3, -2.8], [107.8, -3.2], [107.4, -3.0]],                          // Belitung
+        [[97.3, 1.7], [97.9, 1.2], [97.5, 0.7], [97.1, 1.1]]                                    // Nias
+      ],
+      jawa: [
+        [[105.9, -6.0], [106.7, -5.95], [107.4, -6.0], [108.3, -6.2], [108.7, -6.6], [109.5, -6.8], [110.4, -6.9],
+         [111.0, -6.5], [111.4, -6.7], [112.0, -6.9], [112.7, -7.2], [113.2, -7.7], [114.1, -7.8], [114.4, -8.2],
+         [114.5, -8.7], [113.7, -8.4], [112.6, -8.4], [111.7, -8.3], [111.1, -8.2], [110.5, -8.15], [110.3, -8.0],
+         [109.4, -7.8], [109.0, -7.75], [108.4, -7.75], [107.7, -7.6], [106.6, -7.35], [106.4, -6.95], [105.7, -6.8],
+         [105.2, -6.8], [105.3, -6.4]],
+        [[112.7, -7.1], [113.5, -6.9], [114.1, -7.0], [113.5, -7.2], [112.9, -7.2]]              // Madura
+      ],
+      sulawesi: [
+        [[125.2, 1.7], [124.4, 1.45], [123.4, 1.15], [122.4, 1.2], [121.4, 1.2], [120.4, 1.0], [119.9, 0.2],
+         [119.75, -0.7], [119.4, -1.2], [118.9, -2.7], [118.95, -3.5], [119.6, -4.0], [119.4, -5.1], [119.45, -5.6],
+         [119.95, -5.6], [120.4, -5.6], [120.4, -5.0], [120.35, -4.55], [120.5, -3.8], [120.2, -3.0], [120.5, -2.8],
+         [121.1, -2.6], [121.3, -2.9], [121.6, -3.6], [121.6, -4.05], [121.9, -4.8], [122.4, -5.3], [122.9, -4.8],
+         [123.0, -4.0], [122.4, -3.4], [121.9, -2.7], [122.0, -2.0], [122.9, -1.6], [123.4, -1.0], [123.0, -0.8],
+         [122.0, -0.7], [121.5, -1.0], [120.8, -1.4], [120.2, -0.9], [120.0, 0.3], [121.0, 0.35], [122.0, 0.4],
+         [123.05, 0.45], [123.8, 0.6], [124.6, 0.95], [125.0, 1.2]]
+      ],
+      kalimantan: [
+        [[109.0, 1.9], [110.4, 1.7], [111.3, 2.8], [112.2, 2.8], [113.0, 3.2], [114.0, 4.3], [114.9, 5.0], [115.6, 5.6],
+         [116.0, 6.0], [116.8, 7.0], [117.3, 6.5], [118.1, 5.8], [118.3, 5.0], [117.9, 4.2], [117.7, 3.4],
+         [117.6, 2.5], [118.0, 1.0], [117.5, 0.1], [117.5, -0.5], [116.8, -1.2], [116.2, -2.0], [116.2, -3.3],
+         [115.7, -3.7], [114.6, -3.5], [114.0, -3.5], [113.0, -3.3], [112.2, -3.4], [111.7, -2.9], [110.5, -3.0],
+         [110.0, -1.8], [109.2, 0.0], [108.9, 1.0]]
+      ],
+      bali_nusra: [
+        [[114.45, -8.2], [115.7, -8.1], [115.7, -8.7], [115.1, -8.8], [114.5, -8.6]],            // Bali
+        [[116.1, -8.4], [116.7, -8.4], [116.6, -8.9], [116.1, -8.9]],                            // Lombok
+        [[116.8, -8.5], [117.5, -8.3], [118.6, -8.2], [119.0, -8.5], [118.3, -9.0], [117.0, -8.9]], // Sumbawa
+        [[119.9, -8.5], [121.0, -8.4], [122.3, -8.3], [123.0, -8.3], [122.9, -8.7], [121.8, -8.9], [120.5, -8.9], [119.9, -8.7]], // Flores
+        [[119.0, -9.5], [120.0, -9.3], [120.9, -9.8], [120.0, -10.2], [119.2, -9.9]],            // Sumba
+        [[123.4, -10.2], [124.2, -9.4], [125.1, -9.0], [126.0, -8.4], [127.3, -8.4], [127.0, -8.9], [125.9, -9.4], [124.5, -10.3]] // Timor
+      ],
+      maluku: [
+        [[128.0, 2.3], [128.6, 1.6], [128.5, 0.9], [128.7, 0.2], [128.2, -0.3], [127.6, -0.8], [127.7, -0.1],
+         [127.9, 0.5], [127.5, 0.8], [127.4, 1.5], [127.6, 2.0]],                                // Halmahera
+        [[128.0, -3.0], [129.0, -2.8], [130.5, -3.0], [130.9, -3.4], [130.0, -3.9], [128.8, -3.4], [128.2, -3.3]], // Seram
+        [[126.5, -3.3], [127.4, -3.3], [127.2, -3.9], [126.4, -3.8]],                            // Buru
+        [[127.9, -1.8], [128.8, -1.9], [128.5, -2.3], [127.9, -2.2]],                            // Sula (kasar)
+        [[128.0, -3.65], [128.4, -3.6], [128.35, -3.85], [128.05, -3.8]]                         // Ambon
+      ],
+      papua: [
+        [[131.0, -0.8], [132.2, -0.4], [133.2, -0.7], [134.1, -0.8], [134.4, -1.4], [134.0, -2.3], [134.9, -3.3],
+         [135.6, -3.4], [136.4, -2.3], [137.7, -1.5], [138.7, -1.9], [139.5, -2.3], [140.7, -2.5], [141.0, -2.6],
+         [141.0, -9.1], [140.2, -8.3], [139.0, -8.1], [138.1, -7.6], [138.0, -5.7], [136.8, -4.9], [135.5, -4.3],
+         [133.7, -3.65], [132.9, -2.9], [133.0, -2.3], [133.8, -2.2], [133.0, -2.5], [132.2, -2.6], [132.0, -1.6],
+         [131.3, -1.3]]
+      ],
+      // Daratan negara tetangga (hiasan, tidak bisa dimainkan).
+      neighbor: [
+        [[100.0, 7.3], [101.0, 7.3], [102.3, 6.1], [103.4, 4.5], [103.5, 3.5], [103.8, 2.4], [104.2, 1.4], [103.4, 1.3],
+         [102.5, 1.9], [101.8, 2.7], [101.3, 3.2], [100.7, 4.3], [100.3, 5.4], [100.3, 6.0], [100.1, 6.5]]
+      ]
+    },
+
+    // Jalur kapal hiasan (bujur, lintang).
+    lanes: [
+      [[106.8, -5.4], [109.5, -4.3], [113.0, -4.6], [117.0, -5.3], [119.0, -5.6]],
+      [[99.5, 4.6], [101.5, 3.2], [103.8, 1.4], [106.2, -3.8], [106.8, -5.4]],
+      [[116.0, -9.6], [119.5, -10.4], [124.5, -11.0], [128.0, -7.5], [127.8, -4.4]]
+    ]
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/* Pemformat angka dan waktu (format Indonesia). Tidak menyentuh DOM. */
+(function (NT) {
+  function num(n, decimals) {
+    return new Intl.NumberFormat('id-ID', {
+      maximumFractionDigits: decimals || 0,
+      minimumFractionDigits: 0
+    }).format(n);
+  }
+
+  function compact(n) {
+    const a = Math.abs(n);
+    if (a >= 1e12) return num(n / 1e12, 2) + ' T';
+    if (a >= 1e9) return num(n / 1e9, 2) + ' M';
+    if (a >= 1e6) return num(n / 1e6, 2) + ' jt';
+    return num(n, 0);
+  }
+
+  NT.fmt = {
+    num: num,
+    compact: compact,
+    // Kas / jumlah uang besar
+    money: function (n) { return 'Rp ' + compact(n); },
+    // Harga satuan (boleh desimal)
+    price: function (n) { return 'Rp ' + num(n, Math.abs(n) < 100 ? 1 : 0); },
+    // Singkat: 19 dtk, 3m 20d, 1j 5m
+    short: function (ms) {
+      const s = Math.max(0, Math.round(ms / 1000));
+      if (s < 60) return s + ' dtk';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + 'm ' + (s % 60) + 'd';
+      return Math.floor(m / 60) + 'j ' + (m % 60) + 'm';
+    },
+    // Hitung mundur: 01:05 atau 1:02:03
+    clock: function (ms) {
+      const s = Math.max(0, Math.ceil(ms / 1000));
+      const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+      const p = function (n) { return (n < 10 ? '0' : '') + n; };
+      return h ? h + ':' + p(m) + ':' + p(sec) : p(m) + ':' + p(sec);
+    },
+    duration: function (ms) {
+      const s = Math.max(0, Math.round(ms / 1000));
+      if (s < 60) return s + ' detik';
+      const m = Math.floor(s / 60);
+      if (m < 60) return m + ' menit';
+      const h = Math.floor(m / 60);
+      return h + ' jam ' + (m % 60) + ' menit';
+    }
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Dunia nyata: musim (bulan kalender WIB) dan peristiwa acak deterministik.
+ * Semua fungsi murni terhadap `now` (ms) dan config, tanpa DOM, supaya bisa dites dan
+ * nanti dipindah ke server (semua pemain melihat peristiwa yang sama).
+ */
+(function (NT) {
+  const C = NT.config;
+  const D = NT.data;
+  const WIB_MS = 7 * 3600 * 1000;
+  const MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+  /* ---------- Musim ---------- */
+
+  // Bulan 0-11 menurut WIB (dengan geseran untuk uji).
+  function monthOf(now) {
+    const m = new Date(now + WIB_MS).getUTCMonth() + (C.seasonMonthShift || 0);
+    return ((m % 12) + 12) % 12;
+  }
+
+  // Tabel musim dinormalkan: rata-rata setahun = 1.
+  const normCache = {};
+  function table(commodityId, kind) {
+    const key = commodityId + ':' + kind;
+    if (!normCache[key]) {
+      const t = D.commodities[commodityId].season[kind];
+      const mean = t.reduce(function (a, b) { return a + b; }, 0) / t.length;
+      normCache[key] = t.map(function (v) { return v / mean; });
+    }
+    return normCache[key];
+  }
+
+  function seasonProd(commodityId, now) {
+    if (!C.seasonsEnabled) return 1;
+    return table(commodityId, 'prod')[monthOf(now)];
+  }
+
+  function seasonPrice(commodityId, now) {
+    if (!C.seasonsEnabled) return 1;
+    return table(commodityId, 'price')[monthOf(now)];
+  }
+
+  // Musim iklim Indonesia (perkiraan umum).
+  function climate(now) {
+    const m = monthOf(now) + 1;
+    if (m === 11 || m === 12 || m <= 3) return { id: 'hujan', icon: '🌧️', name: 'Musim hujan' };
+    if (m === 4 || m === 5 || m === 10) return { id: 'pancaroba', icon: '⛅', name: 'Pancaroba' };
+    return { id: 'kemarau', icon: '☀️', name: 'Musim kemarau' };
+  }
+
+  // Kata singkat untuk kondisi panen komoditas bulan ini.
+  function harvestTag(commodityId, now) {
+    const p = seasonProd(commodityId, now);
+    if (p >= 1.2) return { id: 'raya', text: 'panen raya' };
+    if (p <= 0.8) return { id: 'paceklik', text: 'paceklik' };
+    return null;
+  }
+
+  /* ---------- Peristiwa acak ---------- */
+
+  // Hash bilangan bulat 32-bit -> [0,1). Deterministik.
+  function rand(n, salt) {
+    let h = (Math.imul(n | 0, 374761393) + Math.imul(salt | 0, 668265263)) | 0;
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+
+  function slotMs() { return C.eventSlotHours * 3600 * 1000; }
+
+  function eventAtSlot(slot) {
+    if (!C.eventsEnabled) return null;
+    if (rand(slot, 1) >= C.eventChance) return null;
+    const month = new Date(slot * slotMs() + WIB_MS).getUTCMonth() + 1;
+    const eligible = D.events.filter(function (e) { return !e.months || e.months.indexOf(month) !== -1; });
+    if (!eligible.length) return null;
+    const total = eligible.reduce(function (a, e) { return a + e.weight; }, 0);
+    let pick = rand(slot, 2) * total;
+    for (let i = 0; i < eligible.length; i++) {
+      pick -= eligible[i].weight;
+      if (pick < 0) return eligible[i];
+    }
+    return eligible[eligible.length - 1];
+  }
+
+  // Peristiwa aktif saat ini (atau null), beserta jam mulai dan selesai.
+  function activeEvent(now) {
+    const slot = Math.floor(now / slotMs());
+    const e = eventAtSlot(slot);
+    if (!e) return null;
+    return { event: e, startsAt: slot * slotMs(), endsAt: (slot + 1) * slotMs() };
+  }
+
+  // Pengali produksi bangunan akibat peristiwa.
+  function eventProd(building, now) {
+    const a = activeEvent(now);
+    if (!a || !a.event.prod) return 1;
+    const p = a.event.prod;
+    let m = 1;
+    if (p.commodity && p.commodity[building.produces] != null) m *= p.commodity[building.produces];
+    if (p.region && p.region[building.region] != null) m *= p.region[building.region];
+    return m;
+  }
+
+  function eventPrice(commodityId, now) {
+    const a = activeEvent(now);
+    if (!a || !a.event.price || a.event.price[commodityId] == null) return 1;
+    return a.event.price[commodityId];
+  }
+
+  NT.world = {
+    MONTHS: MONTHS,
+    monthOf: monthOf,
+    seasonProd: seasonProd,
+    seasonPrice: seasonPrice,
+    climate: climate,
+    harvestTag: harvestTag,
+    activeEvent: activeEvent,
+    eventAtSlot: eventAtSlot,
+    eventProd: eventProd,
+    eventPrice: eventPrice
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Mengubah poligon geografi (data/geo.js) menjadi grid sel untuk peta pixel art.
+ * Murni (tanpa DOM) supaya bisa dites. Hasilnya dihitung sekali dan disimpan.
+ */
+(function (NT) {
+  let cache = null;
+
+  function pointInPolygon(x, y, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+
+  function build() {
+    const G = NT.data.geo;
+    const W = Math.ceil((G.lon1 - G.lon0) / G.cellDeg);
+    const H = Math.ceil((G.lat0 - G.lat1) / G.cellDeg);
+    const owner = new Array(W * H).fill(null);   // id wilayah pemilik sel, atau null = laut
+    const ids = Object.keys(G.polygons);
+
+    for (let cy = 0; cy < H; cy++) {
+      const lat = G.lat0 - (cy + 0.5) * G.cellDeg;
+      for (let cx = 0; cx < W; cx++) {
+        const lon = G.lon0 + (cx + 0.5) * G.cellDeg;
+        for (let k = 0; k < ids.length; k++) {
+          const polys = G.polygons[ids[k]];
+          let hit = false;
+          for (let p = 0; p < polys.length && !hit; p++) hit = pointInPolygon(lon, lat, polys[p]);
+          if (hit) { owner[cy * W + cx] = ids[k]; break; }
+        }
+      }
+    }
+
+    // Jarak ke daratan terdekat (sel), terbatas 3, untuk laut dangkal.
+    const dist = new Array(W * H).fill(9);
+    for (let i = 0; i < owner.length; i++) if (owner[i]) dist[i] = 0;
+    for (let pass = 1; pass <= 3; pass++) {
+      for (let cy = 0; cy < H; cy++) {
+        for (let cx = 0; cx < W; cx++) {
+          const i = cy * W + cx;
+          if (dist[i] !== 9) continue;
+          const near = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]].some(function (d) {
+            const x = cx + d[0], y = cy + d[1];
+            return x >= 0 && y >= 0 && x < W && y < H && dist[y * W + x] === pass - 1;
+          });
+          if (near) dist[i] = pass;
+        }
+      }
+    }
+    return { W: W, H: H, owner: owner, dist: dist };
+  }
+
+  function grid() { if (!cache) cache = build(); return cache; }
+
+  // Koordinat geografis -> sel dan piksel.
+  function toCell(lon, lat) {
+    const G = NT.data.geo;
+    return { cx: (lon - G.lon0) / G.cellDeg, cy: (G.lat0 - lat) / G.cellDeg };
+  }
+  function toPx(lon, lat) {
+    const G = NT.data.geo;
+    const c = toCell(lon, lat);
+    return { x: c.cx * G.cellPx, y: c.cy * G.cellPx };
+  }
+  // Pemilik sel pada koordinat (null = laut).
+  function ownerAt(lon, lat) {
+    const g = grid();
+    const c = toCell(lon, lat);
+    const x = Math.floor(c.cx), y = Math.floor(c.cy);
+    if (x < 0 || y < 0 || x >= g.W || y >= g.H) return null;
+    return g.owner[y * g.W + x];
+  }
+
+  NT.raster = { grid: grid, toCell: toCell, toPx: toPx, ownerAt: ownerAt, pointInPolygon: pointInPolygon };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Bentuk data pemain. Semua yang perlu disimpan ada di sini, dan murni data JSON
+ * supaya mudah dipindah ke tabel Supabase nanti.
+ */
+(function (NT) {
+  const D = NT.data;
+  const VERSION = 1;
+
+  function createInitialState(now) {
+    const s = {
+      version: VERSION,
+      createdAt: now,
+      cash: 50,
+      totalEarned: 0,
+      regions: {},     // id -> { unlocked, infra: { tol, pelabuhan } }
+      buildings: {},   // id -> { level, lastCollected }
+      inventory: {},   // komoditas -> jumlah
+      market: {},      // wilayah -> komoditas -> { stock, updatedAt }
+      jobs: []         // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
+    };
+
+    Object.keys(D.regions).forEach(function (id) {
+      const r = D.regions[id];
+      if (r.comingSoon) return;
+      s.regions[id] = { unlocked: !!r.start, infra: { tol: 0, pelabuhan: 0 } };
+      s.market[id] = {};
+    });
+    Object.keys(D.commodities).forEach(function (id) { s.inventory[id] = 0; });
+
+    // Pemain mulai dengan satu sawah di Jawa.
+    s.buildings.sawah = { level: 1, lastCollected: now };
+    return s;
+  }
+
+  // Gabungkan data tersimpan dengan struktur terbaru (aman bila ada wilayah/komoditas baru).
+  function normalize(saved, now) {
+    const base = createInitialState(now);
+    if (!saved || typeof saved !== 'object') return base;
+
+    base.cash = Number(saved.cash) || 0;
+    base.totalEarned = Number(saved.totalEarned) || 0;
+    base.createdAt = saved.createdAt || now;
+
+    Object.keys(base.regions).forEach(function (id) {
+      const sr = saved.regions && saved.regions[id];
+      if (!sr) return;
+      base.regions[id].unlocked = !!sr.unlocked || !!D.regions[id].start;
+      base.regions[id].infra.tol = (sr.infra && sr.infra.tol) || 0;
+      base.regions[id].infra.pelabuhan = (sr.infra && sr.infra.pelabuhan) || 0;
+    });
+
+    base.buildings = {};
+    Object.keys(D.buildings).forEach(function (id) {
+      const sb = saved.buildings && saved.buildings[id];
+      if (sb && sb.level > 0) {
+        base.buildings[id] = { level: sb.level, lastCollected: sb.lastCollected || now };
+      }
+    });
+
+    Object.keys(base.inventory).forEach(function (id) {
+      base.inventory[id] = Math.max(0, Math.floor((saved.inventory && saved.inventory[id]) || 0));
+    });
+
+    Object.keys(base.market).forEach(function (rid) {
+      const sm = saved.market && saved.market[rid];
+      if (sm) base.market[rid] = sm;
+    });
+    base.jobs = (Array.isArray(saved.jobs) ? saved.jobs : []).filter(function (j) {
+      if (!j || !(j.endsAt > 0) || !(j.startedAt > 0) || !j.region || !base.regions[j.region]) return false;
+      return j.kind === 'building' ? !!D.buildings[j.id] : (j.kind === 'infra' && !!D.infra[j.id]);
+    });
+    return base;
+  }
+
+  NT.state = { createInitialState: createInitialState, normalize: normalize };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Aturan ekonomi game. Semua fungsi murni terhadap `state` dan `now` (milidetik),
+ * tanpa DOM. Nanti fungsi-fungsi yang mengubah data (collect, sell, upgrade, unlock)
+ * bisa dipindah ke Postgres function / Edge Function di Supabase agar tidak bisa dicurangi.
+ *
+ * Fungsi yang mengubah data mengembalikan { ok: true, ... } atau { ok: false, reason }.
+ */
+(function (NT) {
+  const C = NT.config;
+  const D = NT.data;
+  const fmt = NT.fmt;
+
+  const fail = function (reason) { return { ok: false, reason: reason }; };
+
+  /* ---------- Util ---------- */
+
+  // Jarak rute laut antar hub pelabuhan (km): garis lurus (haversine) x faktor kelokan rute.
+  function distanceKm(a, b) {
+    if (a === b) return 0;
+    const ha = D.regions[a].hub, hb = D.regions[b].hub;
+    const rad = Math.PI / 180;
+    const dLat = (hb.lat - ha.lat) * rad, dLon = (hb.lon - ha.lon) * rad;
+    const h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(ha.lat * rad) * Math.cos(hb.lat * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 6371 * 2 * Math.asin(Math.sqrt(h)) * C.routeDetour;
+  }
+
+  function hashString(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 100000;
+    return h / 100000 * Math.PI * 2;
+  }
+
+  function buildingLevel(state, id) {
+    return (state.buildings[id] && state.buildings[id].level) || 0;
+  }
+
+  function infraLevel(state, regionId, infraId) {
+    const r = state.regions[regionId];
+    return (r && r.infra && r.infra[infraId]) || 0;
+  }
+
+  /* ---------- Produksi (dihitung dari timestamp, tetap jalan saat offline) ---------- */
+
+  // Pengali dunia nyata (musim dan peristiwa) untuk sebuah bangunan pada waktu `now`.
+  function worldProdMult(buildingId, now) {
+    if (now == null) return 1;
+    const b = D.buildings[buildingId];
+    return NT.world.seasonProd(b.produces, now) * NT.world.eventProd(b, now);
+  }
+
+  // Unit per menit. `now` opsional: tanpa `now`, musim dan peristiwa tidak dihitung.
+  function productionRate(state, buildingId, now) {
+    const b = D.buildings[buildingId];
+    const lvl = buildingLevel(state, buildingId);
+    if (!lvl) return 0;
+    const tol = infraLevel(state, b.region, 'tol');
+    return b.baseRate * lvl * (1 + C.tolBonusPerLevel * tol) * worldProdMult(buildingId, now);
+  }
+
+  function capacity(state, buildingId, now) {
+    return Math.floor(productionRate(state, buildingId, now) * 60 * C.storageHours);
+  }
+
+  // Hasil tertunda memakai laju saat ini untuk seluruh jendela (gudang hanya 2 jam, jadi selisihnya kecil).
+  function pending(state, buildingId, now) {
+    const sb = state.buildings[buildingId];
+    if (!sb || !sb.level) return 0;
+    const minutes = Math.max(0, (now - sb.lastCollected) / 60000);
+    return Math.min(capacity(state, buildingId, now), productionRate(state, buildingId, now) * minutes);
+  }
+
+  function collect(state, buildingId, now) {
+    const b = D.buildings[buildingId];
+    const sb = state.buildings[buildingId];
+    if (!b || !sb) return fail('Bangunan belum dibangun.');
+    const p = pending(state, buildingId, now);
+    const whole = Math.floor(p);
+    if (whole < 1) return fail('Belum ada hasil yang bisa dikumpulkan.');
+
+    const rate = productionRate(state, buildingId, now);
+    const isFull = p >= capacity(state, buildingId, now);
+    state.inventory[b.produces] = (state.inventory[b.produces] || 0) + whole;
+    // Sisa pecahan tetap dihitung, kecuali gudang sudah penuh.
+    sb.lastCollected = isFull ? now : now - ((p - whole) / rate) * 60000;
+    return { ok: true, commodity: b.produces, amount: whole };
+  }
+
+  function collectAll(state, now) {
+    const items = {};
+    let total = 0;
+    Object.keys(state.buildings).forEach(function (id) {
+      const res = collect(state, id, now);
+      if (res.ok) {
+        items[res.commodity] = (items[res.commodity] || 0) + res.amount;
+        total += res.amount;
+      }
+    });
+    if (!total) return fail('Belum ada hasil yang bisa dikumpulkan.');
+    return { ok: true, items: items, total: total };
+  }
+
+  function totalPendingValue(state, now) {
+    let v = 0;
+    Object.keys(state.buildings).forEach(function (id) {
+      v += pending(state, id, now) * D.commodities[D.buildings[id].produces].basePrice;
+    });
+    return v;
+  }
+
+  /* ---------- Biaya dan upgrade ---------- */
+
+  function buildingCost(buildingId, currentLevel) {
+    return Math.round(D.buildings[buildingId].baseCost * Math.pow(C.upgradeGrowth, currentLevel));
+  }
+
+  function infraCost(regionId, infraId, currentLevel) {
+    const f = D.regions[regionId].infraCostFactor || 1;
+    return Math.round(D.infra[infraId].baseCost * f * Math.pow(C.upgradeGrowth, currentLevel));
+  }
+
+  /* ---------- Waktu pembangunan (timer) ---------- */
+
+  function jobsOf(state) { return state.jobs || (state.jobs = []); }
+
+  function jobFor(state, key) {
+    return jobsOf(state).filter(function (j) { return j.key === key; })[0] || null;
+  }
+
+  // Makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama. Hasil dalam milidetik.
+  function buildDuration(buildingId, level) {
+    if (!C.buildTimeEnabled) return 0;
+    const tier = Math.pow(D.buildings[buildingId].baseCost / 60, C.buildTierExp);
+    return Math.round(C.buildBaseSec * tier * Math.pow(C.buildGrowth, level)) * 1000;
+  }
+
+  function infraDuration(regionId, level) {
+    if (!C.buildTimeEnabled) return 0;
+    const f = Math.pow(D.regions[regionId].infraCostFactor || 1, C.infraRegionExp);
+    return Math.round(C.infraBaseSec * f * Math.pow(C.infraGrowth, level)) * 1000;
+  }
+
+  // Pindahkan hasil tertunda bangunan `ids` ke gudang pada waktu `at`, jalankan `change` (mengubah laju
+  // produksi), lalu pertahankan sisa pecahan agar tidak ikut dikali laju baru secara surut.
+  function rebase(state, ids, at, change) {
+    const snap = ids.filter(function (id) { return state.buildings[id]; }).map(function (id) {
+      const p = pending(state, id, at);
+      const whole = Math.floor(p);
+      const cid = D.buildings[id].produces;
+      state.inventory[cid] = (state.inventory[cid] || 0) + whole;
+      return { id: id, frac: p >= capacity(state, id, at) ? 0 : p - whole };
+    });
+    change();
+    snap.forEach(function (x) {
+      const rate = productionRate(state, x.id, at);
+      state.buildings[x.id].lastCollected = at - (rate ? x.frac / rate * 60000 : 0);
+    });
+  }
+
+  // Terapkan hasil pembangunan yang selesai pada waktu job.endsAt (aman dipanggil belakangan, mis. setelah offline).
+  function applyJob(state, j) {
+    if (j.kind === 'building') {
+      if (!state.buildings[j.id]) {
+        state.buildings[j.id] = { level: 1, lastCollected: j.endsAt };
+      } else {
+        rebase(state, [j.id], j.endsAt, function () { state.buildings[j.id].level = j.to; });
+      }
+    } else if (j.id === 'tol') {
+      rebase(state, D.regions[j.region].buildings, j.endsAt, function () { state.regions[j.region].infra.tol = j.to; });
+    } else {
+      state.regions[j.region].infra[j.id] = j.to;
+    }
+  }
+
+  // Selesaikan semua pembangunan yang waktunya habis. Mengembalikan daftar job yang selesai.
+  function settle(state, now) {
+    const list = jobsOf(state);
+    const done = list.filter(function (j) { return j.endsAt <= now; })
+      .sort(function (a, b) { return a.endsAt - b.endsAt; });
+    if (!done.length) return [];
+    state.jobs = list.filter(function (j) { return j.endsAt > now; });
+    done.forEach(function (j) { applyJob(state, j); });
+    return done;
+  }
+
+  function speedupCost(job, now) {
+    const total = Math.max(1, job.endsAt - job.startedAt);
+    const left = Math.max(0, job.endsAt - now);
+    return Math.max(1, Math.ceil(job.cost * C.speedupCostShare * left / total));
+  }
+
+  function speedup(state, key, now) {
+    const job = jobFor(state, key);
+    if (!job) return fail('Pembangunan sudah selesai.');
+    const cost = speedupCost(job, now);
+    if (state.cash < cost) return fail('Kas belum cukup untuk mempercepat.');
+    state.cash -= cost;
+    job.endsAt = now;
+    settle(state, now);
+    return { ok: true, cost: cost, finished: job };
+  }
+
+  function builderCheck(state) {
+    if (jobsOf(state).length >= C.maxBuilders) {
+      return fail('Semua tukang sedang sibuk (' + C.maxBuilders + '). Tunggu salah satu selesai atau percepat.');
+    }
+    return null;
+  }
+
+  function upgradeBuilding(state, buildingId, now) {
+    const b = D.buildings[buildingId];
+    if (!b) return fail('Bangunan tidak dikenal.');
+    if (!state.regions[b.region] || !state.regions[b.region].unlocked) return fail('Wilayah belum dibuka.');
+
+    const key = 'b:' + buildingId;
+    if (jobFor(state, key)) return fail('Sedang dalam pembangunan.');
+    const lvl = buildingLevel(state, buildingId);
+    const cost = buildingCost(buildingId, lvl);
+    if (state.cash < cost) return fail('Kas belum cukup.');
+
+    const dur = buildDuration(buildingId, lvl);
+    if (dur > 0) {
+      const busy = builderCheck(state);
+      if (busy) return busy;
+      state.cash -= cost;
+      jobsOf(state).push({ key: key, kind: 'building', id: buildingId, region: b.region, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0, queued: true, durationMs: dur };
+    }
+
+    collect(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
+    state.cash -= cost;
+    if (lvl === 0) {
+      state.buildings[buildingId] = { level: 1, lastCollected: now };
+    } else {
+      state.buildings[buildingId].level = lvl + 1;
+    }
+    return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0 };
+  }
+
+  function upgradeInfra(state, regionId, infraId, now) {
+    const infra = D.infra[infraId];
+    const rs = state.regions[regionId];
+    if (!infra || !rs) return fail('Infrastruktur tidak dikenal.');
+    if (!rs.unlocked) return fail('Wilayah belum dibuka.');
+
+    const key = 'i:' + regionId + ':' + infraId;
+    if (jobFor(state, key)) return fail('Sedang dalam pembangunan.');
+    const lvl = infraLevel(state, regionId, infraId);
+    if (lvl >= infra.maxLevel) return fail('Sudah level maksimum.');
+    const cost = infraCost(regionId, infraId, lvl);
+    if (state.cash < cost) return fail('Kas belum cukup.');
+
+    const dur = infraDuration(regionId, lvl);
+    if (dur > 0) {
+      const busy = builderCheck(state);
+      if (busy) return busy;
+      state.cash -= cost;
+      jobsOf(state).push({ key: key, kind: 'infra', id: infraId, region: regionId, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      return { ok: true, cost: cost, level: lvl + 1, queued: true, durationMs: dur };
+    }
+
+    // Tol mengubah laju produksi, jadi amankan hasil semua bangunan di wilayah ini dulu.
+    if (infraId === 'tol') {
+      D.regions[regionId].buildings.forEach(function (bid) { collect(state, bid, now); });
+    }
+    state.cash -= cost;
+    rs.infra[infraId] = lvl + 1;
+    return { ok: true, cost: cost, level: lvl + 1 };
+  }
+
+  // Perkiraan pemasukan per menit (nilai dasar semua hasil produksi, belum dikurangi ongkir).
+  function incomePerMin(state, now) {
+    let v = 0;
+    Object.keys(state.buildings).forEach(function (id) {
+      v += productionRate(state, id, now) * D.commodities[D.buildings[id].produces].basePrice;
+    });
+    return v;
+  }
+
+  // Target termurah berikutnya, supaya pemain selalu punya tujuan dekat.
+  function nextGoal(state) {
+    let best = null;
+    function consider(cost, label, icon) { if (!best || cost < best.cost) best = { cost: cost, label: label, icon: icon }; }
+    Object.keys(D.regions).forEach(function (rid) {
+      const r = D.regions[rid], rs = state.regions[rid];
+      if (!rs || r.comingSoon) return;
+      if (!rs.unlocked) { consider(r.unlockCost, 'Buka ' + r.name, '🔓'); return; }
+      r.buildings.forEach(function (bid) {
+        if (jobFor(state, 'b:' + bid)) return;
+        const lvl = buildingLevel(state, bid);
+        consider(buildingCost(bid, lvl), (lvl ? 'Naikkan ' : 'Bangun ') + D.buildings[bid].name + (lvl ? ' ke Lv ' + (lvl + 1) : ''), D.buildings[bid].icon);
+      });
+      Object.keys(D.infra).forEach(function (iid) {
+        if (jobFor(state, 'i:' + rid + ':' + iid)) return;
+        const lvl = infraLevel(state, rid, iid);
+        if (lvl >= D.infra[iid].maxLevel) return;
+        consider(infraCost(rid, iid, lvl), D.infra[iid].name + ' ' + r.name + ' Lv ' + (lvl + 1), D.infra[iid].icon);
+      });
+    });
+    return best;
+  }
+
+  function unlockRegion(state, regionId) {
+    const r = D.regions[regionId];
+    const rs = state.regions[regionId];
+    if (!r || !rs || r.comingSoon) return fail('Wilayah ini belum tersedia.');
+    if (rs.unlocked) return fail('Wilayah sudah terbuka.');
+    if (state.cash < r.unlockCost) return fail('Kas belum cukup.');
+    state.cash -= r.unlockCost;
+    rs.unlocked = true;
+    return { ok: true, cost: r.unlockCost };
+  }
+
+  /* ---------- Pasar ---------- */
+
+  // Tekanan pasokan: naik saat pemain menjual, meluruh seiring waktu.
+  function marketStock(state, regionId, commodityId, now) {
+    const m = state.market[regionId] && state.market[regionId][commodityId];
+    if (!m) return 0;
+    const minutes = Math.max(0, (now - m.updatedAt) / 60000);
+    return m.stock * Math.exp(-C.marketDecayPerMin * minutes);
+  }
+
+  function wave(regionId, commodityId, now) {
+    return 1 + C.priceWaveAmplitude * Math.sin(now / (7 * 60000) + hashString(regionId + commodityId));
+  }
+
+  // Pengali musim dan peristiwa terhadap harga komoditas (sama di semua pasar).
+  function worldPriceMult(commodityId, now) {
+    return NT.world.seasonPrice(commodityId, now) * NT.world.eventPrice(commodityId, now);
+  }
+
+  // Harga normal (tanpa fluktuasi dan tanpa tekanan pasokan).
+  function normalPrice(regionId, commodityId) {
+    const demand = (D.regions[regionId].demand && D.regions[regionId].demand[commodityId]) || 1;
+    return D.commodities[commodityId].basePrice * demand;
+  }
+
+  function unitPrice(regionId, commodityId, stock, now) {
+    const depth = D.commodities[commodityId].marketDepth;
+    const pressure = stock / (stock + depth);
+    return normalPrice(regionId, commodityId) * wave(regionId, commodityId, now) *
+      worldPriceMult(commodityId, now) * (1 - C.maxMarketDrop * pressure);
+  }
+
+  function currentPrice(state, regionId, commodityId, now) {
+    return unitPrice(regionId, commodityId, marketStock(state, regionId, commodityId, now), now);
+  }
+
+  // Ongkir per unit dari wilayah asal komoditas ke pasar tujuan:
+  // bobot (kg) x jarak (km) x tarif kapal, lalu dikecilkan oleh pelabuhan. Barang curah murah (padi)
+  // jadi paling terasa ongkirnya; barang bernilai tinggi (cengkeh, batik) hampir tidak.
+  function shippingPerUnit(state, commodityId, marketId) {
+    const c = D.commodities[commodityId];
+    const km = distanceKm(c.region, marketId);
+    if (!km) return 0;
+    const ports = infraLevel(state, c.region, 'pelabuhan') + infraLevel(state, marketId, 'pelabuhan');
+    const discount = Math.min(C.maxShippingDiscount, ports * C.portDiscountPerLevel);
+    const realRp = c.unitKg * km * C.seaFreightRpPerKgKm;
+    return realRp / C.priceScale * (1 - discount);
+  }
+
+  // Harga bersih per unit saat ini (harga pasar dikurangi ongkir).
+  function netUnitPrice(state, commodityId, marketId, now) {
+    return currentPrice(state, marketId, commodityId, now) - shippingPerUnit(state, commodityId, marketId);
+  }
+
+  function quoteSale(state, commodityId, marketId, qty, now) {
+    let stock = marketStock(state, marketId, commodityId, now);
+    let revenue = 0;
+    for (let i = 0; i < qty; i++) {
+      revenue += unitPrice(marketId, commodityId, stock, now);
+      stock += 1;
+    }
+    const shipping = shippingPerUnit(state, commodityId, marketId) * qty;
+    return { qty: qty, revenue: revenue, shipping: shipping, net: revenue - shipping };
+  }
+
+  function sell(state, commodityId, marketId, qty, now) {
+    qty = Math.floor(qty);
+    const ms = state.regions[marketId];
+    if (!D.commodities[commodityId] || !ms) return fail('Pasar tidak dikenal.');
+    if (!ms.unlocked) return fail('Buka wilayah ini dulu untuk berdagang di sana.');
+    if (qty < 1) return fail('Tidak ada barang untuk dijual.');
+    if ((state.inventory[commodityId] || 0) < qty) return fail('Stok di gudang tidak cukup.');
+
+    const q = quoteSale(state, commodityId, marketId, qty, now);
+    if (q.net <= 0) return fail('Harga terlalu rendah, penjualan akan rugi. Coba pasar lain.');
+
+    const stock = marketStock(state, marketId, commodityId, now);
+    state.market[marketId][commodityId] = { stock: stock + qty, updatedAt: now };
+    state.inventory[commodityId] -= qty;
+    state.cash += q.net;
+    state.totalEarned += q.net;
+    return { ok: true, qty: qty, revenue: q.revenue, shipping: q.shipping, net: q.net };
+  }
+
+  // Pasar terbuka dengan harga bersih per unit tertinggi untuk komoditas ini.
+  function bestMarket(state, commodityId, now) {
+    let best = null;
+    Object.keys(state.regions).forEach(function (rid) {
+      if (!state.regions[rid].unlocked) return;
+      const p = netUnitPrice(state, commodityId, rid, now);
+      if (!best || p > best.price) best = { regionId: rid, price: p };
+    });
+    return best;
+  }
+
+  /* ---------- Skor peradaban ---------- */
+
+  function score(state) {
+    let s = 0;
+    Object.keys(state.buildings).forEach(function (id) { s += state.buildings[id].level * 10; });
+    Object.keys(state.regions).forEach(function (rid) {
+      const r = state.regions[rid];
+      if (r.unlocked && !D.regions[rid].start) s += 100;
+      s += ((r.infra.tol || 0) + (r.infra.pelabuhan || 0)) * 25;
+    });
+    s += Math.floor(state.totalEarned / 1000);
+    return s;
+  }
+
+  function rank(scoreValue) {
+    let current = D.ranks[0];
+    let next = null;
+    for (let i = 0; i < D.ranks.length; i++) {
+      if (scoreValue >= D.ranks[i].min) { current = D.ranks[i]; next = D.ranks[i + 1] || null; }
+    }
+    return { current: current, next: next };
+  }
+
+  NT.economy = {
+    distanceKm: distanceKm,
+    worldProdMult: worldProdMult,
+    worldPriceMult: worldPriceMult,
+    buildingLevel: buildingLevel,
+    infraLevel: infraLevel,
+    productionRate: productionRate,
+    capacity: capacity,
+    pending: pending,
+    collect: collect,
+    collectAll: collectAll,
+    totalPendingValue: totalPendingValue,
+    buildingCost: buildingCost,
+    infraCost: infraCost,
+    jobFor: jobFor,
+    buildDuration: buildDuration,
+    infraDuration: infraDuration,
+    settle: settle,
+    speedup: speedup,
+    speedupCost: speedupCost,
+    incomePerMin: incomePerMin,
+    nextGoal: nextGoal,
+    upgradeBuilding: upgradeBuilding,
+    upgradeInfra: upgradeInfra,
+    unlockRegion: unlockRegion,
+    marketStock: marketStock,
+    normalPrice: normalPrice,
+    currentPrice: currentPrice,
+    shippingPerUnit: shippingPerUnit,
+    netUnitPrice: netUnitPrice,
+    quoteSale: quoteSale,
+    sell: sell,
+    bestMarket: bestMarket,
+    score: score,
+    rank: rank,
+    _fmt: fmt
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Driver penyimpanan lokal (localStorage). Semua driver punya antarmuka yang sama:
+ *   load()  -> Promise<state | null>
+ *   save(s) -> Promise<boolean>
+ *   reset() -> Promise<void>
+ * Jadi pindah ke Supabase cukup mengganti NT.config.storage.
+ */
+(function (NT) {
+  NT.storageDrivers = NT.storageDrivers || {};
+
+  NT.storageDrivers.local = {
+    label: 'Tersimpan di browser ini',
+
+    load: function () {
+      try {
+        const raw = window.localStorage.getItem(NT.config.saveKey);
+        return Promise.resolve(raw ? JSON.parse(raw) : null);
+      } catch (e) {
+        return Promise.resolve(null);
+      }
+    },
+
+    save: function (state) {
+      try {
+        window.localStorage.setItem(NT.config.saveKey, JSON.stringify(state));
+        return Promise.resolve(true);
+      } catch (e) {
+        return Promise.resolve(false);
+      }
+    },
+
+    reset: function () {
+      try { window.localStorage.removeItem(NT.config.saveKey); } catch (e) { /* abaikan */ }
+      return Promise.resolve();
+    }
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Driver Supabase (tahap 1: simpan seluruh state sebagai satu baris JSON per pemain).
+ * BELUM DIUJI. Langkah mengaktifkan ada di README.md.
+ *
+ * Catatan keamanan: di tahap ini klien masih bisa mengubah state-nya sendiri.
+ * Untuk multiplayer sungguhan, pindahkan aturan di js/core/economy.js
+ * (sell, collect, upgrade, unlock) ke Postgres function lalu panggil lewat supabase.rpc().
+ */
+(function (NT) {
+  NT.storageDrivers = NT.storageDrivers || {};
+
+  let client = null;
+
+  function getClient() {
+    if (client) return client;
+    if (!window.supabase || !window.supabase.createClient) {
+      throw new Error('supabase-js belum dimuat. Aktifkan tag script CDN di index.html.');
+    }
+    const cfg = NT.config.supabase;
+    if (!cfg.url || !cfg.anonKey) {
+      throw new Error('Isi supabase.url dan supabase.anonKey di js/config.js.');
+    }
+    client = window.supabase.createClient(cfg.url, cfg.anonKey);
+    return client;
+  }
+
+  // Masuk anonim dulu (aktifkan "Anonymous sign-ins" di dashboard Supabase).
+  // Nanti bisa diganti login email / Google.
+  async function userId() {
+    const c = getClient();
+    const current = await c.auth.getSession();
+    let session = current.data.session;
+    if (!session) {
+      const res = await c.auth.signInAnonymously();
+      if (res.error) throw res.error;
+      session = res.data.session;
+    }
+    return session.user.id;
+  }
+
+  NT.storageDrivers.supabase = {
+    label: 'Tersimpan di cloud (Supabase)',
+
+    async load() {
+      const c = getClient();
+      const uid = await userId();
+      const res = await c.from('game_saves').select('state').eq('user_id', uid).maybeSingle();
+      if (res.error) throw res.error;
+      return res.data ? res.data.state : null;
+    },
+
+    async save(state) {
+      const c = getClient();
+      const uid = await userId();
+      const res = await c.from('game_saves').upsert({
+        user_id: uid,
+        state: state,
+        updated_at: new Date().toISOString()
+      });
+      if (res.error) throw res.error;
+      return true;
+    },
+
+    async reset() {
+      const c = getClient();
+      const uid = await userId();
+      const res = await c.from('game_saves').delete().eq('user_id', uid);
+      if (res.error) throw res.error;
+    }
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/* Memilih driver penyimpanan sesuai NT.config.storage. */
+(function (NT) {
+  NT.getStorage = function () {
+    const driver = NT.storageDrivers[NT.config.storage];
+    if (!driver) throw new Error('Driver penyimpanan tidak dikenal: ' + NT.config.storage);
+    return driver;
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/* Notifikasi kecil di layar. */
+(function (NT) {
+  NT.ui = NT.ui || {};
+
+  NT.ui.toast = function (message, kind) {
+    const host = document.getElementById('toasts');
+    if (!host) return;
+    const el = document.createElement('div');
+    el.className = 'toast ' + (kind || 'ok');
+    el.textContent = message;
+    host.appendChild(el);
+    while (host.children.length > 3) host.removeChild(host.firstChild);
+    setTimeout(function () { el.classList.add('out'); }, 2800);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3300);
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/* Efek rasa-main: angka melayang, confetti, suara sintetis, hitung kas bergulir. Tidak ada file aset. */
+(function (NT) {
+  NT.ui = NT.ui || {};
+
+  let ctx = null;
+  let muted = false;
+  try { muted = localStorage.getItem('nt-muted') === '1'; } catch (e) { /* abaikan */ }
+
+  function audio() {
+    if (muted) return null;
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+    }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+
+  function tone(freq, start, dur, type, vol) {
+    const a = audio();
+    if (!a) return;
+    const o = a.createOscillator(), g = a.createGain();
+    const t = a.currentTime + start;
+    o.type = type || 'square';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol || 0.05, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + dur + 0.03);
+  }
+
+  const SFX = {
+    coin: function () { tone(988, 0, 0.08); tone(1319, 0.07, 0.16); },
+    click: function () { tone(440, 0, 0.05, 'triangle', 0.06); },
+    start: function () { tone(330, 0, 0.08, 'triangle', 0.07); tone(392, 0.08, 0.12, 'triangle', 0.07); },
+    done: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, i * 0.09, 0.2); }); },
+    error: function () { tone(180, 0, 0.16, 'sawtooth', 0.04); }
+  };
+
+  function sfx(name) { try { if (SFX[name]) SFX[name](); } catch (e) { /* suara tidak boleh merusak game */ } }
+
+  function toggleMute() {
+    muted = !muted;
+    try { localStorage.setItem('nt-muted', muted ? '1' : '0'); } catch (e) { /* abaikan */ }
+    if (!muted) sfx('click');
+    return muted;
+  }
+
+  function floatText(x, y, text, cls) {
+    const el = document.createElement('div');
+    el.className = 'floaty ' + (cls || '');
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    document.body.appendChild(el);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1300);
+  }
+
+  function floatFromRect(rect, text, cls) {
+    if (rect) floatText(rect.left + rect.width / 2, rect.top, text, cls);
+  }
+
+  function confetti(x, y) {
+    const colors = ['#f0c25f', '#d9a441', '#6fbf5a', '#2d8fd0', '#e98aa8', '#c8472f'];
+    for (let i = 0; i < 28; i++) {
+      const p = document.createElement('i');
+      const ang = Math.random() * Math.PI * 2, d = 60 + Math.random() * 120;
+      p.className = 'confetti';
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      p.style.background = colors[i % colors.length];
+      p.style.setProperty('--dx', Math.cos(ang) * d + 'px');
+      p.style.setProperty('--dy', (Math.sin(ang) * d - 50) + 'px');
+      p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+      document.body.appendChild(p);
+      setTimeout(function () { if (p.parentNode) p.parentNode.removeChild(p); }, 1300);
+    }
+  }
+
+  // Kas bergulir halus ke angka baru dan berkedip hijau/merah.
+  function setCash(el, target) {
+    if (el._to === target) return;
+    const from = el._val == null ? target : el._val;
+    el._to = target;
+    cancelAnimationFrame(el._raf);
+    if (from === target) { el._val = target; el.textContent = NT.fmt.money(target); return; }
+    el.classList.remove('up', 'down');
+    void el.offsetWidth;
+    el.classList.add(target > from ? 'up' : 'down');
+    const t0 = performance.now();
+    (function step(t) {
+      const k = Math.min(1, (t - t0) / 450);
+      el._val = from + (target - from) * (1 - Math.pow(1 - k, 3));
+      el.textContent = NT.fmt.money(el._val);
+      if (k < 1) el._raf = requestAnimationFrame(step); else el._val = target;
+    })(t0);
+  }
+
+  NT.ui.fx = {
+    sfx: sfx, toggleMute: toggleMute, isMuted: function () { return muted; },
+    floatText: floatText, floatFromRect: floatFromRect, confetti: confetti, setCash: setCash
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/* Sprite pixel art 8x8 untuk bangunan, pelabuhan, dan kapal. Setiap huruf = satu warna, titik = kosong. */
+(function (NT) {
+  NT.ui = NT.ui || {};
+
+  const COLORS = {
+    g: '#2e7343', G: '#6fbf5a', d: '#4a8f3e', y: '#e8c34a', r: '#c8472f', R: '#b8452c', b: '#7a4a24',
+    w: '#f4ead2', k: '#2b2f33', p: '#e98aa8', B: '#2d8fd0', o: '#d9822b', m: '#9aa3a8', n: '#c9a24a'
+  };
+
+  const SPRITES = {
+    sawah: ['...RR...', '..RRRR..', '..bwwb..', '..bwwb..', 'GdGdGdGd', 'dGdGdGdG', 'GdGdGdGd', 'dGdGdGdG'],
+    sentra_batik: ['...bb...', '..bbbb..', '.bbbbbb.', 'bbbbbbbb', '.wwwwww.', '.wnwwnw.', '.wwwwww.', '.kkkkkk.'],
+    kebun_kopi: ['..GGG...', '.GGrGG..', 'GGGGGrG.', '.GrGGG..', '..GGrG..', '...bb...', '...bb...', '..kbbk..'],
+    kebun_karet: ['..GGG...', '.GGGGG..', 'GGGGGGG.', '.GGGGG..', '...bb...', '...bb...', '..mbb...', '..kk....'],
+    kebun_kakao: ['..GGG...', '.GGoGG..', 'GGGGGoG.', '.GoGGG..', '..GGoG..', '...bb...', '...bb...', '..kbbk..'],
+    kebun_cengkeh: ['..GGG...', '.GpGGp..', 'GGGpGGG.', 'pGGGGpG.', '.GGpGG..', '...bb...', '...bb...', '..kbbk..'],
+    pelabuhan: ['....k...', '....k...', '..kkkkk.', '..k..k..', 'ooRRoomm', 'mmmmmmmm', 'BBBBBBBB', 'bBbBbBbB'],
+    kapal: ['.....w..', '....ww..', 'kkkkkkk.', '.rrrrr..', '..rrr...', '........', '........', '........']
+  };
+
+  // Path SVG untuk sprite, berpusat di (cx, cy), tiap piksel berukuran px satuan.
+  function path(name, cx, cy, px, opacity) {
+    const rows = SPRITES[name];
+    if (!rows) return '';
+    const ox = cx - 4 * px, oy = cy - 4 * px;
+    const byColor = {};
+    rows.forEach(function (row, y) {
+      for (let x = 0; x < row.length; x++) {
+        const ch = row[x];
+        if (ch === '.') continue;
+        (byColor[ch] = byColor[ch] || []).push('M' + (ox + x * px) + ' ' + (oy + y * px) + 'h' + px + 'v' + px + 'h-' + px + 'z');
+      }
+    });
+    const parts = Object.keys(byColor).map(function (ch) {
+      return '<path fill="' + COLORS[ch] + '" d="' + byColor[ch].join('') + '"/>';
+    }).join('');
+    return '<g class="sprite"' + (opacity != null ? ' opacity="' + opacity + '"' : '') + '>' + parts + '</g>';
+  }
+
+  NT.ui.sprites = { path: path, names: Object.keys(SPRITES) };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Peta pixel art Nusantara. Daratan digambar dari grid sel hasil rasterisasi poligon geografi
+ * (data/geo.js), jadi posisi pulau mengikuti bujur/lintang nyata. Dibuat sekali; setelah itu hanya
+ * kelas pulau dan lapisan dinamis (bangunan, jalan tol, pelabuhan) yang diperbarui.
+ */
+(function (NT) {
+  NT.ui = NT.ui || {};
+  const D = NT.data;
+  const G = D.geo;
+  const S = G.cellPx;
+
+  // Derau deterministik 0..1 per sel, supaya hutan dan pantai tampak berbintik tapi tidak berubah-ubah.
+  function noise(x, y, salt) {
+    let h = Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(salt || 0, 2147483647);
+    h = Math.imul(h ^ (h >>> 13), 1274126177);
+    return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+  }
+
+  // Gabungkan sel berurutan dalam satu baris menjadi satu persegi panjang (path ringkas).
+  function runsPath(grid, test) {
+    const d = [];
+    for (let cy = 0; cy < grid.H; cy++) {
+      let start = -1;
+      for (let cx = 0; cx <= grid.W; cx++) {
+        const on = cx < grid.W && test(cx, cy, cy * grid.W + cx);
+        if (on && start < 0) start = cx;
+        if (!on && start >= 0) {
+          d.push('M' + start * S + ' ' + cy * S + 'h' + (cx - start) * S + 'v' + S + 'h-' + (cx - start) * S + 'z');
+          start = -1;
+        }
+      }
+    }
+    return d.join('');
+  }
+
+  function isSea(grid, x, y) {
+    return x < 0 || y < 0 || x >= grid.W || y >= grid.H || grid.owner[y * grid.W + x] === null;
+  }
+
+  function coastal(grid, x, y) {
+    return isSea(grid, x - 1, y) || isSea(grid, x + 1, y) || isSea(grid, x, y - 1) || isSea(grid, x, y + 1);
+  }
+
+  // Pantai berpasir hanya sebagian sel tepi, supaya pulau sempit (Jawa) tetap tampak hijau.
+  function sandy(grid, x, y) { return coastal(grid, x, y) && noise(x, y, 3) < 0.55; }
+
+  function landPaths(grid, id) {
+    const own = function (i) { return grid.owner[i] === id; };
+    return '' +
+      '<path class="px-sand" d="' + runsPath(grid, function (x, y, i) { return own(i) && sandy(grid, x, y); }) + '"/>' +
+      '<path class="px-grass" d="' + runsPath(grid, function (x, y, i) { return own(i) && !sandy(grid, x, y) && noise(x, y, 1) < 0.62; }) + '"/>' +
+      '<path class="px-forest" d="' + runsPath(grid, function (x, y, i) { const n = noise(x, y, 1); return own(i) && !sandy(grid, x, y) && n >= 0.62 && n < 0.86; }) + '"/>' +
+      '<path class="px-dark" d="' + runsPath(grid, function (x, y, i) { return own(i) && !sandy(grid, x, y) && noise(x, y, 1) >= 0.86; }) + '"/>';
+  }
+
+  function pt(lonlat) { return NT.raster.toPx(lonlat[0], lonlat[1]); }
+
+  function islandMarkup(grid, r) {
+    const pin = pt(r.map.pin), label = pt(r.map.label);
+    return '' +
+      '<g class="island" data-region="' + r.id + '" tabindex="0" role="button" aria-label="' + r.name + '">' +
+        '<g class="island-land">' + landPaths(grid, r.id) + '</g>' +
+        '<g class="dyn" data-dyn="' + r.id + '"></g>' +
+        '<text class="island-label" x="' + label.x + '" y="' + label.y + '" text-anchor="middle">' + (r.short || r.name) + '</text>' +
+        '<g class="pin" transform="translate(' + pin.x + ',' + pin.y + ')">' +
+          '<circle class="pin-pulse" r="15"/>' +
+          '<circle class="pin-dot" r="15"/>' +
+          '<text class="pin-icon" text-anchor="middle" dy="7">' + r.icon + '</text>' +
+        '</g>' +
+      '</g>';
+  }
+
+  function shipsMarkup() {
+    return G.lanes.map(function (lane, i) {
+      const pts = lane.map(pt);
+      const there = pts.map(function (p, k) { return (k ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join('');
+      const back = pts.slice(0, -1).reverse().map(function (p) { return 'L' + p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join('');
+      return '<g class="ship"><animateMotion dur="' + (70 + i * 14) + 's" repeatCount="indefinite" path="' + there + back + '"/>' +
+        NT.ui.sprites.path('kapal', 0, 0, 2) + '</g>';
+    }).join('');
+  }
+
+  function build() {
+    const grid = NT.raster.grid();
+    const W = grid.W * S, H = grid.H * S;
+    const sea = [1, 2, 3].map(function (n) {
+      return '<path class="px-sea s' + n + '" d="' + runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === n; }) + '"/>';
+    }).join('');
+    const sparkle = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 7) > 0.955; });
+    const sparkle2 = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 9) > 0.955; });
+    const neighbor = '<path class="px-neighbor" d="' + runsPath(grid, function (x, y, i) { return grid.owner[i] === 'neighbor'; }) + '"/>';
+    const islands = Object.keys(D.regions).map(function (id) { return islandMarkup(grid, D.regions[id]); }).join('');
+
+    return '' +
+    '<svg class="map-svg" viewBox="0 0 ' + W + ' ' + H + '" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peta Nusantara">' +
+      '<rect class="px-deep" width="' + W + '" height="' + H + '"/>' +
+      '<path class="sparkle a" d="' + sparkle + '"/><path class="sparkle b" d="' + sparkle2 + '"/>' +
+      sea + neighbor + islands +
+      '<g class="ships">' + shipsMarkup() + '</g>' +
+    '</svg>';
+  }
+
+  /* ---------- Lapisan dinamis: jalan tol, bangunan, pelabuhan ---------- */
+
+  // Garis sel antar dua titik (Bresenham), dikembalikan sebagai path persegi.
+  function linePath(a, b, width) {
+    const x0 = Math.floor(a.cx), y0 = Math.floor(a.cy), x1 = Math.floor(b.cx), y1 = Math.floor(b.cy);
+    const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy, x = x0, y = y0, d = '', guard = 0;
+    for (;;) {
+      d += 'M' + x * S + ' ' + y * S + 'h' + S + 'v' + S * width + 'h-' + S + 'z';
+      if ((x === x1 && y === y1) || ++guard > 400) break;
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x += sx; }
+      if (e2 <= dx) { err += dx; y += sy; }
+    }
+    return d;
+  }
+
+  // Lencana pembangunan: palu bergoyang dan bar progres (lebar diisi tiap detik oleh tickJobs).
+  function jobBadge(x, y, key) {
+    return '<g class="jobbadge" transform="translate(' + x + ',' + y + ')"><text class="hammer" text-anchor="middle" dy="-4">🔨</text>' +
+      '<rect class="jb-bg" x="-14" y="2" width="28" height="5" rx="2"/>' +
+      '<rect class="jb-fill" data-job="' + key + '" x="-14" y="2" width="0" height="5" rx="2"/></g>';
+  }
+
+  function dynMarkup(r, rs, state) {
+    if (r.comingSoon || !rs.unlocked) return '';
+    const m = r.map;
+    const tol = (rs.infra && rs.infra.tol) || 0;
+    const port = (rs.infra && rs.infra.pelabuhan) || 0;
+    let out = '';
+
+    if (tol > 0) {
+      const c0 = NT.raster.toCell(m.pin[0], m.pin[1]);
+      const ends = Object.keys(m.slots || {}).map(function (bid) { return NT.raster.toCell(m.slots[bid][0], m.slots[bid][1]); });
+      if (m.port) ends.push(NT.raster.toCell(m.port[0], m.port[1]));
+      const width = tol >= 3 ? 2 : 1;
+      out += '<path class="road" d="' + ends.map(function (e) { return linePath(c0, e, width); }).join('') + '"/>';
+    }
+
+    Object.keys(m.slots || {}).forEach(function (bid) {
+      const lvl = (state.buildings[bid] && state.buildings[bid].level) || 0;
+      const p = pt(m.slots[bid]);
+      const job = NT.economy.jobFor(state, 'b:' + bid);
+      out += NT.ui.sprites.path(bid, p.x, p.y, lvl >= 3 ? 3 : 2, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
+      if (lvl) {
+        out += '<g class="bubble" data-id="' + bid + '" transform="translate(' + p.x + ',' + (p.y - 28) + ')"><g class="bob">' +
+          '<circle r="12" class="bubble-bg"/><text class="bubble-ico" text-anchor="middle" dy="5">📦</text></g></g>';
+      }
+      if (job) out += jobBadge(p.x, p.y + 26, job.key);
+    });
+    const tolJob = NT.economy.jobFor(state, 'i:' + r.id + ':tol');
+    if (tolJob) { const pp = pt(m.pin); out += jobBadge(pp.x, pp.y + 32, tolJob.key); }
+
+    if (m.port) {
+      const p = pt(m.port);
+      out += NT.ui.sprites.path('pelabuhan', p.x, p.y, port >= 3 ? 3 : 2, port ? null : 0.28);
+      if (port > 0) out += NT.ui.sprites.path('kapal', p.x + 16 + port * 2, p.y + 2, 2);
+      const portJob = NT.economy.jobFor(state, 'i:' + r.id + ':pelabuhan');
+      if (portJob) out += jobBadge(p.x, p.y + 26, portJob.key);
+    }
+    return out;
+  }
+
+  const signatures = {};
+
+  // Perbarui kelas (terkunci / dipilih / segera), ikon pin, dan lapisan dinamis sesuai state.
+  function update(state, selectedId) {
+    const host = document.getElementById('map');
+    if (!host) return;
+    Object.keys(D.regions).forEach(function (id) {
+      const r = D.regions[id];
+      const el = host.querySelector('.island[data-region="' + id + '"]');
+      if (!el) return;
+      const rs = state.regions[id];
+      const unlocked = rs && rs.unlocked;
+      el.classList.toggle('soon', !!r.comingSoon);
+      el.classList.toggle('locked', !r.comingSoon && !unlocked);
+      el.classList.toggle('selected', id === selectedId);
+      el.querySelector('.pin-icon').textContent = r.comingSoon ? '…' : (unlocked ? r.icon : '🔒');
+
+      const sig = !rs ? '' : JSON.stringify([unlocked, rs.infra, (r.buildings || []).map(function (b) {
+        return state.buildings[b] ? state.buildings[b].level : 0;
+      }), (state.jobs || []).filter(function (j) { return j.region === id; }).map(function (j) { return j.key; })]);
+      if (signatures[id] !== sig) {
+        signatures[id] = sig;
+        el.querySelector('.dyn').innerHTML = rs ? dynMarkup(r, rs, state) : '';
+      }
+    });
+  }
+
+  // Tiap detik: isi bar progres pembangunan dan tampilkan gelembung 📦 di bangunan yang hasilnya siap.
+  function tickJobs(state, now) {
+    document.querySelectorAll('#map [data-job]').forEach(function (el) {
+      const j = NT.economy.jobFor(state, el.getAttribute('data-job'));
+      if (!j) return;
+      const k = Math.max(0, Math.min(1, (now - j.startedAt) / (j.endsAt - j.startedAt)));
+      el.setAttribute('width', (28 * k).toFixed(1));
+    });
+    document.querySelectorAll('#map .bubble').forEach(function (el) {
+      const id = el.getAttribute('data-id');
+      const cap = NT.economy.capacity(state, id, now) || 1;
+      const p = NT.economy.pending(state, id, now);
+      el.classList.toggle('on', p >= 1 && p / cap >= 0.2);
+    });
+  }
+
+  // Geser peta (di layar sempit) supaya wilayah terpilih berada di tengah.
+  function focus(regionId) {
+    const scroller = document.querySelector('.map-scroll');
+    const r = D.regions[regionId];
+    if (!scroller || !r) return;
+    const svg = scroller.querySelector('.map-svg');
+    const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
+    const x = pt(r.map.pin).x * scale;
+    scroller.scrollTo({ left: Math.max(0, x - scroller.clientWidth / 2), behavior: 'smooth' });
+  }
+
+  NT.ui.map = {
+    mount: function () {
+      const host = document.getElementById('map');
+      if (host) host.innerHTML = build();
+    },
+    update: update,
+    tickJobs: tickJobs,
+    focus: focus
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Panel antarmuka: wilayah, pasar, info. Render penuh dilakukan setelah aksi pemain;
+ * tiap detik hanya angka bertanda data-live yang diperbarui (supaya tombol tidak "berkedip").
+ */
+(function (NT) {
+  NT.ui = NT.ui || {};
+  const D = NT.data;
+  const E = NT.economy;
+  const F = NT.fmt;
+
+  const view = { tab: 'map', region: 'jawa', market: 'jawa' };
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- Panel wilayah ---------- */
+
+  function jobBox(job, note) {
+    return '<div class="bar job"><i data-live="jobbar" data-key="' + job.key + '"></i></div>' +
+      '<small>🔨 <b data-live="jobtime" data-key="' + job.key + '"></b> · ' + note + '</small>';
+  }
+
+  function speedBtn(job, now) {
+    const cost = E.speedupCost(job, now);
+    return '<button class="btn primary" data-action="speedup" data-key="' + job.key + '" data-cost="' + cost + '">⚡ Percepat · ' +
+      '<span data-live="speedcost" data-key="' + job.key + '">' + F.money(cost) + '</span></button>';
+  }
+
+  function buildingRow(state, id, now) {
+    const b = D.buildings[id];
+    const c = D.commodities[b.produces];
+    const lvl = E.buildingLevel(state, id);
+    const cost = E.buildingCost(id, lvl);
+    const rate = E.productionRate(state, id, now);
+    const job = E.jobFor(state, 'b:' + id);
+    const dur = E.buildDuration(id, lvl);
+    const time = dur ? ' · ⏱ ' + F.short(dur) : '';
+
+    if (!lvl) {
+      if (job) {
+        return '' +
+        '<div class="row building">' +
+          '<div class="row-icon working">' + b.icon + '</div>' +
+          '<div class="row-main"><b>Membangun ' + b.name + '…</b>' + jobBox(job, 'lalu ' + F.num(b.baseRate, 1) + '/menit') + '</div>' +
+          '<div class="row-actions">' + speedBtn(job, now) + '</div>' +
+        '</div>';
+      }
+      return '' +
+      '<div class="row">' +
+        '<div class="row-icon">' + b.icon + '</div>' +
+        '<div class="row-main"><b>' + b.name + '</b>' +
+          '<small>Menghasilkan ' + c.name + ' (' + F.num(b.baseRate, 1) + '/menit pada Lv 1)</small></div>' +
+        '<div class="row-actions">' +
+          '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">Bangun · ' + F.money(cost) + time + '</button>' +
+        '</div>' +
+      '</div>';
+    }
+
+    const cap = E.capacity(state, id, now);
+    return '' +
+    '<div class="row' + (job ? ' building' : '') + '">' +
+      '<div class="row-icon working">' + b.icon + '</div>' +
+      '<div class="row-main">' +
+        '<b>' + b.name + ' <span class="lvl">Lv ' + lvl + '</span>' + (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
+        '<small>' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/menit <span data-live="bmult" data-id="' + id + '"></span></small>' +
+        '<div class="bar"><i data-live="bar" data-id="' + id + '"></i></div>' +
+        '<small><span data-live="pending" data-id="' + id + '">0</span> / ' + F.num(cap) + ' siap dikumpulkan</small>' +
+        (job ? jobBox(job, 'naik ke Lv ' + job.to) : '') +
+      '</div>' +
+      '<div class="row-actions">' +
+        '<button class="btn" data-action="collect" data-id="' + id + '">Kumpulkan</button>' +
+        (job ? speedBtn(job, now)
+             : '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">⬆ ' + F.money(cost) + time + '</button>') +
+      '</div>' +
+    '</div>';
+  }
+
+  function infraRow(state, regionId, infraId, now) {
+    const inf = D.infra[infraId];
+    const lvl = E.infraLevel(state, regionId, infraId);
+    const maxed = lvl >= inf.maxLevel;
+    const cost = maxed ? 0 : E.infraCost(regionId, infraId, lvl);
+    const job = E.jobFor(state, 'i:' + regionId + ':' + infraId);
+    const dur = maxed ? 0 : E.infraDuration(regionId, lvl);
+    return '' +
+    '<div class="row' + (job ? ' building' : '') + '">' +
+      '<div class="row-icon' + (job ? ' working' : '') + '">' + inf.icon + '</div>' +
+      '<div class="row-main"><b>' + inf.name + ' <span class="lvl">Lv ' + lvl + '/' + inf.maxLevel + '</span>' +
+        (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
+        '<small>' + inf.desc + '</small>' + (job ? jobBox(job, 'naik ke Lv ' + job.to) : '') + '</div>' +
+      '<div class="row-actions">' +
+        (maxed
+          ? '<span class="maxed">MAKS</span>'
+          : (job ? speedBtn(job, now)
+                 : '<button class="btn primary" data-action="upgrade-infra" data-region="' + regionId + '" data-id="' + infraId + '" data-cost="' + cost + '">⬆ ' + F.money(cost) +
+                   (dur ? ' · ⏱ ' + F.short(dur) : '') + '</button>')) +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderRegion(state, now) {
+    const r = D.regions[view.region];
+    const host = $('region-panel');
+    let html = '';
+
+    if (r.comingSoon) {
+      html = '<div class="card"><h2>' + r.icon + ' ' + r.name + '</h2><p class="muted">' + r.tagline +
+        '. Wilayah ini disiapkan sebagai kerangka untuk pengembangan berikutnya.</p></div>';
+    } else if (!state.regions[r.id].unlocked) {
+      const list = r.buildings.map(function (bid) {
+        const b = D.buildings[bid];
+        return '<li>' + b.icon + ' ' + b.name + ' <span class="muted">→ ' + D.commodities[b.produces].name + '</span></li>';
+      }).join('');
+      html = '<div class="card"><h2>🔒 ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
+        '<ul class="plain">' + list + '</ul>' +
+        '<p class="muted small">Membuka wilayah juga membuka pasar baru untuk menjual hasil bumi.</p>' +
+        '<button class="btn primary wide" data-action="unlock" data-id="' + r.id + '" data-cost="' + r.unlockCost + '">Buka wilayah · ' + F.money(r.unlockCost) + '</button></div>';
+    } else {
+      html = '<div class="card"><h2>' + r.icon + ' ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
+        '<h3>Produksi</h3>' + r.buildings.map(function (bid) { return buildingRow(state, bid, now); }).join('') +
+        '<h3>Infrastruktur</h3>' + Object.keys(D.infra).map(function (iid) { return infraRow(state, r.id, iid, now); }).join('') +
+        '</div>';
+    }
+    host.innerHTML = html;
+  }
+
+  /* ---------- Tab pasar ---------- */
+
+  function renderMarket(state, now) {
+    if (!state.regions[view.market] || !state.regions[view.market].unlocked) view.market = 'jawa';
+
+    const regions = Object.keys(state.regions).filter(function (id) { return state.regions[id].unlocked; });
+    const seg = regions.map(function (id) {
+      return '<button class="seg' + (id === view.market ? ' on' : '') + '" data-action="market-region" data-id="' + id + '">' + D.regions[id].name + '</button>';
+    }).join('');
+
+    const goods = Object.keys(D.commodities).filter(function (cid) {
+      return state.regions[D.commodities[cid].region].unlocked || state.inventory[cid] > 0;
+    }).map(function (cid) {
+      const c = D.commodities[cid];
+      return '' +
+      '<div class="goods">' +
+        '<div class="goods-head">' +
+          '<div class="row-icon">' + c.icon + '</div>' +
+          '<div class="row-main"><b>' + c.name + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
+          '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>' +
+        '</div>' +
+        '<div class="goods-price">' +
+          '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
+          '<span class="muted">ongkir <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
+          '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
+        '</div>' +
+        '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' +
+        '<div class="goods-actions">' +
+          '<button class="btn" data-action="sell" data-c="' + cid + '" data-qty="10">Jual 10</button>' +
+          '<button class="btn primary" data-action="sell" data-c="' + cid + '" data-qty="all">Jual semua</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+    $('tab-market').innerHTML =
+      '<div class="card"><h2>Pasar tujuan</h2>' +
+      '<div class="segs">' + seg + '</div>' +
+      '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
+      'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya.</p></div>' + goods;
+  }
+
+  /* ---------- Tab info ---------- */
+
+  // Kalender panen 12 bulan untuk satu komoditas (hijau = panen raya, merah = paceklik).
+  function calendar(cid, now) {
+    const cur = NT.world.monthOf(now);
+    const t = D.commodities[cid].season.prod;
+    const mean = t.reduce(function (a, b) { return a + b; }, 0) / t.length;
+    const boxes = t.map(function (v, i) {
+      const r = v / mean;
+      return '<i class="' + (r >= 1.2 ? 'hi' : (r <= 0.8 ? 'lo' : '')) + (i === cur ? ' now' : '') + '" title="' + NT.world.MONTHS[i] + '"></i>';
+    }).join('');
+    return '<div class="cal">' + boxes + '</div>';
+  }
+
+  function worldCard() {
+    const now = Date.now();
+    const labels = 'JFMAMJJASOND'.split('').map(function (c) { return '<span>' + c + '</span>'; }).join('');
+    const rows = Object.keys(D.commodities).map(function (cid) {
+      const c = D.commodities[cid];
+      return '<div><b>' + c.icon + ' ' + c.name + '</b>' + calendar(cid, now) +
+        '<div class="cal-labels">' + labels + '</div><small class="muted">' + c.seasonNote + '</small></div>';
+    }).join('');
+    return '<div class="card"><h2>Dunia nyata</h2>' +
+      '<p class="muted small">Musim mengikuti kalender sungguhan (WIB). Saat panen raya hasil berlimpah tapi harga tertekan; saat paceklik sebaliknya. ' +
+      'Peristiwa seperti banjir atau El Niño bergantian tiap ' + NT.config.eventSlotHours + ' jam dan sama untuk semua pemain. ' +
+      'Harga dasar mengikuti rasio harga nyata (perkiraan kasar), dan ongkir mengikuti jarak laut antar kota pelabuhan.</p>' +
+      '<div data-live="world-now"></div>' + rows + '</div>';
+  }
+
+  function renderAbout(state) {
+    const driver = NT.getStorage();
+    const roadmap = [
+      [true, 'Produksi berbasis waktu (jalan walau offline)'],
+      [true, 'Pasar dengan harga dinamis; ongkir dari berat dan jarak laut nyata'],
+      [true, 'Musim panen dan peristiwa dunia nyata (banjir, El Niño, lonjakan ekspor)'],
+      [true, 'Peta pixel art dengan bentuk pulau mengikuti bujur/lintang nyata'],
+      [true, 'Infrastruktur: tol dan pelabuhan'],
+      [false, 'Login dan simpan di Supabase'],
+      [false, 'Pasar bersama antar-pemain'],
+      [false, 'Proyek nasional dan aliansi'],
+      [false, 'Wilayah lain: Kalimantan, Bali & Nusa Tenggara, Maluku, Papua']
+    ].map(function (x) { return '<li>' + (x[0] ? '✅' : '⬜') + ' ' + x[1] + '</li>'; }).join('');
+
+    $('tab-about').innerHTML =
+      '<div class="card"><h2>Cara bermain</h2><ol class="plain">' +
+        '<li>Kumpulkan hasil dari sawah dan kebunmu di tab <b>Peta</b>.</li>' +
+        '<li>Jual di tab <b>Pasar</b>. Cari pasar dengan harga bersih terbaik.</li>' +
+        '<li>Naikkan level bangunan, bangun tol dan pelabuhan.</li>' +
+        '<li>Buka wilayah baru untuk komoditas dan pasar baru.</li></ol></div>' +
+      worldCard() +
+      '<div class="card"><h2>Gelar peradaban</h2><p><b data-live="rank-big"></b></p>' +
+        '<div class="bar"><i data-live="rank-bar"></i></div><small class="muted" data-live="rank-next"></small></div>' +
+      '<div class="card"><h2>Rencana pengembangan</h2><ul class="plain">' + roadmap + '</ul></div>' +
+      '<div class="card"><h2>Penyimpanan</h2><p class="muted">' + driver.label + '</p>' +
+        '<button class="btn danger" data-action="reset">Mulai ulang game</button></div>';
+  }
+
+  /* ---------- Chip wilayah ---------- */
+
+  function renderChips(state) {
+    const host = $('region-chips');
+    if (!host) return;
+    host.innerHTML = Object.keys(D.regions).map(function (id) {
+      const r = D.regions[id];
+      const unlocked = state.regions[id] && state.regions[id].unlocked;
+      return '<button class="chip' + (id === view.region ? ' on' : '') + (r.comingSoon ? ' soon' : '') + '" data-action="pick-region" data-id="' + id + '">' +
+        (r.comingSoon ? '…' : (unlocked ? r.icon : '🔒')) + ' ' + (r.short || r.name) + '</button>';
+    }).join('');
+  }
+
+  /* ---------- Banner dunia nyata ---------- */
+
+  let bannerCache = '';
+  function worldHtml(now) {
+    const W = NT.world;
+    const cl = W.climate(now);
+    const ev = W.activeEvent(now);
+    let html = '<span>' + cl.icon + ' ' + cl.name + ' · ' + W.MONTHS[W.monthOf(now)] + '</span>';
+    if (ev) {
+      const good = Object.keys(ev.event.price || {}).some(function (k) { return ev.event.price[k] > 1; }) &&
+        !Object.keys(ev.event.prod || {}).some(function (k) {
+          return Object.keys(ev.event.prod[k]).some(function (x) { return ev.event.prod[k][x] < 1; });
+        });
+      html += '<span class="evt' + (good ? ' good' : '') + '">' + ev.event.icon + ' ' + ev.event.name + ': ' + ev.event.desc +
+        ' <span class="muted-light">(sisa ' + F.duration(ev.endsAt - now) + ')</span></span>';
+    }
+    return html;
+  }
+
+  function multText(m) {
+    if (Math.abs(m - 1) < 0.03) return '';
+    return '<span class="mult ' + (m > 1 ? 'up' : 'down') + '">' + (m > 1 ? '▲ ' : '▼ ') + 'x' + F.num(m, 2) + '</span>';
+  }
+
+  /* ---------- Render dan tick ---------- */
+
+  function renderAll(state, now) {
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.classList.toggle('on', t.getAttribute('data-id') === view.tab);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function (p) {
+      p.classList.toggle('on', p.id === 'tab-' + view.tab);
+    });
+    NT.ui.map.update(state, view.region);
+    renderChips(state);
+    renderRegion(state, now);
+    renderMarket(state, now);
+    renderAbout(state);
+    tick(state, now);
+  }
+
+  function each(selector, fn) {
+    document.querySelectorAll(selector).forEach(fn);
+  }
+
+  function tick(state, now) {
+    const sc = E.score(state);
+    const rk = E.rank(sc);
+    NT.ui.fx.setCash($('stat-cash'), state.cash);
+    $('btn-mute').textContent = NT.ui.fx.isMuted() ? '🔇' : '🔊';
+    $('stat-score').textContent = F.num(sc);
+    $('rank-name').textContent = rk.current.name;
+
+    const wh = worldHtml(now);
+    if (wh !== bannerCache) {
+      bannerCache = wh;
+      $('world-banner').innerHTML = wh;
+      each('[data-live="world-now"]', function (el) { el.innerHTML = '<p>' + wh + '</p>'; });
+    }
+
+    // Timer pembangunan
+    each('[data-live="jobbar"]', function (el) {
+      const j = E.jobFor(state, el.getAttribute('data-key'));
+      if (j) el.style.width = Math.max(0, Math.min(100, (now - j.startedAt) / (j.endsAt - j.startedAt) * 100)) + '%';
+    });
+    each('[data-live="jobtime"]', function (el) {
+      const j = E.jobFor(state, el.getAttribute('data-key'));
+      if (j) el.textContent = F.clock(j.endsAt - now);
+    });
+    each('[data-live="speedcost"]', function (el) {
+      const j = E.jobFor(state, el.getAttribute('data-key'));
+      if (!j) return;
+      const c = E.speedupCost(j, now);
+      el.textContent = F.money(c);
+      el.parentNode.setAttribute('data-cost', c);
+    });
+
+    // Kartu target berikutnya dan jumlah tukang
+    const goal = E.nextGoal(state);
+    if (goal) {
+      $('goal-ico').textContent = goal.icon;
+      $('goal-title').textContent = goal.label + ' · ' + F.money(goal.cost);
+      $('goal-bar').style.width = Math.min(100, state.cash / goal.cost * 100) + '%';
+      const inc = E.incomePerMin(state, now);
+      $('goal-eta').textContent = state.cash >= goal.cost ? '✅ Kas cukup, ayo bangun!'
+        : (inc > 0 ? '≈ ' + F.duration((goal.cost - state.cash) / inc * 60000) + ' lagi jika semua hasil dijual' : '');
+    } else {
+      $('goal-title').textContent = 'Semua target tercapai';
+    }
+    const busy = (state.jobs || []).length;
+    $('builders').textContent = '🔨 ' + busy + '/' + NT.config.maxBuilders;
+    $('builders').classList.toggle('busy', busy >= NT.config.maxBuilders);
+
+    // Tombol Kumpulkan berdenyut bila gudang sudah separuh penuh
+    let anyReady = false;
+    each('[data-action="collect"]', function (el) {
+      const id = el.getAttribute('data-id');
+      const ready = E.pending(state, id, now) >= Math.max(1, E.capacity(state, id, now) * 0.5);
+      el.classList.toggle('ready', ready);
+      anyReady = anyReady || ready;
+    });
+    Object.keys(state.buildings).forEach(function (id) {
+      if (E.pending(state, id, now) >= Math.max(1, E.capacity(state, id, now) * 0.5)) anyReady = true;
+    });
+    const all = document.querySelector('.collect-all');
+    if (all) all.classList.toggle('ready', anyReady);
+    NT.ui.map.tickJobs(state, now);
+
+    // Tombol berbiaya: nonaktif bila kas kurang
+    each('[data-cost]', function (el) {
+      el.disabled = state.cash < Number(el.getAttribute('data-cost'));
+    });
+
+    each('[data-live="pending"]', function (el) {
+      el.textContent = F.num(Math.floor(E.pending(state, el.getAttribute('data-id'), now)));
+    });
+    each('[data-live="bmult"]', function (el) {
+      el.innerHTML = multText(E.worldProdMult(el.getAttribute('data-id'), now));
+    });
+    each('[data-live="bar"]', function (el) {
+      const id = el.getAttribute('data-id');
+      const cap = E.capacity(state, id, now) || 1;
+      el.style.width = Math.min(100, E.pending(state, id, now) / cap * 100) + '%';
+      el.parentNode.classList.toggle('full', E.pending(state, id, now) >= cap);
+    });
+
+    // Pasar
+    each('[data-live="stock"]', function (el) {
+      el.textContent = F.num(state.inventory[el.getAttribute('data-c')] || 0);
+    });
+    each('[data-live="unit"]', function (el) {
+      el.textContent = F.price(E.currentPrice(state, view.market, el.getAttribute('data-c'), now));
+    });
+    each('[data-live="ship"]', function (el) {
+      const s = E.shippingPerUnit(state, el.getAttribute('data-c'), view.market);
+      el.textContent = s ? F.price(s) : 'Rp 0';
+    });
+    each('[data-live="season"]', function (el) {
+      const tag = NT.world.harvestTag(el.getAttribute('data-c'), now);
+      el.innerHTML = tag ? '<span class="tag ' + tag.id + '">' + tag.text + '</span>' : '';
+    });
+    each('[data-live="km"]', function (el) {
+      const km = E.distanceKm(D.commodities[el.getAttribute('data-c')].region, view.market);
+      el.textContent = km ? '(' + F.num(Math.round(km / 10) * 10) + ' km)' : '';
+    });
+    each('[data-live="trend"]', function (el) {
+      const cid = el.getAttribute('data-c');
+      const ratio = E.currentPrice(state, view.market, cid, now) / E.normalPrice(view.market, cid) - 1;
+      const pct = Math.round(ratio * 100);
+      el.textContent = (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '%';
+      el.className = 'trend ' + (pct >= 0 ? 'up' : 'down');
+    });
+    each('[data-live="best"]', function (el) {
+      const cid = el.getAttribute('data-c');
+      const best = E.bestMarket(state, cid, now);
+      if (!best) { el.textContent = ''; return; }
+      if (best.regionId === view.market) {
+        el.textContent = '⭐ Ini pasar dengan harga bersih terbaik sekarang';
+      } else {
+        el.textContent = '💡 Lebih untung di ' + D.regions[best.regionId].name + ': ' + F.price(best.price) + ' bersih per unit';
+      }
+    });
+    each('[data-action="sell"]', function (el) {
+      const have = state.inventory[el.getAttribute('data-c')] || 0;
+      const qty = el.getAttribute('data-qty');
+      el.disabled = qty === 'all' ? have < 1 : have < Number(qty);
+    });
+
+    // Info
+    each('[data-live="rank-big"]', function (el) { el.textContent = rk.current.name + ' · skor ' + F.num(sc); });
+    each('[data-live="rank-bar"]', function (el) {
+      const pct = rk.next ? (sc - rk.current.min) / (rk.next.min - rk.current.min) * 100 : 100;
+      el.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    });
+    each('[data-live="rank-next"]', function (el) {
+      el.textContent = rk.next ? 'Berikutnya: ' + rk.next.name + ' (skor ' + F.num(rk.next.min) + ')' : 'Gelar tertinggi tercapai';
+    });
+  }
+
+  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/* Titik masuk: memuat data, menyambungkan aksi pemain, menjalankan loop. */
+(function (NT) {
+  const E = NT.economy;
+  const F = NT.fmt;
+  const P = NT.ui.panels;
+  const toast = NT.ui.toast;
+
+  let state = null;
+  let storage = null;
+  let saveTimer = null;
+  let saveErrorShown = false;
+  // Jika memuat gagal, jangan menyimpan agar progres cloud tidak tertimpa.
+  let loadFailed = false;
+
+  function now() { return Date.now(); }
+
+  /* ---------- Simpan ---------- */
+
+  function persist() {
+    if (loadFailed) return Promise.resolve();
+    return storage.save(state).then(function (ok) {
+      if (ok === false && !saveErrorShown) {
+        saveErrorShown = true;
+        toast('Gagal menyimpan. Kemajuan mungkin hilang bila halaman ditutup.', 'warn');
+      }
+    }).catch(function (e) {
+      if (!saveErrorShown) {
+        saveErrorShown = true;
+        toast('Gagal menyimpan: ' + e.message, 'warn');
+      }
+    });
+  }
+
+  function persistSoon() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(persist, 400);
+  }
+
+  /* ---------- Aksi pemain ---------- */
+
+  function describeItems(items) {
+    return Object.keys(items).map(function (cid) {
+      return F.num(items[cid]) + ' ' + NT.data.commodities[cid].name;
+    }).join(', ');
+  }
+
+  function celebrate(done, offline) {
+    done.forEach(function (j) {
+      const name = j.kind === 'building' ? NT.data.buildings[j.id].name
+        : NT.data.infra[j.id].name + ' ' + NT.data.regions[j.region].name;
+      toast('✅ ' + name + (j.kind === 'building' && j.from === 0 ? ' selesai dibangun!' : ' naik ke Lv ' + j.to + '!'), 'ok');
+    });
+    NT.ui.fx.sfx('done');
+    if (!offline) NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
+  }
+
+  const actions = {
+    mute: function () { NT.ui.fx.toggleMute(); return { silent: true }; },
+
+    speedup: function (el) {
+      const res = E.speedup(state, el.getAttribute('data-key'), now());
+      if (res.ok) { res.message = '⚡ Selesai seketika!'; res.sfx = 'done'; }
+      return res;
+    },
+
+    tab: function (el) {
+      P.view.tab = el.getAttribute('data-id');
+      return { silent: true };
+    },
+
+    'collect-all': function () {
+      const res = E.collectAll(state, now());
+      if (res.ok) { res.message = 'Terkumpul: ' + describeItems(res.items); res.fx = '+' + F.num(res.total) + ' 📦'; res.sfx = 'coin'; }
+      return res;
+    },
+
+    collect: function (el) {
+      const res = E.collect(state, el.getAttribute('data-id'), now());
+      if (res.ok) { res.message = '+' + F.num(res.amount) + ' ' + NT.data.commodities[res.commodity].name; res.fx = '+' + F.num(res.amount) + ' ' + NT.data.commodities[res.commodity].icon; res.sfx = 'coin'; }
+      return res;
+    },
+
+    'upgrade-building': function (el) {
+      const res = E.upgradeBuilding(state, el.getAttribute('data-id'), now());
+      if (res.ok) {
+        res.message = res.queued ? '🔨 ' + (res.built ? 'Mulai dibangun' : 'Upgrade dimulai') + ' · selesai dalam ' + F.short(res.durationMs)
+          : (res.built ? 'Dibangun!' : 'Naik ke level ' + res.level + '!');
+        res.sfx = 'start';
+      }
+      return res;
+    },
+
+    'upgrade-infra': function (el) {
+      const res = E.upgradeInfra(state, el.getAttribute('data-region'), el.getAttribute('data-id'), now());
+      if (res.ok) {
+        res.message = res.queued ? '🔨 Pembangunan dimulai · selesai dalam ' + F.short(res.durationMs) : 'Infrastruktur naik ke level ' + res.level + '!';
+        res.sfx = 'start';
+      }
+      return res;
+    },
+
+    unlock: function (el) {
+      const id = el.getAttribute('data-id');
+      const res = E.unlockRegion(state, id);
+      if (res.ok) res.message = NT.data.regions[id].name + ' terbuka! Pasar baru tersedia.';
+      return res;
+    },
+
+    sell: function (el) {
+      const cid = el.getAttribute('data-c');
+      const q = el.getAttribute('data-qty');
+      const qty = q === 'all' ? (state.inventory[cid] || 0) : Number(q);
+      const market = P.view.market;
+      const res = E.sell(state, cid, market, qty, now());
+      if (res.ok) {
+        res.message = 'Terjual ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name +
+          ' di ' + NT.data.regions[market].name + ': +' + F.money(res.net);
+        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+      }
+      return res;
+    },
+
+    'pick-region': function (el) {
+      selectRegion(el.getAttribute('data-id'));
+      return { silent: true, skipRender: true };
+    },
+
+    'market-region': function (el) {
+      P.view.market = el.getAttribute('data-id');
+      return { silent: true };
+    },
+
+    reset: function () {
+      if (!window.confirm('Mulai ulang dari awal? Semua kemajuan akan hilang.')) return { silent: true };
+      state = NT.state.createInitialState(now());
+      P.view.region = 'jawa';
+      P.view.market = 'jawa';
+      P.view.tab = 'map';
+      loadFailed = false;
+      storage.reset().then(persist);
+      return { ok: true, message: 'Game dimulai ulang.' };
+    }
+  };
+
+  function handle(name, el) {
+    const fn = actions[name];
+    if (!fn) return;
+    const rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    const early = E.settle(state, now()); // pastikan pembangunan yang waktunya habis sudah diterapkan
+    if (early.length) celebrate(early);
+    const res = fn(el);
+    if (!res.silent) {
+      if (res.ok) {
+        if (res.message) toast(res.message, 'ok');
+        if (res.fx) NT.ui.fx.floatFromRect(rect, res.fx, res.fxClass);
+        if (res.sfx === 'done') NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
+        NT.ui.fx.sfx(res.sfx || 'click');
+        persistSoon();
+      } else {
+        toast(res.reason, 'warn');
+        NT.ui.fx.sfx('error');
+      }
+    }
+    if (!res.skipRender) P.renderAll(state, now());
+  }
+
+  function selectRegion(id) {
+    P.view.region = id;
+    P.renderAll(state, now());
+    NT.ui.map.focus(id);
+  }
+
+  function bindEvents() {
+    document.addEventListener('click', function (e) {
+      const bubble = e.target.closest('.bubble.on');
+      if (bubble) { handle('collect', bubble); return; }
+
+      const island = e.target.closest('.island');
+      if (island) { selectRegion(island.getAttribute('data-region')); return; }
+
+      const el = e.target.closest('[data-action]');
+      if (!el || el.disabled) return;
+      handle(el.getAttribute('data-action'), el);
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const island = e.target.closest && e.target.closest('.island');
+      if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); }
+    });
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) persist();
+    });
+    window.addEventListener('pagehide', persist);
+  }
+
+  /* ---------- Mulai ---------- */
+
+  async function start() {
+    storage = NT.getStorage();
+
+    let saved = null;
+    try {
+      saved = await storage.load();
+    } catch (e) {
+      loadFailed = true;
+      toast('Gagal memuat data tersimpan: ' + e.message + '. Progres tidak akan disimpan sampai halaman dimuat ulang.', 'warn');
+    }
+
+    const t = now();
+    state = NT.state.normalize(saved, t);
+    const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
+
+    NT.ui.map.mount();
+    bindEvents();
+    P.renderAll(state, t);
+
+    if (finishedAway.length) celebrate(finishedAway, true);
+
+    // Sambutan kembali bila pemain pergi cukup lama.
+    if (saved) {
+      const away = t - Math.min.apply(null, Object.keys(state.buildings).map(function (id) {
+        return state.buildings[id].lastCollected;
+      }));
+      if (away > 2 * 60000) {
+        toast('Selamat datang kembali! ' + F.duration(away) + ' berlalu, hasil bumi menunggu di kebunmu.', 'ok');
+      }
+    }
+
+    setInterval(function () {
+      const t2 = now();
+      const done = E.settle(state, t2);
+      if (done.length) { celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
+    }, 1000);
+    setInterval(persist, NT.config.autosaveMs);
+  }
+
+  start();
+})((window.NT = window.NT || {}));
+
+</script>
+</body>
+</html>

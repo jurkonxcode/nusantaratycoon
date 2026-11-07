@@ -44,7 +44,25 @@
     }).join(', ');
   }
 
+  function celebrate(done, offline) {
+    done.forEach(function (j) {
+      const name = j.kind === 'building' ? NT.data.buildings[j.id].name
+        : NT.data.infra[j.id].name + ' ' + NT.data.regions[j.region].name;
+      toast('✅ ' + name + (j.kind === 'building' && j.from === 0 ? ' selesai dibangun!' : ' naik ke Lv ' + j.to + '!'), 'ok');
+    });
+    NT.ui.fx.sfx('done');
+    if (!offline) NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
+  }
+
   const actions = {
+    mute: function () { NT.ui.fx.toggleMute(); return { silent: true }; },
+
+    speedup: function (el) {
+      const res = E.speedup(state, el.getAttribute('data-key'), now());
+      if (res.ok) { res.message = '⚡ Selesai seketika!'; res.sfx = 'done'; }
+      return res;
+    },
+
     tab: function (el) {
       P.view.tab = el.getAttribute('data-id');
       return { silent: true };
@@ -52,25 +70,32 @@
 
     'collect-all': function () {
       const res = E.collectAll(state, now());
-      if (res.ok) res.message = 'Terkumpul: ' + describeItems(res.items);
+      if (res.ok) { res.message = 'Terkumpul: ' + describeItems(res.items); res.fx = '+' + F.num(res.total) + ' 📦'; res.sfx = 'coin'; }
       return res;
     },
 
     collect: function (el) {
       const res = E.collect(state, el.getAttribute('data-id'), now());
-      if (res.ok) res.message = '+' + F.num(res.amount) + ' ' + NT.data.commodities[res.commodity].name;
+      if (res.ok) { res.message = '+' + F.num(res.amount) + ' ' + NT.data.commodities[res.commodity].name; res.fx = '+' + F.num(res.amount) + ' ' + NT.data.commodities[res.commodity].icon; res.sfx = 'coin'; }
       return res;
     },
 
     'upgrade-building': function (el) {
       const res = E.upgradeBuilding(state, el.getAttribute('data-id'), now());
-      if (res.ok) res.message = (res.built ? 'Dibangun!' : 'Naik ke level ' + res.level + '!');
+      if (res.ok) {
+        res.message = res.queued ? '🔨 ' + (res.built ? 'Mulai dibangun' : 'Upgrade dimulai') + ' · selesai dalam ' + F.short(res.durationMs)
+          : (res.built ? 'Dibangun!' : 'Naik ke level ' + res.level + '!');
+        res.sfx = 'start';
+      }
       return res;
     },
 
     'upgrade-infra': function (el) {
       const res = E.upgradeInfra(state, el.getAttribute('data-region'), el.getAttribute('data-id'), now());
-      if (res.ok) res.message = 'Infrastruktur naik ke level ' + res.level + '!';
+      if (res.ok) {
+        res.message = res.queued ? '🔨 Pembangunan dimulai · selesai dalam ' + F.short(res.durationMs) : 'Infrastruktur naik ke level ' + res.level + '!';
+        res.sfx = 'start';
+      }
       return res;
     },
 
@@ -90,6 +115,7 @@
       if (res.ok) {
         res.message = 'Terjual ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name +
           ' di ' + NT.data.regions[market].name + ': +' + F.money(res.net);
+        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
       }
       return res;
     },
@@ -119,13 +145,20 @@
   function handle(name, el) {
     const fn = actions[name];
     if (!fn) return;
+    const rect = el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    const early = E.settle(state, now()); // pastikan pembangunan yang waktunya habis sudah diterapkan
+    if (early.length) celebrate(early);
     const res = fn(el);
     if (!res.silent) {
       if (res.ok) {
         if (res.message) toast(res.message, 'ok');
+        if (res.fx) NT.ui.fx.floatFromRect(rect, res.fx, res.fxClass);
+        if (res.sfx === 'done') NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
+        NT.ui.fx.sfx(res.sfx || 'click');
         persistSoon();
       } else {
         toast(res.reason, 'warn');
+        NT.ui.fx.sfx('error');
       }
     }
     if (!res.skipRender) P.renderAll(state, now());
@@ -139,6 +172,9 @@
 
   function bindEvents() {
     document.addEventListener('click', function (e) {
+      const bubble = e.target.closest('.bubble.on');
+      if (bubble) { handle('collect', bubble); return; }
+
       const island = e.target.closest('.island');
       if (island) { selectRegion(island.getAttribute('data-region')); return; }
 
@@ -174,10 +210,13 @@
 
     const t = now();
     state = NT.state.normalize(saved, t);
+    const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
 
     NT.ui.map.mount();
     bindEvents();
     P.renderAll(state, t);
+
+    if (finishedAway.length) celebrate(finishedAway, true);
 
     // Sambutan kembali bila pemain pergi cukup lama.
     if (saved) {
@@ -189,7 +228,11 @@
       }
     }
 
-    setInterval(function () { P.tick(state, now()); }, 1000);
+    setInterval(function () {
+      const t2 = now();
+      const done = E.settle(state, t2);
+      if (done.length) { celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
+    }, 1000);
     setInterval(persist, NT.config.autosaveMs);
   }
 

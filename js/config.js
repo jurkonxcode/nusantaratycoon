@@ -12,6 +12,17 @@
     storageHours: 2,          // gudang bangunan penuh setelah N jam
     tolBonusPerLevel: 0.2,    // +20% produksi per level tol
 
+    // Waktu pembangunan: makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama.
+    buildTimeEnabled: true,
+    buildBaseSec: 10,         // detik untuk upgrade pertama bangunan termurah
+    buildGrowth: 1.9,         // durasi x1,9 tiap level
+    buildTierExp: 0.25,       // pengali tier = (biayaDasar / 60) ^ eksponen
+    infraBaseSec: 30,
+    infraGrowth: 2.3,
+    infraRegionExp: 0.3,
+    maxBuilders: 2,           // jumlah pembangunan yang bisa berjalan bersamaan
+    speedupCostShare: 0.4,    // biaya percepat = 40% biaya upgrade x sisa waktu / total waktu
+
     // Biaya
     upgradeGrowth: 1.55,      // kenaikan biaya tiap level
 

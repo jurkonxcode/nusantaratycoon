@@ -15,7 +15,8 @@
       regions: {},     // id -> { unlocked, infra: { tol, pelabuhan } }
       buildings: {},   // id -> { level, lastCollected }
       inventory: {},   // komoditas -> jumlah
-      market: {}       // wilayah -> komoditas -> { stock, updatedAt }
+      market: {},      // wilayah -> komoditas -> { stock, updatedAt }
+      jobs: []         // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
     };
 
     Object.keys(D.regions).forEach(function (id) {
@@ -63,6 +64,10 @@
     Object.keys(base.market).forEach(function (rid) {
       const sm = saved.market && saved.market[rid];
       if (sm) base.market[rid] = sm;
+    });
+    base.jobs = (Array.isArray(saved.jobs) ? saved.jobs : []).filter(function (j) {
+      if (!j || !(j.endsAt > 0) || !(j.startedAt > 0) || !j.region || !base.regions[j.region]) return false;
+      return j.kind === 'building' ? !!D.buildings[j.id] : (j.kind === 'infra' && !!D.infra[j.id]);
     });
     return base;
   }

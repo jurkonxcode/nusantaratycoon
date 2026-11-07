@@ -119,14 +119,113 @@
     return Math.round(D.infra[infraId].baseCost * f * Math.pow(C.upgradeGrowth, currentLevel));
   }
 
+  /* ---------- Waktu pembangunan (timer) ---------- */
+
+  function jobsOf(state) { return state.jobs || (state.jobs = []); }
+
+  function jobFor(state, key) {
+    return jobsOf(state).filter(function (j) { return j.key === key; })[0] || null;
+  }
+
+  // Makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama. Hasil dalam milidetik.
+  function buildDuration(buildingId, level) {
+    if (!C.buildTimeEnabled) return 0;
+    const tier = Math.pow(D.buildings[buildingId].baseCost / 60, C.buildTierExp);
+    return Math.round(C.buildBaseSec * tier * Math.pow(C.buildGrowth, level)) * 1000;
+  }
+
+  function infraDuration(regionId, level) {
+    if (!C.buildTimeEnabled) return 0;
+    const f = Math.pow(D.regions[regionId].infraCostFactor || 1, C.infraRegionExp);
+    return Math.round(C.infraBaseSec * f * Math.pow(C.infraGrowth, level)) * 1000;
+  }
+
+  // Pindahkan hasil tertunda bangunan `ids` ke gudang pada waktu `at`, jalankan `change` (mengubah laju
+  // produksi), lalu pertahankan sisa pecahan agar tidak ikut dikali laju baru secara surut.
+  function rebase(state, ids, at, change) {
+    const snap = ids.filter(function (id) { return state.buildings[id]; }).map(function (id) {
+      const p = pending(state, id, at);
+      const whole = Math.floor(p);
+      const cid = D.buildings[id].produces;
+      state.inventory[cid] = (state.inventory[cid] || 0) + whole;
+      return { id: id, frac: p >= capacity(state, id, at) ? 0 : p - whole };
+    });
+    change();
+    snap.forEach(function (x) {
+      const rate = productionRate(state, x.id, at);
+      state.buildings[x.id].lastCollected = at - (rate ? x.frac / rate * 60000 : 0);
+    });
+  }
+
+  // Terapkan hasil pembangunan yang selesai pada waktu job.endsAt (aman dipanggil belakangan, mis. setelah offline).
+  function applyJob(state, j) {
+    if (j.kind === 'building') {
+      if (!state.buildings[j.id]) {
+        state.buildings[j.id] = { level: 1, lastCollected: j.endsAt };
+      } else {
+        rebase(state, [j.id], j.endsAt, function () { state.buildings[j.id].level = j.to; });
+      }
+    } else if (j.id === 'tol') {
+      rebase(state, D.regions[j.region].buildings, j.endsAt, function () { state.regions[j.region].infra.tol = j.to; });
+    } else {
+      state.regions[j.region].infra[j.id] = j.to;
+    }
+  }
+
+  // Selesaikan semua pembangunan yang waktunya habis. Mengembalikan daftar job yang selesai.
+  function settle(state, now) {
+    const list = jobsOf(state);
+    const done = list.filter(function (j) { return j.endsAt <= now; })
+      .sort(function (a, b) { return a.endsAt - b.endsAt; });
+    if (!done.length) return [];
+    state.jobs = list.filter(function (j) { return j.endsAt > now; });
+    done.forEach(function (j) { applyJob(state, j); });
+    return done;
+  }
+
+  function speedupCost(job, now) {
+    const total = Math.max(1, job.endsAt - job.startedAt);
+    const left = Math.max(0, job.endsAt - now);
+    return Math.max(1, Math.ceil(job.cost * C.speedupCostShare * left / total));
+  }
+
+  function speedup(state, key, now) {
+    const job = jobFor(state, key);
+    if (!job) return fail('Pembangunan sudah selesai.');
+    const cost = speedupCost(job, now);
+    if (state.cash < cost) return fail('Kas belum cukup untuk mempercepat.');
+    state.cash -= cost;
+    job.endsAt = now;
+    settle(state, now);
+    return { ok: true, cost: cost, finished: job };
+  }
+
+  function builderCheck(state) {
+    if (jobsOf(state).length >= C.maxBuilders) {
+      return fail('Semua tukang sedang sibuk (' + C.maxBuilders + '). Tunggu salah satu selesai atau percepat.');
+    }
+    return null;
+  }
+
   function upgradeBuilding(state, buildingId, now) {
     const b = D.buildings[buildingId];
     if (!b) return fail('Bangunan tidak dikenal.');
     if (!state.regions[b.region] || !state.regions[b.region].unlocked) return fail('Wilayah belum dibuka.');
 
+    const key = 'b:' + buildingId;
+    if (jobFor(state, key)) return fail('Sedang dalam pembangunan.');
     const lvl = buildingLevel(state, buildingId);
     const cost = buildingCost(buildingId, lvl);
     if (state.cash < cost) return fail('Kas belum cukup.');
+
+    const dur = buildDuration(buildingId, lvl);
+    if (dur > 0) {
+      const busy = builderCheck(state);
+      if (busy) return busy;
+      state.cash -= cost;
+      jobsOf(state).push({ key: key, kind: 'building', id: buildingId, region: b.region, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0, queued: true, durationMs: dur };
+    }
 
     collect(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
     state.cash -= cost;
@@ -144,10 +243,21 @@
     if (!infra || !rs) return fail('Infrastruktur tidak dikenal.');
     if (!rs.unlocked) return fail('Wilayah belum dibuka.');
 
+    const key = 'i:' + regionId + ':' + infraId;
+    if (jobFor(state, key)) return fail('Sedang dalam pembangunan.');
     const lvl = infraLevel(state, regionId, infraId);
     if (lvl >= infra.maxLevel) return fail('Sudah level maksimum.');
     const cost = infraCost(regionId, infraId, lvl);
     if (state.cash < cost) return fail('Kas belum cukup.');
+
+    const dur = infraDuration(regionId, lvl);
+    if (dur > 0) {
+      const busy = builderCheck(state);
+      if (busy) return busy;
+      state.cash -= cost;
+      jobsOf(state).push({ key: key, kind: 'infra', id: infraId, region: regionId, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      return { ok: true, cost: cost, level: lvl + 1, queued: true, durationMs: dur };
+    }
 
     // Tol mengubah laju produksi, jadi amankan hasil semua bangunan di wilayah ini dulu.
     if (infraId === 'tol') {
@@ -156,6 +266,38 @@
     state.cash -= cost;
     rs.infra[infraId] = lvl + 1;
     return { ok: true, cost: cost, level: lvl + 1 };
+  }
+
+  // Perkiraan pemasukan per menit (nilai dasar semua hasil produksi, belum dikurangi ongkir).
+  function incomePerMin(state, now) {
+    let v = 0;
+    Object.keys(state.buildings).forEach(function (id) {
+      v += productionRate(state, id, now) * D.commodities[D.buildings[id].produces].basePrice;
+    });
+    return v;
+  }
+
+  // Target termurah berikutnya, supaya pemain selalu punya tujuan dekat.
+  function nextGoal(state) {
+    let best = null;
+    function consider(cost, label, icon) { if (!best || cost < best.cost) best = { cost: cost, label: label, icon: icon }; }
+    Object.keys(D.regions).forEach(function (rid) {
+      const r = D.regions[rid], rs = state.regions[rid];
+      if (!rs || r.comingSoon) return;
+      if (!rs.unlocked) { consider(r.unlockCost, 'Buka ' + r.name, '🔓'); return; }
+      r.buildings.forEach(function (bid) {
+        if (jobFor(state, 'b:' + bid)) return;
+        const lvl = buildingLevel(state, bid);
+        consider(buildingCost(bid, lvl), (lvl ? 'Naikkan ' : 'Bangun ') + D.buildings[bid].name + (lvl ? ' ke Lv ' + (lvl + 1) : ''), D.buildings[bid].icon);
+      });
+      Object.keys(D.infra).forEach(function (iid) {
+        if (jobFor(state, 'i:' + rid + ':' + iid)) return;
+        const lvl = infraLevel(state, rid, iid);
+        if (lvl >= D.infra[iid].maxLevel) return;
+        consider(infraCost(rid, iid, lvl), D.infra[iid].name + ' ' + r.name + ' Lv ' + (lvl + 1), D.infra[iid].icon);
+      });
+    });
+    return best;
   }
 
   function unlockRegion(state, regionId) {
@@ -301,6 +443,14 @@
     totalPendingValue: totalPendingValue,
     buildingCost: buildingCost,
     infraCost: infraCost,
+    jobFor: jobFor,
+    buildDuration: buildDuration,
+    infraDuration: infraDuration,
+    settle: settle,
+    speedup: speedup,
+    speedupCost: speedupCost,
+    incomePerMin: incomePerMin,
+    nextGoal: nextGoal,
     upgradeBuilding: upgradeBuilding,
     upgradeInfra: upgradeInfra,
     unlockRegion: unlockRegion,

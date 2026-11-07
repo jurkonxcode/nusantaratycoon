@@ -19,6 +19,7 @@ const E = NT.economy;
 // Tes ekonomi inti berjalan tanpa musim dan peristiwa; keduanya dites tersendiri di bawah.
 NT.config.seasonsEnabled = false;
 NT.config.eventsEnabled = false;
+NT.config.buildTimeEnabled = false; // timer pembangunan dites di tests/jobs.test.js
 const MIN = 60000;
 const t0 = 1_700_000_000_000;
 let passed = 0;

@@ -86,3 +86,17 @@ Cukup untuk uji coba bersama teman, belum untuk kompetisi.
   pada `js/data/regions.js`.
 - **Membuka wilayah:** hapus `comingSoon` di wilayahnya dan isi `unlockCost`, `infraCostFactor`,
   `buildings`, `demand`, lalu tambahkan jaraknya di `NT.data.distance`.
+
+## Timer pembangunan dan rasa-main (sesi 3)
+
+- **Upgrade butuh waktu.** Kas dipotong di muka, level naik setelah timer habis. Durasi naik tiap level (x1,9 untuk bangunan,
+  x2,3 untuk infrastruktur) dan lebih lama untuk bangunan/wilayah mahal. Produksi tetap memakai laju lama sampai timer habis.
+  Timer jalan terus walau game ditutup; hasilnya diterapkan saat game dibuka lagi.
+- **Tukang terbatas** (`maxBuilders`, awal 2): hanya dua pembangunan bisa berjalan bersamaan.
+- **Percepat**: bayar sebagian biaya upgrade sesuai sisa waktu untuk menyelesaikan seketika.
+- **Kartu Target Berikutnya** di tab Peta: tujuan termurah, bar progres kas, dan perkiraan waktunya.
+- **Peta hidup**: gelembung 📦 muncul di bangunan yang hasilnya siap (ketuk untuk mengumpulkan), palu dan bar progres di
+  bangunan yang sedang dibangun.
+- **Efek**: angka melayang, confetti saat selesai, kas bergulir, tombol berdenyut saat gudang separuh penuh, suara sintetis
+  (tombol 🔊 untuk senyap). Semua angka ada di `js/config.js` (`buildBaseSec`, `buildGrowth`, `maxBuilders`, `speedupCostShare`).
+- Tes: `node tests/jobs.test.js`. Matikan timer untuk uji lama dengan `buildTimeEnabled: false`.
