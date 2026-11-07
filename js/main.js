@@ -9,12 +9,15 @@
   let storage = null;
   let saveTimer = null;
   let saveErrorShown = false;
+  // Jika memuat gagal, jangan menyimpan agar progres cloud tidak tertimpa.
+  let loadFailed = false;
 
   function now() { return Date.now(); }
 
   /* ---------- Simpan ---------- */
 
   function persist() {
+    if (loadFailed) return Promise.resolve();
     return storage.save(state).then(function (ok) {
       if (ok === false && !saveErrorShown) {
         saveErrorShown = true;
@@ -102,6 +105,7 @@
       P.view.region = 'jawa';
       P.view.market = 'jawa';
       P.view.tab = 'map';
+      loadFailed = false;
       storage.reset().then(persist);
       return { ok: true, message: 'Game dimulai ulang.' };
     }
@@ -158,7 +162,8 @@
     try {
       saved = await storage.load();
     } catch (e) {
-      toast('Gagal memuat data tersimpan: ' + e.message, 'warn');
+      loadFailed = true;
+      toast('Gagal memuat data tersimpan: ' + e.message + '. Progres tidak akan disimpan sampai halaman dimuat ulang.', 'warn');
     }
 
     const t = now();
