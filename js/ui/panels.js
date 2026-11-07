@@ -19,7 +19,7 @@
     const c = D.commodities[b.produces];
     const lvl = E.buildingLevel(state, id);
     const cost = E.buildingCost(id, lvl);
-    const rate = E.productionRate(state, id);
+    const rate = E.productionRate(state, id, now);
 
     if (!lvl) {
       return '' +
@@ -33,13 +33,13 @@
       '</div>';
     }
 
-    const cap = E.capacity(state, id);
+    const cap = E.capacity(state, id, now);
     return '' +
     '<div class="row">' +
       '<div class="row-icon">' + b.icon + '</div>' +
       '<div class="row-main">' +
         '<b>' + b.name + ' <span class="lvl">Lv ' + lvl + '</span></b>' +
-        '<small>' + F.num(rate, 1) + ' ' + c.name.toLowerCase() + '/menit</small>' +
+        '<small>' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/menit <span data-live="bmult" data-id="' + id + '"></span></small>' +
         '<div class="bar"><i data-live="bar" data-id="' + id + '"></i></div>' +
         '<small><span data-live="pending" data-id="' + id + '">0</span> / ' + F.num(cap) + ' siap dikumpulkan</small>' +
       '</div>' +
@@ -112,12 +112,12 @@
       '<div class="goods">' +
         '<div class="goods-head">' +
           '<div class="row-icon">' + c.icon + '</div>' +
-          '<div class="row-main"><b>' + c.name + '</b><small>dari ' + D.regions[c.region].name + '</small></div>' +
+          '<div class="row-main"><b>' + c.name + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
           '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>' +
         '</div>' +
         '<div class="goods-price">' +
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
-          '<span class="muted">ongkir <span data-live="ship" data-c="' + cid + '"></span></span>' +
+          '<span class="muted">ongkir <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
           '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
         '</div>' +
         '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' +
@@ -131,17 +131,46 @@
     $('tab-market').innerHTML =
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
-      '<p class="muted small">Harga naik turun dengan sendirinya, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
-      'Barang dari wilayah lain kena ongkir; pelabuhan menurunkannya.</p></div>' + goods;
+      '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
+      'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya.</p></div>' + goods;
   }
 
   /* ---------- Tab info ---------- */
+
+  // Kalender panen 12 bulan untuk satu komoditas (hijau = panen raya, merah = paceklik).
+  function calendar(cid, now) {
+    const cur = NT.world.monthOf(now);
+    const t = D.commodities[cid].season.prod;
+    const mean = t.reduce(function (a, b) { return a + b; }, 0) / t.length;
+    const boxes = t.map(function (v, i) {
+      const r = v / mean;
+      return '<i class="' + (r >= 1.2 ? 'hi' : (r <= 0.8 ? 'lo' : '')) + (i === cur ? ' now' : '') + '" title="' + NT.world.MONTHS[i] + '"></i>';
+    }).join('');
+    return '<div class="cal">' + boxes + '</div>';
+  }
+
+  function worldCard() {
+    const now = Date.now();
+    const labels = 'JFMAMJJASOND'.split('').map(function (c) { return '<span>' + c + '</span>'; }).join('');
+    const rows = Object.keys(D.commodities).map(function (cid) {
+      const c = D.commodities[cid];
+      return '<div><b>' + c.icon + ' ' + c.name + '</b>' + calendar(cid, now) +
+        '<div class="cal-labels">' + labels + '</div><small class="muted">' + c.seasonNote + '</small></div>';
+    }).join('');
+    return '<div class="card"><h2>Dunia nyata</h2>' +
+      '<p class="muted small">Musim mengikuti kalender sungguhan (WIB). Saat panen raya hasil berlimpah tapi harga tertekan; saat paceklik sebaliknya. ' +
+      'Peristiwa seperti banjir atau El Niño bergantian tiap ' + NT.config.eventSlotHours + ' jam dan sama untuk semua pemain. ' +
+      'Harga dasar mengikuti rasio harga nyata (perkiraan kasar), dan ongkir mengikuti jarak laut antar kota pelabuhan.</p>' +
+      '<div data-live="world-now"></div>' + rows + '</div>';
+  }
 
   function renderAbout(state) {
     const driver = NT.getStorage();
     const roadmap = [
       [true, 'Produksi berbasis waktu (jalan walau offline)'],
-      [true, 'Pasar dengan harga dinamis dan ongkir antar wilayah'],
+      [true, 'Pasar dengan harga dinamis; ongkir dari berat dan jarak laut nyata'],
+      [true, 'Musim panen dan peristiwa dunia nyata (banjir, El Niño, lonjakan ekspor)'],
+      [true, 'Peta pixel art dengan bentuk pulau mengikuti bujur/lintang nyata'],
       [true, 'Infrastruktur: tol dan pelabuhan'],
       [false, 'Login dan simpan di Supabase'],
       [false, 'Pasar bersama antar-pemain'],
@@ -155,11 +184,49 @@
         '<li>Jual di tab <b>Pasar</b>. Cari pasar dengan harga bersih terbaik.</li>' +
         '<li>Naikkan level bangunan, bangun tol dan pelabuhan.</li>' +
         '<li>Buka wilayah baru untuk komoditas dan pasar baru.</li></ol></div>' +
+      worldCard() +
       '<div class="card"><h2>Gelar peradaban</h2><p><b data-live="rank-big"></b></p>' +
         '<div class="bar"><i data-live="rank-bar"></i></div><small class="muted" data-live="rank-next"></small></div>' +
       '<div class="card"><h2>Rencana pengembangan</h2><ul class="plain">' + roadmap + '</ul></div>' +
       '<div class="card"><h2>Penyimpanan</h2><p class="muted">' + driver.label + '</p>' +
         '<button class="btn danger" data-action="reset">Mulai ulang game</button></div>';
+  }
+
+  /* ---------- Chip wilayah ---------- */
+
+  function renderChips(state) {
+    const host = $('region-chips');
+    if (!host) return;
+    host.innerHTML = Object.keys(D.regions).map(function (id) {
+      const r = D.regions[id];
+      const unlocked = state.regions[id] && state.regions[id].unlocked;
+      return '<button class="chip' + (id === view.region ? ' on' : '') + (r.comingSoon ? ' soon' : '') + '" data-action="pick-region" data-id="' + id + '">' +
+        (r.comingSoon ? '…' : (unlocked ? r.icon : '🔒')) + ' ' + (r.short || r.name) + '</button>';
+    }).join('');
+  }
+
+  /* ---------- Banner dunia nyata ---------- */
+
+  let bannerCache = '';
+  function worldHtml(now) {
+    const W = NT.world;
+    const cl = W.climate(now);
+    const ev = W.activeEvent(now);
+    let html = '<span>' + cl.icon + ' ' + cl.name + ' · ' + W.MONTHS[W.monthOf(now)] + '</span>';
+    if (ev) {
+      const good = Object.keys(ev.event.price || {}).some(function (k) { return ev.event.price[k] > 1; }) &&
+        !Object.keys(ev.event.prod || {}).some(function (k) {
+          return Object.keys(ev.event.prod[k]).some(function (x) { return ev.event.prod[k][x] < 1; });
+        });
+      html += '<span class="evt' + (good ? ' good' : '') + '">' + ev.event.icon + ' ' + ev.event.name + ': ' + ev.event.desc +
+        ' <span class="muted-light">(sisa ' + F.duration(ev.endsAt - now) + ')</span></span>';
+    }
+    return html;
+  }
+
+  function multText(m) {
+    if (Math.abs(m - 1) < 0.03) return '';
+    return '<span class="mult ' + (m > 1 ? 'up' : 'down') + '">' + (m > 1 ? '▲ ' : '▼ ') + 'x' + F.num(m, 2) + '</span>';
   }
 
   /* ---------- Render dan tick ---------- */
@@ -172,6 +239,7 @@
       p.classList.toggle('on', p.id === 'tab-' + view.tab);
     });
     NT.ui.map.update(state, view.region);
+    renderChips(state);
     renderRegion(state, now);
     renderMarket(state, now);
     renderAbout(state);
@@ -189,6 +257,13 @@
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
 
+    const wh = worldHtml(now);
+    if (wh !== bannerCache) {
+      bannerCache = wh;
+      $('world-banner').innerHTML = wh;
+      each('[data-live="world-now"]', function (el) { el.innerHTML = '<p>' + wh + '</p>'; });
+    }
+
     // Tombol berbiaya: nonaktif bila kas kurang
     each('[data-cost]', function (el) {
       el.disabled = state.cash < Number(el.getAttribute('data-cost'));
@@ -197,9 +272,12 @@
     each('[data-live="pending"]', function (el) {
       el.textContent = F.num(Math.floor(E.pending(state, el.getAttribute('data-id'), now)));
     });
+    each('[data-live="bmult"]', function (el) {
+      el.innerHTML = multText(E.worldProdMult(el.getAttribute('data-id'), now));
+    });
     each('[data-live="bar"]', function (el) {
       const id = el.getAttribute('data-id');
-      const cap = E.capacity(state, id) || 1;
+      const cap = E.capacity(state, id, now) || 1;
       el.style.width = Math.min(100, E.pending(state, id, now) / cap * 100) + '%';
       el.parentNode.classList.toggle('full', E.pending(state, id, now) >= cap);
     });
@@ -214,6 +292,14 @@
     each('[data-live="ship"]', function (el) {
       const s = E.shippingPerUnit(state, el.getAttribute('data-c'), view.market);
       el.textContent = s ? F.price(s) : 'Rp 0';
+    });
+    each('[data-live="season"]', function (el) {
+      const tag = NT.world.harvestTag(el.getAttribute('data-c'), now);
+      el.innerHTML = tag ? '<span class="tag ' + tag.id + '">' + tag.text + '</span>' : '';
+    });
+    each('[data-live="km"]', function (el) {
+      const km = E.distanceKm(D.commodities[el.getAttribute('data-c')].region, view.market);
+      el.textContent = km ? '(' + F.num(Math.round(km / 10) * 10) + ' km)' : '';
     });
     each('[data-live="trend"]', function (el) {
       const cid = el.getAttribute('data-c');

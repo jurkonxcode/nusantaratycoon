@@ -94,6 +94,11 @@
       return res;
     },
 
+    'pick-region': function (el) {
+      selectRegion(el.getAttribute('data-id'));
+      return { silent: true, skipRender: true };
+    },
+
     'market-region': function (el) {
       P.view.market = el.getAttribute('data-id');
       return { silent: true };
@@ -123,12 +128,13 @@
         toast(res.reason, 'warn');
       }
     }
-    P.renderAll(state, now());
+    if (!res.skipRender) P.renderAll(state, now());
   }
 
   function selectRegion(id) {
     P.view.region = id;
     P.renderAll(state, now());
+    NT.ui.map.focus(id);
   }
 
   function bindEvents() {

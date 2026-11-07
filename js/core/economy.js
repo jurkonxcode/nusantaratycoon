@@ -14,10 +14,15 @@
 
   /* ---------- Util ---------- */
 
-  function distance(a, b) {
+  // Jarak rute laut antar hub pelabuhan (km): garis lurus (haversine) x faktor kelokan rute.
+  function distanceKm(a, b) {
     if (a === b) return 0;
-    const key = [a, b].sort().join('|');
-    return D.distance[key] != null ? D.distance[key] : 5;
+    const ha = D.regions[a].hub, hb = D.regions[b].hub;
+    const rad = Math.PI / 180;
+    const dLat = (hb.lat - ha.lat) * rad, dLon = (hb.lon - ha.lon) * rad;
+    const h = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(ha.lat * rad) * Math.cos(hb.lat * rad) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    return 6371 * 2 * Math.asin(Math.sqrt(h)) * C.routeDetour;
   }
 
   function hashString(str) {
@@ -37,23 +42,32 @@
 
   /* ---------- Produksi (dihitung dari timestamp, tetap jalan saat offline) ---------- */
 
-  function productionRate(state, buildingId) {
+  // Pengali dunia nyata (musim dan peristiwa) untuk sebuah bangunan pada waktu `now`.
+  function worldProdMult(buildingId, now) {
+    if (now == null) return 1;
+    const b = D.buildings[buildingId];
+    return NT.world.seasonProd(b.produces, now) * NT.world.eventProd(b, now);
+  }
+
+  // Unit per menit. `now` opsional: tanpa `now`, musim dan peristiwa tidak dihitung.
+  function productionRate(state, buildingId, now) {
     const b = D.buildings[buildingId];
     const lvl = buildingLevel(state, buildingId);
     if (!lvl) return 0;
     const tol = infraLevel(state, b.region, 'tol');
-    return b.baseRate * lvl * (1 + C.tolBonusPerLevel * tol); // unit per menit
+    return b.baseRate * lvl * (1 + C.tolBonusPerLevel * tol) * worldProdMult(buildingId, now);
   }
 
-  function capacity(state, buildingId) {
-    return Math.floor(productionRate(state, buildingId) * 60 * C.storageHours);
+  function capacity(state, buildingId, now) {
+    return Math.floor(productionRate(state, buildingId, now) * 60 * C.storageHours);
   }
 
+  // Hasil tertunda memakai laju saat ini untuk seluruh jendela (gudang hanya 2 jam, jadi selisihnya kecil).
   function pending(state, buildingId, now) {
     const sb = state.buildings[buildingId];
     if (!sb || !sb.level) return 0;
     const minutes = Math.max(0, (now - sb.lastCollected) / 60000);
-    return Math.min(capacity(state, buildingId), productionRate(state, buildingId) * minutes);
+    return Math.min(capacity(state, buildingId, now), productionRate(state, buildingId, now) * minutes);
   }
 
   function collect(state, buildingId, now) {
@@ -64,8 +78,8 @@
     const whole = Math.floor(p);
     if (whole < 1) return fail('Belum ada hasil yang bisa dikumpulkan.');
 
-    const rate = productionRate(state, buildingId);
-    const isFull = p >= capacity(state, buildingId);
+    const rate = productionRate(state, buildingId, now);
+    const isFull = p >= capacity(state, buildingId, now);
     state.inventory[b.produces] = (state.inventory[b.produces] || 0) + whole;
     // Sisa pecahan tetap dihitung, kecuali gudang sudah penuh.
     sb.lastCollected = isFull ? now : now - ((p - whole) / rate) * 60000;
@@ -169,6 +183,11 @@
     return 1 + C.priceWaveAmplitude * Math.sin(now / (7 * 60000) + hashString(regionId + commodityId));
   }
 
+  // Pengali musim dan peristiwa terhadap harga komoditas (sama di semua pasar).
+  function worldPriceMult(commodityId, now) {
+    return NT.world.seasonPrice(commodityId, now) * NT.world.eventPrice(commodityId, now);
+  }
+
   // Harga normal (tanpa fluktuasi dan tanpa tekanan pasokan).
   function normalPrice(regionId, commodityId) {
     const demand = (D.regions[regionId].demand && D.regions[regionId].demand[commodityId]) || 1;
@@ -178,21 +197,25 @@
   function unitPrice(regionId, commodityId, stock, now) {
     const depth = D.commodities[commodityId].marketDepth;
     const pressure = stock / (stock + depth);
-    return normalPrice(regionId, commodityId) * wave(regionId, commodityId, now) * (1 - C.maxMarketDrop * pressure);
+    return normalPrice(regionId, commodityId) * wave(regionId, commodityId, now) *
+      worldPriceMult(commodityId, now) * (1 - C.maxMarketDrop * pressure);
   }
 
   function currentPrice(state, regionId, commodityId, now) {
     return unitPrice(regionId, commodityId, marketStock(state, regionId, commodityId, now), now);
   }
 
-  // Ongkir per unit dari wilayah asal komoditas ke pasar tujuan.
+  // Ongkir per unit dari wilayah asal komoditas ke pasar tujuan:
+  // bobot (kg) x jarak (km) x tarif kapal, lalu dikecilkan oleh pelabuhan. Barang curah murah (padi)
+  // jadi paling terasa ongkirnya; barang bernilai tinggi (cengkeh, batik) hampir tidak.
   function shippingPerUnit(state, commodityId, marketId) {
-    const from = D.commodities[commodityId].region;
-    const d = distance(from, marketId);
-    if (!d) return 0;
-    const ports = infraLevel(state, from, 'pelabuhan') + infraLevel(state, marketId, 'pelabuhan');
+    const c = D.commodities[commodityId];
+    const km = distanceKm(c.region, marketId);
+    if (!km) return 0;
+    const ports = infraLevel(state, c.region, 'pelabuhan') + infraLevel(state, marketId, 'pelabuhan');
     const discount = Math.min(C.maxShippingDiscount, ports * C.portDiscountPerLevel);
-    return D.commodities[commodityId].basePrice * C.shippingRate * d * (1 - discount);
+    const realRp = c.unitKg * km * C.seaFreightRpPerKgKm;
+    return realRp / C.priceScale * (1 - discount);
   }
 
   // Harga bersih per unit saat ini (harga pasar dikurangi ongkir).
@@ -265,7 +288,9 @@
   }
 
   NT.economy = {
-    distance: distance,
+    distanceKm: distanceKm,
+    worldProdMult: worldProdMult,
+    worldPriceMult: worldPriceMult,
     buildingLevel: buildingLevel,
     infraLevel: infraLevel,
     productionRate: productionRate,

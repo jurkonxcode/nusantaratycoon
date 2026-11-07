@@ -8,14 +8,17 @@ global.window = global;
 const root = path.join(__dirname, '..', 'js');
 [
   'config.js',
-  'data/commodities.js', 'data/buildings.js', 'data/regions.js',
-  'core/format.js', 'core/state.js', 'core/economy.js'
+  'data/commodities.js', 'data/events.js', 'data/buildings.js', 'data/regions.js',
+  'core/format.js', 'core/world.js', 'core/state.js', 'core/economy.js'
 ].forEach(function (f) {
   vm.runInThisContext(fs.readFileSync(path.join(root, f), 'utf8'), { filename: f });
 });
 
 const NT = global.NT;
 const E = NT.economy;
+// Tes ekonomi inti berjalan tanpa musim dan peristiwa; keduanya dites tersendiri di bawah.
+NT.config.seasonsEnabled = false;
+NT.config.eventsEnabled = false;
 const MIN = 60000;
 const t0 = 1_700_000_000_000;
 let passed = 0;

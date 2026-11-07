@@ -73,46 +73,85 @@ body {
   position: relative; border-radius: 18px; overflow: hidden;
   border: 3px solid var(--gold); box-shadow: var(--shadow); background: var(--sea-800);
 }
-.map-svg { display: block; width: 100%; height: auto; }
+.map-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
+.map-svg { display: block; width: 100%; min-width: 760px; height: auto; image-rendering: pixelated; }
 .collect-all { margin-top: 10px; box-shadow: var(--shadow); }
 
-.island { cursor: pointer; outline: none; }
-.island-shape path, .island-shape ellipse {
-  fill: url(#land); stroke: #2c6e3a; stroke-width: 2; filter: url(#shadow);
-  transition: stroke .2s, stroke-width .2s;
-}
-.island:hover .island-shape path, .island:hover .island-shape ellipse,
-.island:focus-visible .island-shape path, .island:focus-visible .island-shape ellipse { stroke: #fff; stroke-width: 3; }
-.island.locked .island-shape path, .island.locked .island-shape ellipse { fill: url(#landLocked); stroke: #55625a; }
-.island.soon .island-shape path, .island.soon .island-shape ellipse { fill: url(#landLocked); stroke: #55625a; opacity: .55; }
-.island.selected .island-shape path, .island.selected .island-shape ellipse { stroke: var(--gold); stroke-width: 4; }
-.island-label {
-  font: 700 25px Georgia, serif; fill: #fff; paint-order: stroke; stroke: rgba(3, 30, 40, .8); stroke-width: 6px;
-  stroke-linejoin: round; pointer-events: none;
-}
-.island.soon .island-label { opacity: .75; font-size: 20px; }
+/* Laut */
+.px-deep { fill: #0e5575; }
+.px-sea.s1 { fill: #2a9aa8; }
+.px-sea.s2 { fill: #1b7f93; }
+.px-sea.s3 { fill: #146a82; }
+.sparkle { fill: #fff; opacity: .16; animation: twinkle 3.4s steps(2, end) infinite; }
+.sparkle.b { animation-delay: -1.7s; }
+@keyframes twinkle { 50% { opacity: 0; } }
 
-.pin-dot { fill: #fffaf0; stroke: var(--gold-dark); stroke-width: 4; }
-.pin-icon { font-size: 22px; pointer-events: none; }
+/* Daratan */
+.px-neighbor { fill: #6f8f68; opacity: .7; }
+.px-sand { fill: #ecd9a0; }
+.px-grass { fill: #79b95a; }
+.px-forest { fill: #4f9a4a; }
+.px-dark { fill: #3c7f40; }
+.island.locked .px-sand { fill: #cfc3a0; }
+.island.locked .px-grass { fill: #aab08c; }
+.island.locked .px-forest { fill: #97a07f; }
+.island.locked .px-dark { fill: #868f70; }
+.island.soon .island-land { opacity: .5; }
+.island.soon .px-sand { fill: #cfc8b0; }
+.island.soon .px-grass { fill: #a3a893; }
+.island.soon .px-forest { fill: #939985; }
+.island.soon .px-dark { fill: #858b78; }
+
+.island { cursor: pointer; outline: none; }
+.island:hover .island-land, .island:focus-visible .island-land { filter: brightness(1.12); }
+.island.selected .island-land { filter: drop-shadow(0 0 2px #ffd36b) drop-shadow(0 0 5px #ffd36b); }
+.island-label {
+  font: 700 15px "Trebuchet MS", system-ui, sans-serif; fill: #fff; paint-order: stroke; stroke: rgba(3, 30, 40, .85);
+  stroke-width: 4px; stroke-linejoin: round; pointer-events: none; letter-spacing: .3px;
+}
+.island.soon .island-label { opacity: .8; font-size: 13px; }
+.road { fill: #5b5f66; }
+.ship { pointer-events: none; }
+
+.pin-dot { fill: #fffaf0; stroke: var(--gold-dark); stroke-width: 3; }
+.pin-icon { font-size: 17px; pointer-events: none; }
 .island.locked .pin-dot, .island.soon .pin-dot { fill: #d9ddd9; stroke: #7b867e; }
 .pin-pulse { fill: none; stroke: var(--gold); stroke-width: 2; opacity: 0; }
 .island.selected .pin-pulse { animation: pulse 1.8s ease-out infinite; }
-
 @keyframes pulse {
-  0% { r: 20; opacity: .9; }
-  100% { r: 40; opacity: 0; }
+  0% { r: 15; opacity: .9; }
+  100% { r: 30; opacity: 0; }
 }
 
-.wave-layer { animation: waves 14s linear infinite; }
-@keyframes waves { to { transform: translateX(-60px); } }
-
-.cloud { animation: drift 60s linear infinite; }
-.cloud.c2 { animation-duration: 80s; }
-.cloud.c3 { animation-duration: 70s; animation-delay: -20s; }
-@keyframes drift {
-  from { transform: translateX(-160px); }
-  to { transform: translateX(1160px); }
+/* Chip wilayah (cara cepat memilih di layar kecil) */
+.region-chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 8px 10px; background: var(--sea-900); scrollbar-width: none; }
+.region-chips::-webkit-scrollbar { display: none; }
+.chip {
+  flex: none; border: 1px solid rgba(255, 255, 255, .22); background: rgba(255, 255, 255, .08); color: #e3f1f5;
+  font: inherit; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 999px; cursor: pointer; white-space: nowrap;
 }
+.chip.on { background: var(--gold); border-color: var(--gold-dark); color: #3a2605; }
+.chip.soon { opacity: .55; }
+
+/* Banner dunia nyata */
+.world-banner {
+  display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; margin: 0 0 10px; padding: 8px 12px;
+  background: var(--sea-700); border: 1px solid rgba(255, 255, 255, .18); border-radius: 12px;
+  color: #eaf5f8; font-size: 13px; box-shadow: var(--shadow);
+}
+.world-banner .evt { flex-basis: 100%; color: #ffe29a; font-weight: 700; }
+.world-banner .evt.good { color: #b8f0b8; }
+.tag { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; vertical-align: middle; margin-left: 4px; }
+.tag.raya { background: #dff3d6; color: #1f6b34; }
+.tag.paceklik { background: #fbe3d8; color: #9a3a1a; }
+.mult.up { color: var(--green); font-weight: 800; }
+.mult.down { color: var(--red); font-weight: 800; }
+.cal { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin: 4px 0 10px; }
+.cal i { display: block; height: 14px; border-radius: 3px; background: #ddd2b6; }
+.cal i.hi { background: #6fbf6f; }
+.cal i.lo { background: #e7b9a4; }
+.cal i.now { outline: 2px solid var(--sea-800); outline-offset: 1px; }
+.cal-labels { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; font-size: 9px; text-align: center; color: var(--muted); margin-top: -6px; margin-bottom: 8px; }
 
 /* Kartu dan baris */
 .card {
@@ -207,5 +246,6 @@ ul.plain { list-style: none; padding-left: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wave-layer, .cloud, .pin-pulse, .bar i { animation: none !important; transition: none !important; }
+  .sparkle, .pin-pulse, .bar i { animation: none !important; transition: none !important; }
 }
+.muted-light { opacity: .75; font-weight: 400; }

@@ -15,7 +15,7 @@ Buka `index.html` langsung di browser (klik dua kali), atau jalankan server loka
 python3 -m http.server 8000
 ```
 
-lalu buka http://localhost:8000. Tes logika ekonomi: `node tests/economy.test.js`.
+lalu buka http://localhost:8000. Tes: `node tests/economy.test.js` dan `node tests/world.test.js`.
 
 ## Struktur folder
 
@@ -27,7 +27,7 @@ js/
   data/                 data murni: wilayah, komoditas, bangunan, infrastruktur
   core/                 logika game tanpa DOM (state, ekonomi, format angka)
   storage/              penyimpanan: local-storage.js, supabase-storage.js
-  ui/                   peta SVG, panel, notifikasi
+  ui/                   peta pixel art, sprite, panel, notifikasi
   main.js               menyambungkan semuanya
 supabase/schema.sql     skema awal database (belum diuji)
 tests/                  tes logika ekonomi
@@ -43,7 +43,10 @@ Itu yang membuat logikanya bisa dites sendiri dan nanti dipindah ke server.
   dan gudang bangunan penuh setelah 2 jam sehingga pemain punya alasan kembali.
 - **Harga pasar** = harga dasar x permintaan wilayah x fluktuasi lambat x tekanan pasokan.
   Menjual banyak di satu pasar menekan harganya, tekanan itu meluruh 8% per menit.
-- **Ongkir** = jarak antar wilayah x 6% harga dasar. Pelabuhan di kedua ujung menurunkannya.
+- **Ongkir** = berat x jarak laut nyata antar kota pelabuhan x tarif kapal. Pelabuhan di kedua ujung menurunkannya.
+  Barang curah murah (padi) paling terasa ongkirnya.
+- **Musim dan peristiwa** mengikuti kalender nyata (WIB): panen raya, paceklik, banjir, El Niño, lonjakan ekspor.
+- **Harga dasar** mengikuti rasio harga nyata (perkiraan kasar). Cek keseimbangan: `node tools/balance.js`.
 - **Jalan tol** menambah produksi 20% per level di wilayahnya.
 - **Skor peradaban** menentukan gelar, dari Desa Rintisan sampai Peradaban Nusantara.
 

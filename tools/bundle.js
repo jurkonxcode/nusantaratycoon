@@ -16,7 +16,8 @@ html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, function (_, href
 // Abaikan skrip yang sengaja dikomentari (mis. CDN Supabase).
 html = html.replace(/<!--[\s\S]*?-->/g, '');
 
-html = html.replace(/<script src="([^"]+)"><\/script>/g, function (_, src) {
+html = html.replace(/<script src="([^"]+)"><\/script>/g, function (match, src) {
+  if (/^https?:/.test(src)) return match; // skrip CDN (Supabase) tetap dimuat dari internet
   const code = fs.readFileSync(path.join(root, src), 'utf8').replace(/<\/script>/g, '<\\/script>');
   return '<script>\n' + code + '\n</script>';
 });

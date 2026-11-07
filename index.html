@@ -33,8 +33,10 @@
 
     <main>
       <section id="tab-map" class="tab-panel">
+        <div id="world-banner" class="world-banner"></div>
         <div class="map-card">
-          <div id="map"></div>
+          <div class="map-scroll"><div id="map"></div></div>
+          <div id="region-chips" class="region-chips"></div>
         </div>
         <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
         <div id="region-panel"></div>
@@ -50,15 +52,20 @@
 
   <script src="js/config.js"></script>
   <script src="js/data/commodities.js"></script>
+  <script src="js/data/events.js"></script>
   <script src="js/data/buildings.js"></script>
   <script src="js/data/regions.js"></script>
+  <script src="js/data/geo.js"></script>
   <script src="js/core/format.js"></script>
+  <script src="js/core/world.js"></script>
+  <script src="js/core/raster.js"></script>
   <script src="js/core/state.js"></script>
   <script src="js/core/economy.js"></script>
   <script src="js/storage/local-storage.js"></script>
   <script src="js/storage/supabase-storage.js"></script>
   <script src="js/storage/index.js"></script>
   <script src="js/ui/toast.js"></script>
+  <script src="js/ui/sprites.js"></script>
   <script src="js/ui/map.js"></script>
   <script src="js/ui/panels.js"></script>
   <script src="js/main.js"></script>
