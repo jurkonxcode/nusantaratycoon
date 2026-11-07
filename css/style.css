@@ -559,3 +559,5 @@ button.term-tag { border: 0; text-decoration: underline dotted; text-underline-o
 .island.soon .island-land { opacity: .55; filter: saturate(.25); }
 .island.selected .island-land { filter: drop-shadow(0 0 2px #ffd36b) drop-shadow(0 0 5px #ffd36b); }
 .neighbor-land { pointer-events: none; }
+img.brand-logo { width: 40px; height: 40px; flex: none; filter: drop-shadow(0 2px 3px rgba(0,0,0,.35)); }
+@media (max-width: 759px) { img.brand-logo { width: 32px; height: 32px; } }

@@ -22,6 +22,11 @@ html = html.replace(/<script src="([^"]+)"><\/script>/g, function (match, src) {
   return '<script>\n' + code + '\n</script>';
 });
 
+// Gambar logo lokal disematkan sebagai data URI supaya dist tetap satu file.
+html = html.replace(/src="(assets\/[^"]+\.svg)"/g, function (_, src) {
+  return 'src="data:image/svg+xml;base64,' + fs.readFileSync(path.join(root, src)).toString('base64') + '"';
+});
+
 const outDir = path.join(root, 'dist');
 fs.mkdirSync(outDir, { recursive: true });
 const out = path.join(outDir, 'nusantara-tycoon.html');
