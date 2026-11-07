@@ -105,7 +105,8 @@ body {
   box-shadow: inset 0 0 0 2px rgba(217, 164, 65, .7), inset 0 0 40px rgba(3, 25, 35, .35);
 }
 .map-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.map-svg { display: block; width: 100%; height: auto; image-rendering: pixelated; }
+.map-svg { display: block; width: 100%; height: auto; }
+.sprite, .road { shape-rendering: crispEdges; }
 @media (max-width: 759px) { .map-svg { min-width: 760px; } }
 .collect-all { box-shadow: var(--shadow-sm); }
 
@@ -549,3 +550,12 @@ button.term-tag { border: 0; text-decoration: underline dotted; text-underline-o
 .log li:first-child { border-top: 0; }
 .log small { color: var(--muted); font-size: 11px; white-space: nowrap; }
 @media (max-width: 520px) { .tab { font-size: 13px; padding-left: 2px; padding-right: 2px; } }
+
+/* Peta realistis: tekstur sudah memuat bayangan, jadi cukup filter warna untuk status pulau. */
+.island-land { filter: none; }
+.island:hover .island-land, .island:focus-visible .island-land { filter: brightness(1.1); }
+.island.locked .island-land { filter: saturate(.3) brightness(1.08); }
+.island.locked:hover .island-land { filter: saturate(.45) brightness(1.15); }
+.island.soon .island-land { opacity: .55; filter: saturate(.25); }
+.island.selected .island-land { filter: drop-shadow(0 0 2px #ffd36b) drop-shadow(0 0 5px #ffd36b); }
+.neighbor-land { pointer-events: none; }

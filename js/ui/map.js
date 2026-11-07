@@ -75,7 +75,7 @@
     const lw = Math.round(text.length * 9.6 + 20);
     return '' +
       '<g class="island" data-region="' + r.id + '" tabindex="0" role="button" aria-label="' + r.name + '">' +
-        '<g class="island-land">' + landPaths(grid, r.id) + '</g>' +
+        '<g class="island-land">' + NT.ui.terrain.landMarkup(r.id) + '</g>' +
         '<g class="dyn" data-dyn="' + r.id + '"></g>' +
         '<g class="island-tag"><rect class="label-bg" x="' + (label.x - lw / 2) + '" y="' + (label.y - 17) + '" width="' + lw + '" height="25" rx="7"/>' +
         '<text class="island-label" x="' + label.x + '" y="' + label.y + '" text-anchor="middle">' + text + '</text></g>' +
@@ -133,20 +133,17 @@
   function build() {
     const grid = NT.raster.grid();
     const W = grid.W * S, H = grid.H * S;
-    const sea = [1, 2, 3].map(function (n) {
-      return '<path class="px-sea s' + n + '" d="' + runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === n; }) + '"/>';
-    }).join('');
-    const sparkle = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 7) > 0.975; });
-    const sparkle2 = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 9) > 0.975; });
     const cp = NT.raster.toPx(139.4, 5.0);
-    const neighbor = '<path class="px-neighbor" d="' + runsPath(grid, function (x, y, i) { return grid.owner[i] === 'neighbor'; }) + '"/>';
+    const T = NT.ui.terrain;
+    const seaImg = '<image data-tex="sea" x="0" y="0" width="' + W + '" height="' + H + '" preserveAspectRatio="none"/>';
+    const neighbor = '<g class="neighbor-land">' + T.landMarkup('neighbor') + '</g>';
     const islands = Object.keys(D.regions).map(function (id) { return islandMarkup(grid, D.regions[id]); }).join('');
 
     return '' +
-    '<svg class="map-svg" viewBox="0 0 ' + W + ' ' + H + '" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peta Nusantara">' +
-      '<rect class="px-deep" width="' + W + '" height="' + H + '"/>' +
-      '<path class="sparkle a" d="' + sparkle + '"/><path class="sparkle b" d="' + sparkle2 + '"/>' +
-      graticule(W, H) + sea + neighbor + seaLabels(grid) + islands +
+    '<svg class="map-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peta Nusantara">' +
+      T.defs() +
+      '<rect class="px-deep" width="' + W + '" height="' + H + '"/>' + seaImg +
+      graticule(W, H) + neighbor + seaLabels(grid) + islands +
       '<g class="ships">' + shipsMarkup() + '</g>' + compass(cp.x, cp.y) +
     '</svg>';
   }
@@ -271,7 +268,7 @@
   NT.ui.map = {
     mount: function () {
       const host = document.getElementById('map');
-      if (host) host.innerHTML = build();
+      if (host) { host.innerHTML = build(); NT.ui.terrain.attach(host); }
     },
     update: update,
     tickJobs: tickJobs,
