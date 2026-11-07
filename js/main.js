@@ -153,6 +153,19 @@
       return { silent: true, skipRender: true };
     },
 
+    'sell-everything': function () {
+      const market = P.view.market;
+      const res = E.sellAll(state, market, now());
+      if (res.ok) {
+        res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) +
+          (res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati karena rugi)' : '');
+        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+      }
+      return res;
+    },
+
+    'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
+
     'market-region': function (el) {
       P.view.market = el.getAttribute('data-id');
       return { silent: true };
@@ -224,10 +237,44 @@
     reader.readAsText(file);
   }
 
+  // Di HP panel wilayah berupa lembar dari bawah; di desktop kelas "open" tidak berpengaruh.
   function selectRegion(id) {
+    const wasOpen = P.view.sheet;
     P.view.region = id;
+    P.view.sheet = true;
     P.renderAll(state, now());
     NT.ui.map.focus(id);
+    if (!wasOpen && window.matchMedia('(max-width: 979px)').matches) {
+      const card = document.querySelector('.map-card');
+      if (card) card.scrollIntoView({ block: 'start', behavior: document.body.classList.contains('calm') ? 'auto' : 'smooth' });
+    }
+  }
+
+  // Geser lembar ke bawah untuk menutup.
+  function bindSheet() {
+    const grab = document.getElementById('sheet-grab');
+    const box = document.getElementById('sheet-box');
+    if (!grab || !box) return;
+    let y0 = null, dy = 0;
+    grab.addEventListener('touchstart', function (e) { y0 = e.touches[0].clientY; dy = 0; box.style.transition = 'none'; }, { passive: true });
+    grab.addEventListener('touchmove', function (e) {
+      if (y0 === null) return;
+      dy = Math.max(0, e.touches[0].clientY - y0);
+      box.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: true });
+    function end() {
+      if (y0 === null) return;
+      const close = dy > 70;
+      y0 = null;
+      box.style.transition = '';
+      box.style.transform = '';
+      if (close) { P.view.sheet = false; P.renderAll(state, now()); }
+    }
+    grab.addEventListener('touchend', end);
+    grab.addEventListener('touchcancel', end);
+    grab.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); P.view.sheet = false; P.renderAll(state, now()); }
+    });
   }
 
   function bindEvents() {
@@ -244,6 +291,7 @@
     });
 
     document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && P.view.sheet) { P.view.sheet = false; P.renderAll(state, now()); return; }
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const island = e.target.closest && e.target.closest('.island');
       if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); }
@@ -289,6 +337,7 @@
     NT.ui.settings.apply();
     NT.ui.map.mount();
     bindEvents();
+    bindSheet();
     P.renderAll(state, t);
 
     // Layar sambutan bila pemain pergi cukup lama; bila tidak, cukup toast untuk pembangunan yang selesai.

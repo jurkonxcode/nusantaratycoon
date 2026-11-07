@@ -457,3 +457,49 @@ body.text-xlarge main { zoom: 1.25; }
 .wb-list b { font-variant-numeric: tabular-nums; color: var(--green); }
 .modal-actions { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
 .modal-actions .btn.wide { margin-top: 0; }
+
+/* ---------- Paket B: lembar wilayah (HP) ---------- */
+.sheet-grab { display: none; }
+@media (max-width: 979px) {
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; pointer-events: none; visibility: hidden; transition: visibility 0s .3s; }
+  .sheet.open { visibility: visible; transition-delay: 0s; }
+  .sheet-box {
+    pointer-events: auto; display: flex; flex-direction: column; max-height: 58vh; max-height: 58dvh;
+    background: var(--page); border-radius: 18px 18px 0 0; border-top: 2px solid var(--gold);
+    box-shadow: 0 -10px 30px rgba(5, 31, 42, .35); transform: translateY(105%);
+    transition: transform .3s cubic-bezier(.2, .8, .2, 1); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sheet.open .sheet-box { transform: none; }
+  .sheet-grab {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; position: relative;
+    padding: 18px 16px 8px; cursor: pointer; touch-action: none; user-select: none;
+  }
+  .sheet-bar { position: absolute; top: 7px; left: 50%; width: 42px; height: 5px; margin-left: -21px; border-radius: 3px; background: var(--sand-dark); }
+  .sheet-title { font-weight: 800; color: var(--sea-800); }
+  .sheet-x { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--sand); color: var(--sea-800); font-size: 14px; }
+  #region-panel { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 0 12px 16px; }
+  #region-panel .card { margin-top: 0; box-shadow: none; border: 0; background: transparent; padding: 0 4px; }
+  #region-panel .card > h2 { display: none; }
+  body.sheet-open main { padding-bottom: 60vh; }
+  body.sheet-open #toasts { bottom: auto; top: calc(10px + env(safe-area-inset-top)); }
+}
+.calm .sheet-box { transition: none; }
+
+/* ---------- Paket B: pasar informatif ---------- */
+.sell-everything { margin: 4px 0 8px; }
+.sell-everything:disabled { opacity: .55; }
+.sig { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.sig.good { background: #e3f4e8; color: var(--green); }
+.sig.low { background: #fbe7e4; color: var(--red); }
+.spark { height: 46px; margin-top: 8px; background: var(--sand); border-radius: 8px; overflow: hidden; }
+.spark svg { display: block; width: 100%; height: 100%; }
+.spark:empty::after { content: ""; display: block; height: 100%; }
+.sp-base { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; opacity: .5; vector-effect: non-scaling-stroke; }
+.sp-now { stroke: var(--gold-dark); stroke-width: 1; opacity: .5; vector-effect: non-scaling-stroke; }
+.sp-past, .sp-fut { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.sp-past { stroke: var(--sea-700); }
+.sp-fut { stroke: var(--gold-dark); stroke-dasharray: 4 3; }
+.sp-dot { fill: var(--gold); stroke: var(--sea-900); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.spark-axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.goods-hint { font-size: 12px; color: var(--gold-dark); min-height: 16px; margin-top: 4px; font-weight: 700; }
+.goods-quote { display: block; margin-top: 6px; font-size: 12px; min-height: 14px; }

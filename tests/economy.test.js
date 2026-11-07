@@ -135,4 +135,51 @@ test('normalize aman untuk data lama atau rusak', function () {
   assert.strictEqual(E.buildingLevel(s, 'sawah'), 3);
 });
 
+test('sellAll menjual seluruh gudang ke satu pasar dan cocok dengan quoteSellAll', function () {
+  const s = NT.state.createInitialState(t0);
+  s.regions.sumatra.unlocked = true;
+  s.inventory.padi = 100;
+  s.inventory.batik = 5;
+  const q = E.quoteSellAll(s, 'jawa', t0);
+  const cash0 = s.cash;
+  const r = E.sellAll(s, 'jawa', t0);
+  assert.ok(r.ok);
+  assert.strictEqual(r.items.length, 2);
+  assert.strictEqual(s.inventory.padi, 0);
+  assert.strictEqual(s.inventory.batik, 0);
+  assert.ok(Math.abs(r.net - q.net) < 1e-6);
+  assert.ok(Math.abs(s.cash - cash0 - r.net) < 1e-6);
+});
+
+test('sellAll gagal bila gudang kosong atau pasar terkunci', function () {
+  const s = NT.state.createInitialState(t0);
+  assert.strictEqual(E.sellAll(s, 'jawa', t0).ok, false);
+  s.inventory.padi = 10;
+  assert.strictEqual(E.sellAll(s, 'sumatra', t0).ok, false);
+  assert.strictEqual(s.inventory.padi, 10);
+});
+
+test('priceSeries: titik sekarang sama dengan currentPrice, jumlah titik benar', function () {
+  const s = NT.state.createInitialState(t0);
+  const ser = E.priceSeries(s, 'jawa', 'padi', t0, 30, 30, 60);
+  assert.strictEqual(ser.length, 61);
+  assert.ok(Math.abs(ser[30].price - E.currentPrice(s, 'jawa', 'padi', t0)) < 1e-9);
+  assert.ok(ser.every(function (p) { return p.price > 0; }));
+});
+
+test('priceSignal: bagus/rendah/normal mengikuti rasio terhadap harga normal', function () {
+  const s = NT.state.createInitialState(t0);
+  const seen = {};
+  for (let m = 0; m < 120; m++) seen[E.priceSignal(s, 'jawa', 'batik', t0 + m * MIN).id] = true;
+  assert.ok(seen.bagus && seen.rendah && seen.normal, 'ketiga isyarat muncul dalam 2 jam');
+  const sig = E.priceSignal(s, 'jawa', 'padi', t0);
+  assert.ok(Math.abs(sig.ratio - E.currentPrice(s, 'jawa', 'padi', t0) / E.normalPrice('jawa', 'padi')) < 1e-9);
+});
+
+test('priceSignal: tekanan jual besar membuat isyarat rendah', function () {
+  const s = NT.state.createInitialState(t0);
+  s.market.jawa.padi = { stock: 5000, updatedAt: t0 };
+  assert.strictEqual(E.priceSignal(s, 'jawa', 'padi', t0).id, 'rendah');
+});
+
 console.log('\n' + passed + ' tes lolos');

@@ -395,6 +395,66 @@
     return { ok: true, qty: qty, revenue: q.revenue, shipping: q.shipping, net: q.net };
   }
 
+  // Jual SEMUA isi gudang
+  // ke satu pasar sekaligus. Komoditas yang akan rugi dilewati (dicatat di skipped).
+  function sellAll(state, marketId, now) {
+    const ms = state.regions[marketId];
+    if (!ms) return fail('Pasar tidak dikenal.');
+    if (!ms.unlocked) return fail('Buka wilayah ini dulu untuk berdagang di sana.');
+    const items = [], skipped = [];
+    let net = 0, qty = 0;
+    Object.keys(D.commodities).forEach(function (cid) {
+      const have = Math.floor(state.inventory[cid] || 0);
+      if (have < 1) return;
+      const r = sell(state, cid, marketId, have, now);
+      if (r.ok) { items.push({ commodity: cid, qty: r.qty, net: r.net }); net += r.net; qty += r.qty; }
+      else skipped.push(cid);
+    });
+    if (!items.length) {
+      return fail(skipped.length ? 'Harga di pasar ini terlalu rendah, semua penjualan akan rugi. Coba pasar lain.'
+        : 'Gudang kosong, tidak ada yang bisa dijual.');
+    }
+    return { ok: true, items: items, skipped: skipped, net: net, qty: qty };
+  }
+
+  // Perkiraan hasil bersih bila seluruh gudang dijual ke satu pasar (tanpa mengubah state).
+  function quoteSellAll(state, marketId, now) {
+    let net = 0, qty = 0;
+    Object.keys(D.commodities).forEach(function (cid) {
+      const have = Math.floor(state.inventory[cid] || 0);
+      if (have < 1) return;
+      const q = quoteSale(state, cid, marketId, have, now);
+      if (q.net > 0) { net += q.net; qty += have; }
+    });
+    return { net: net, qty: qty };
+  }
+
+  // Deret harga untuk grafik mini: dari backMin menit lalu sampai fwdMin menit ke depan.
+  // Memakai rumus harga yang sama dengan pasar (gelombang, musim, peristiwa, tekanan jual yang meluruh).
+  function priceSeries(state, marketId, commodityId, now, backMin, fwdMin, steps) {
+    const out = [];
+    const span = (backMin + fwdMin) * 60000;
+    for (let i = 0; i <= steps; i++) {
+      const t = now - backMin * 60000 + span * i / steps;
+      out.push({ t: t, price: unitPrice(marketId, commodityId, marketStock(state, marketId, commodityId, t), t) });
+    }
+    return out;
+  }
+
+  // Isyarat harga: bagus (>= 8% di atas normal), rendah (<= 8% di bawah), atau normal.
+  // peakInMin = menit sampai puncak dalam 30 menit ke depan bila lebih tinggi >= 5% dari sekarang.
+  function priceSignal(state, marketId, commodityId, now) {
+    const cur = currentPrice(state, marketId, commodityId, now);
+    const ratio = cur / normalPrice(marketId, commodityId);
+    const id = ratio >= 1.08 ? 'bagus' : (ratio <= 0.92 ? 'rendah' : 'normal');
+    let peakInMin = null, peak = cur;
+    priceSeries(state, marketId, commodityId, now, 0, 30, 30).forEach(function (p) {
+      if (p.price > peak) { peak = p.price; peakInMin = Math.round((p.t - now) / 60000); }
+    });
+    if (peakInMin !== null && peak < cur * 1.05) peakInMin = null;
+    return { id: id, ratio: ratio, price: cur, peakInMin: peakInMin, peakPrice: peak };
+  }
+
   // Pasar terbuka dengan harga bersih per unit tertinggi untuk komoditas ini.
   function bestMarket(state, commodityId, now) {
     let best = null;
@@ -461,6 +521,10 @@
     netUnitPrice: netUnitPrice,
     quoteSale: quoteSale,
     sell: sell,
+    sellAll: sellAll,
+    quoteSellAll: quoteSellAll,
+    priceSeries: priceSeries,
+    priceSignal: priceSignal,
     bestMarket: bestMarket,
     score: score,
     rank: rank,

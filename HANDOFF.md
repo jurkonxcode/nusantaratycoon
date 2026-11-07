@@ -350,3 +350,25 @@ Permintaan pemilik: visual belum terasa "nagih", dan upgrade level seharusnya pu
   lencana dan gelembung 📦 di `ui/map.js` (`tickJobs`). Gelembung bisa diketuk untuk `collect`.
 - **Tes:** `tests/jobs.test.js` (10 tes). Uji browser headless (Playwright, 18 pengecekan) dijalankan manual di sesi ini, skripnya belum ada di repo.
 - **Belum:** keseimbangan angka timer lewat bermain lama, sprite bangunan yang berubah per level di peta selain ukuran, misi harian, pencapaian.
+
+## 20. Sesi 6: Paket B (7 November 2026)
+
+**Lembar wilayah di HP** (layar < 980px). `#region-panel` kini berada di dalam `#sheet` yang naik dari bawah (tinggi maksimal 58% layar).
+Ketuk pulau atau chip membuka lembar dan menggulir peta ke atas layar supaya tetap terlihat. Tutup lewat tab bilah/✕, geser ke bawah (>70px), atau Esc.
+Tanpa latar gelap, jadi pulau lain di peta tetap bisa diketuk saat lembar terbuka. Di desktop `#sheet` hanya pembungkus biasa (kolom samping).
+State: `view.sheet` (hanya di UI, tidak disimpan). Saat terbuka, `body.sheet-open` menambah ruang di bawah halaman dan memindahkan toast ke atas.
+
+**Pasar informatif**
+- Grafik mini per komoditas: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan), garis titik = harga normal. Data dari `E.priceSeries`
+  (rumus harga yang sama dengan pasar, tekanan jual meluruh; sebelum penjualan terakhir kurvanya datar karena riwayat stok tidak disimpan). Digambar ulang tiap tick hanya saat tab Pasar aktif.
+- Isyarat harga `E.priceSignal`: 🔥 bagus (>= 108% harga normal), 🕳️ rendah (<= 92%), plus petunjuk puncak dalam 30 menit bila >= 5% lebih tinggi.
+- Tombol **Jual semua isi gudang** (aksi `sell-everything` -> `E.sellAll`) menjual semua komoditas ke pasar terpilih; komoditas yang akan rugi dilewati.
+  Kutipan hasil bersih tampil di tombol dan di tiap kartu (`E.quoteSellAll`, `E.quoteSale`).
+- **Server nanti:** `sellAll` ikut dijadikan RPC (`sell_all(p_market_id)`) di tahap C.
+
+**Tes:** `tests/economy.test.js` menjadi 17 tes (sellAll, quoteSellAll, priceSeries, priceSignal). Baru: `tests/browser_paket_b.py` (22 pengecekan, HP 390px dan desktop 1280px).
+**Catatan:** `tests/browser_smoke.py` yang disebut di bagian 0, 2, dan 18 **tidak ada di zip yang diterima sesi ini**; cek apakah ada di repo GitHub.
+
+| Sesi | File yang berubah |
+|---|---|
+| 6 (paket B) | `index.html`, `css/style.css`, `js/main.js`, `js/core/economy.js`, `js/ui/panels.js`, `tests/economy.test.js`, `dist/nusantara-tycoon.html`; baru: `tests/browser_paket_b.py`; `HANDOFF.md` |

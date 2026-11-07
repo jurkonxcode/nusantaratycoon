@@ -8,7 +8,7 @@
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -148,20 +148,47 @@
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
           '<span class="muted">ongkir <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
           '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
+          '<span data-live="signal" data-c="' + cid + '"></span>' +
         '</div>' +
+        '<div class="spark" data-live="spark" data-c="' + cid + '"></div>' +
+        '<div class="spark-axis"><span>30 mnt lalu</span><span>sekarang</span><span>30 mnt lagi</span></div>' +
+        '<div class="goods-hint" data-live="hint" data-c="' + cid + '"></div>' +
         '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' +
         '<div class="goods-actions">' +
           '<button class="btn" data-action="sell" data-c="' + cid + '" data-qty="10">Jual 10</button>' +
           '<button class="btn primary" data-action="sell" data-c="' + cid + '" data-qty="all">Jual semua</button>' +
         '</div>' +
+        '<small class="goods-quote muted" data-live="quote" data-c="' + cid + '"></small>' +
       '</div>';
     }).join('');
 
     $('tab-market').innerHTML =
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
+      '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya.</p></div>' + goods;
+  }
+
+  // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
+  function sparkSvg(state, cid, now) {
+    const W = 240, H = 46, PAD = 4;
+    const ser = E.priceSeries(state, view.market, cid, now, 30, 30, 40);
+    const base = E.normalPrice(view.market, cid);
+    let lo = base, hi = base;
+    ser.forEach(function (p) { lo = Math.min(lo, p.price); hi = Math.max(hi, p.price); });
+    const span = (hi - lo) || 1;
+    function x(i) { return (i / (ser.length - 1) * W).toFixed(1); }
+    function y(v) { return (PAD + (1 - (v - lo) / span) * (H - 2 * PAD)).toFixed(1); }
+    const mid = ser.length >> 1;
+    const past = ser.slice(0, mid + 1).map(function (p, i) { return x(i) + ',' + y(p.price); }).join(' ');
+    const fut = ser.slice(mid).map(function (p, i) { return x(i + mid) + ',' + y(p.price); }).join(' ');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Grafik harga">' +
+      '<line class="sp-base" x1="0" x2="' + W + '" y1="' + y(base) + '" y2="' + y(base) + '"/>' +
+      '<line class="sp-now" x1="' + x(mid) + '" x2="' + x(mid) + '" y1="0" y2="' + H + '"/>' +
+      '<polyline class="sp-past" points="' + past + '"/>' +
+      '<polyline class="sp-fut" points="' + fut + '"/>' +
+      '<circle class="sp-dot" cx="' + x(mid) + '" cy="' + y(ser[mid].price) + '" r="3.2"/></svg>';
   }
 
   /* ---------- Tab info ---------- */
@@ -332,6 +359,9 @@
     NT.ui.map.update(state, view.region);
     renderChips(state);
     renderRegion(state, now);
+    $('sheet-title').textContent = D.regions[view.region].icon + ' ' + D.regions[view.region].name;
+    $('sheet').classList.toggle('open', !!view.sheet);
+    document.body.classList.toggle('sheet-open', !!view.sheet && view.tab === 'map');
     renderMarket(state, now);
     renderAbout(state);
     renderSettings();
@@ -457,6 +487,31 @@
       } else {
         el.textContent = '💡 Lebih untung di ' + D.regions[best.regionId].name + ': ' + F.price(best.price) + ' bersih per unit';
       }
+    });
+    if (view.tab === 'market') {
+      each('[data-live="spark"]', function (el) { el.innerHTML = sparkSvg(state, el.getAttribute('data-c'), now); });
+    }
+    each('[data-live="signal"]', function (el) {
+      const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
+      el.innerHTML = sg.id === 'bagus' ? '<span class="sig good">🔥 Harga bagus</span>'
+        : (sg.id === 'rendah' ? '<span class="sig low">🕳️ Harga rendah</span>' : '');
+    });
+    each('[data-live="hint"]', function (el) {
+      const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
+      el.textContent = sg.peakInMin !== null ? '📈 Puncak sekitar ' + sg.peakInMin + ' menit lagi (' + F.price(sg.peakPrice) + ')'
+        : (sg.id === 'bagus' ? '✅ Sekarang dekat puncak, waktu bagus untuk menjual' : '');
+    });
+    each('[data-live="quote"]', function (el) {
+      const cid = el.getAttribute('data-c');
+      const have = Math.floor(state.inventory[cid] || 0);
+      if (have < 1) { el.textContent = ''; return; }
+      const q = E.quoteSale(state, cid, view.market, have, now);
+      el.textContent = 'Jual semua ' + F.num(have) + ' ≈ ' + F.money(Math.max(0, q.net)) + ' bersih';
+    });
+    each('[data-live="sellall-est"]', function (el) {
+      const q = E.quoteSellAll(state, view.market, now);
+      el.textContent = q.qty > 0 ? '· ≈ ' + F.money(q.net) : '';
+      el.parentNode.disabled = q.qty < 1;
     });
     each('[data-action="sell"]', function (el) {
       const have = state.inventory[el.getAttribute('data-c')] || 0;

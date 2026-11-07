@@ -59,7 +59,16 @@
           </div>
           <div class="side-col">
             <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
-            <div id="region-panel"></div>
+            <div id="sheet" class="sheet">
+              <div class="sheet-box" id="sheet-box">
+                <div class="sheet-grab" id="sheet-grab" data-action="sheet-close" role="button" tabindex="0" aria-label="Tutup panel wilayah">
+                  <i class="sheet-bar" aria-hidden="true"></i>
+                  <span class="sheet-title" id="sheet-title"></span>
+                  <b class="sheet-x" aria-hidden="true">✕</b>
+                </div>
+                <div id="region-panel"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>

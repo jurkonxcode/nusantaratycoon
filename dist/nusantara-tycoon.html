@@ -466,6 +466,52 @@ body.text-xlarge main { zoom: 1.25; }
 .modal-actions { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
 .modal-actions .btn.wide { margin-top: 0; }
 
+/* ---------- Paket B: lembar wilayah (HP) ---------- */
+.sheet-grab { display: none; }
+@media (max-width: 979px) {
+  .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 15; pointer-events: none; visibility: hidden; transition: visibility 0s .3s; }
+  .sheet.open { visibility: visible; transition-delay: 0s; }
+  .sheet-box {
+    pointer-events: auto; display: flex; flex-direction: column; max-height: 58vh; max-height: 58dvh;
+    background: var(--page); border-radius: 18px 18px 0 0; border-top: 2px solid var(--gold);
+    box-shadow: 0 -10px 30px rgba(5, 31, 42, .35); transform: translateY(105%);
+    transition: transform .3s cubic-bezier(.2, .8, .2, 1); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .sheet.open .sheet-box { transform: none; }
+  .sheet-grab {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px; position: relative;
+    padding: 18px 16px 8px; cursor: pointer; touch-action: none; user-select: none;
+  }
+  .sheet-bar { position: absolute; top: 7px; left: 50%; width: 42px; height: 5px; margin-left: -21px; border-radius: 3px; background: var(--sand-dark); }
+  .sheet-title { font-weight: 800; color: var(--sea-800); }
+  .sheet-x { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--sand); color: var(--sea-800); font-size: 14px; }
+  #region-panel { overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 0 12px 16px; }
+  #region-panel .card { margin-top: 0; box-shadow: none; border: 0; background: transparent; padding: 0 4px; }
+  #region-panel .card > h2 { display: none; }
+  body.sheet-open main { padding-bottom: 60vh; }
+  body.sheet-open #toasts { bottom: auto; top: calc(10px + env(safe-area-inset-top)); }
+}
+.calm .sheet-box { transition: none; }
+
+/* ---------- Paket B: pasar informatif ---------- */
+.sell-everything { margin: 4px 0 8px; }
+.sell-everything:disabled { opacity: .55; }
+.sig { font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.sig.good { background: #e3f4e8; color: var(--green); }
+.sig.low { background: #fbe7e4; color: var(--red); }
+.spark { height: 46px; margin-top: 8px; background: var(--sand); border-radius: 8px; overflow: hidden; }
+.spark svg { display: block; width: 100%; height: 100%; }
+.spark:empty::after { content: ""; display: block; height: 100%; }
+.sp-base { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 3; opacity: .5; vector-effect: non-scaling-stroke; }
+.sp-now { stroke: var(--gold-dark); stroke-width: 1; opacity: .5; vector-effect: non-scaling-stroke; }
+.sp-past, .sp-fut { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.sp-past { stroke: var(--sea-700); }
+.sp-fut { stroke: var(--gold-dark); stroke-dasharray: 4 3; }
+.sp-dot { fill: var(--gold); stroke: var(--sea-900); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.spark-axis { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); margin-top: 2px; }
+.goods-hint { font-size: 12px; color: var(--gold-dark); min-height: 16px; margin-top: 4px; font-weight: 700; }
+.goods-quote { display: block; margin-top: 6px; font-size: 12px; min-height: 14px; }
+
 </style>
 </head>
 <body>
@@ -520,7 +566,16 @@ body.text-xlarge main { zoom: 1.25; }
           </div>
           <div class="side-col">
             <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
-            <div id="region-panel"></div>
+            <div id="sheet" class="sheet">
+              <div class="sheet-box" id="sheet-box">
+                <div class="sheet-grab" id="sheet-grab" data-action="sheet-close" role="button" tabindex="0" aria-label="Tutup panel wilayah">
+                  <i class="sheet-bar" aria-hidden="true"></i>
+                  <span class="sheet-title" id="sheet-title"></span>
+                  <b class="sheet-x" aria-hidden="true">✕</b>
+                </div>
+                <div id="region-panel"></div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -1639,6 +1694,66 @@ body.text-xlarge main { zoom: 1.25; }
     return { ok: true, qty: qty, revenue: q.revenue, shipping: q.shipping, net: q.net };
   }
 
+  // Jual SEMUA isi gudang
+  // ke satu pasar sekaligus. Komoditas yang akan rugi dilewati (dicatat di skipped).
+  function sellAll(state, marketId, now) {
+    const ms = state.regions[marketId];
+    if (!ms) return fail('Pasar tidak dikenal.');
+    if (!ms.unlocked) return fail('Buka wilayah ini dulu untuk berdagang di sana.');
+    const items = [], skipped = [];
+    let net = 0, qty = 0;
+    Object.keys(D.commodities).forEach(function (cid) {
+      const have = Math.floor(state.inventory[cid] || 0);
+      if (have < 1) return;
+      const r = sell(state, cid, marketId, have, now);
+      if (r.ok) { items.push({ commodity: cid, qty: r.qty, net: r.net }); net += r.net; qty += r.qty; }
+      else skipped.push(cid);
+    });
+    if (!items.length) {
+      return fail(skipped.length ? 'Harga di pasar ini terlalu rendah, semua penjualan akan rugi. Coba pasar lain.'
+        : 'Gudang kosong, tidak ada yang bisa dijual.');
+    }
+    return { ok: true, items: items, skipped: skipped, net: net, qty: qty };
+  }
+
+  // Perkiraan hasil bersih bila seluruh gudang dijual ke satu pasar (tanpa mengubah state).
+  function quoteSellAll(state, marketId, now) {
+    let net = 0, qty = 0;
+    Object.keys(D.commodities).forEach(function (cid) {
+      const have = Math.floor(state.inventory[cid] || 0);
+      if (have < 1) return;
+      const q = quoteSale(state, cid, marketId, have, now);
+      if (q.net > 0) { net += q.net; qty += have; }
+    });
+    return { net: net, qty: qty };
+  }
+
+  // Deret harga untuk grafik mini: dari backMin menit lalu sampai fwdMin menit ke depan.
+  // Memakai rumus harga yang sama dengan pasar (gelombang, musim, peristiwa, tekanan jual yang meluruh).
+  function priceSeries(state, marketId, commodityId, now, backMin, fwdMin, steps) {
+    const out = [];
+    const span = (backMin + fwdMin) * 60000;
+    for (let i = 0; i <= steps; i++) {
+      const t = now - backMin * 60000 + span * i / steps;
+      out.push({ t: t, price: unitPrice(marketId, commodityId, marketStock(state, marketId, commodityId, t), t) });
+    }
+    return out;
+  }
+
+  // Isyarat harga: bagus (>= 8% di atas normal), rendah (<= 8% di bawah), atau normal.
+  // peakInMin = menit sampai puncak dalam 30 menit ke depan bila lebih tinggi >= 5% dari sekarang.
+  function priceSignal(state, marketId, commodityId, now) {
+    const cur = currentPrice(state, marketId, commodityId, now);
+    const ratio = cur / normalPrice(marketId, commodityId);
+    const id = ratio >= 1.08 ? 'bagus' : (ratio <= 0.92 ? 'rendah' : 'normal');
+    let peakInMin = null, peak = cur;
+    priceSeries(state, marketId, commodityId, now, 0, 30, 30).forEach(function (p) {
+      if (p.price > peak) { peak = p.price; peakInMin = Math.round((p.t - now) / 60000); }
+    });
+    if (peakInMin !== null && peak < cur * 1.05) peakInMin = null;
+    return { id: id, ratio: ratio, price: cur, peakInMin: peakInMin, peakPrice: peak };
+  }
+
   // Pasar terbuka dengan harga bersih per unit tertinggi untuk komoditas ini.
   function bestMarket(state, commodityId, now) {
     let best = null;
@@ -1705,6 +1820,10 @@ body.text-xlarge main { zoom: 1.25; }
     netUnitPrice: netUnitPrice,
     quoteSale: quoteSale,
     sell: sell,
+    sellAll: sellAll,
+    quoteSellAll: quoteSellAll,
+    priceSeries: priceSeries,
+    priceSignal: priceSignal,
     bestMarket: bestMarket,
     score: score,
     rank: rank,
@@ -2383,7 +2502,7 @@ body.text-xlarge main { zoom: 1.25; }
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -2523,20 +2642,47 @@ body.text-xlarge main { zoom: 1.25; }
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
           '<span class="muted">ongkir <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
           '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
+          '<span data-live="signal" data-c="' + cid + '"></span>' +
         '</div>' +
+        '<div class="spark" data-live="spark" data-c="' + cid + '"></div>' +
+        '<div class="spark-axis"><span>30 mnt lalu</span><span>sekarang</span><span>30 mnt lagi</span></div>' +
+        '<div class="goods-hint" data-live="hint" data-c="' + cid + '"></div>' +
         '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' +
         '<div class="goods-actions">' +
           '<button class="btn" data-action="sell" data-c="' + cid + '" data-qty="10">Jual 10</button>' +
           '<button class="btn primary" data-action="sell" data-c="' + cid + '" data-qty="all">Jual semua</button>' +
         '</div>' +
+        '<small class="goods-quote muted" data-live="quote" data-c="' + cid + '"></small>' +
       '</div>';
     }).join('');
 
     $('tab-market').innerHTML =
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
+      '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya.</p></div>' + goods;
+  }
+
+  // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
+  function sparkSvg(state, cid, now) {
+    const W = 240, H = 46, PAD = 4;
+    const ser = E.priceSeries(state, view.market, cid, now, 30, 30, 40);
+    const base = E.normalPrice(view.market, cid);
+    let lo = base, hi = base;
+    ser.forEach(function (p) { lo = Math.min(lo, p.price); hi = Math.max(hi, p.price); });
+    const span = (hi - lo) || 1;
+    function x(i) { return (i / (ser.length - 1) * W).toFixed(1); }
+    function y(v) { return (PAD + (1 - (v - lo) / span) * (H - 2 * PAD)).toFixed(1); }
+    const mid = ser.length >> 1;
+    const past = ser.slice(0, mid + 1).map(function (p, i) { return x(i) + ',' + y(p.price); }).join(' ');
+    const fut = ser.slice(mid).map(function (p, i) { return x(i + mid) + ',' + y(p.price); }).join(' ');
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="Grafik harga">' +
+      '<line class="sp-base" x1="0" x2="' + W + '" y1="' + y(base) + '" y2="' + y(base) + '"/>' +
+      '<line class="sp-now" x1="' + x(mid) + '" x2="' + x(mid) + '" y1="0" y2="' + H + '"/>' +
+      '<polyline class="sp-past" points="' + past + '"/>' +
+      '<polyline class="sp-fut" points="' + fut + '"/>' +
+      '<circle class="sp-dot" cx="' + x(mid) + '" cy="' + y(ser[mid].price) + '" r="3.2"/></svg>';
   }
 
   /* ---------- Tab info ---------- */
@@ -2707,6 +2853,9 @@ body.text-xlarge main { zoom: 1.25; }
     NT.ui.map.update(state, view.region);
     renderChips(state);
     renderRegion(state, now);
+    $('sheet-title').textContent = D.regions[view.region].icon + ' ' + D.regions[view.region].name;
+    $('sheet').classList.toggle('open', !!view.sheet);
+    document.body.classList.toggle('sheet-open', !!view.sheet && view.tab === 'map');
     renderMarket(state, now);
     renderAbout(state);
     renderSettings();
@@ -2832,6 +2981,31 @@ body.text-xlarge main { zoom: 1.25; }
       } else {
         el.textContent = '💡 Lebih untung di ' + D.regions[best.regionId].name + ': ' + F.price(best.price) + ' bersih per unit';
       }
+    });
+    if (view.tab === 'market') {
+      each('[data-live="spark"]', function (el) { el.innerHTML = sparkSvg(state, el.getAttribute('data-c'), now); });
+    }
+    each('[data-live="signal"]', function (el) {
+      const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
+      el.innerHTML = sg.id === 'bagus' ? '<span class="sig good">🔥 Harga bagus</span>'
+        : (sg.id === 'rendah' ? '<span class="sig low">🕳️ Harga rendah</span>' : '');
+    });
+    each('[data-live="hint"]', function (el) {
+      const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
+      el.textContent = sg.peakInMin !== null ? '📈 Puncak sekitar ' + sg.peakInMin + ' menit lagi (' + F.price(sg.peakPrice) + ')'
+        : (sg.id === 'bagus' ? '✅ Sekarang dekat puncak, waktu bagus untuk menjual' : '');
+    });
+    each('[data-live="quote"]', function (el) {
+      const cid = el.getAttribute('data-c');
+      const have = Math.floor(state.inventory[cid] || 0);
+      if (have < 1) { el.textContent = ''; return; }
+      const q = E.quoteSale(state, cid, view.market, have, now);
+      el.textContent = 'Jual semua ' + F.num(have) + ' ≈ ' + F.money(Math.max(0, q.net)) + ' bersih';
+    });
+    each('[data-live="sellall-est"]', function (el) {
+      const q = E.quoteSellAll(state, view.market, now);
+      el.textContent = q.qty > 0 ? '· ≈ ' + F.money(q.net) : '';
+      el.parentNode.disabled = q.qty < 1;
     });
     each('[data-action="sell"]', function (el) {
       const have = state.inventory[el.getAttribute('data-c')] || 0;
@@ -3104,6 +3278,19 @@ body.text-xlarge main { zoom: 1.25; }
       return { silent: true, skipRender: true };
     },
 
+    'sell-everything': function () {
+      const market = P.view.market;
+      const res = E.sellAll(state, market, now());
+      if (res.ok) {
+        res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) +
+          (res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati karena rugi)' : '');
+        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+      }
+      return res;
+    },
+
+    'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
+
     'market-region': function (el) {
       P.view.market = el.getAttribute('data-id');
       return { silent: true };
@@ -3175,10 +3362,44 @@ body.text-xlarge main { zoom: 1.25; }
     reader.readAsText(file);
   }
 
+  // Di HP panel wilayah berupa lembar dari bawah; di desktop kelas "open" tidak berpengaruh.
   function selectRegion(id) {
+    const wasOpen = P.view.sheet;
     P.view.region = id;
+    P.view.sheet = true;
     P.renderAll(state, now());
     NT.ui.map.focus(id);
+    if (!wasOpen && window.matchMedia('(max-width: 979px)').matches) {
+      const card = document.querySelector('.map-card');
+      if (card) card.scrollIntoView({ block: 'start', behavior: document.body.classList.contains('calm') ? 'auto' : 'smooth' });
+    }
+  }
+
+  // Geser lembar ke bawah untuk menutup.
+  function bindSheet() {
+    const grab = document.getElementById('sheet-grab');
+    const box = document.getElementById('sheet-box');
+    if (!grab || !box) return;
+    let y0 = null, dy = 0;
+    grab.addEventListener('touchstart', function (e) { y0 = e.touches[0].clientY; dy = 0; box.style.transition = 'none'; }, { passive: true });
+    grab.addEventListener('touchmove', function (e) {
+      if (y0 === null) return;
+      dy = Math.max(0, e.touches[0].clientY - y0);
+      box.style.transform = 'translateY(' + dy + 'px)';
+    }, { passive: true });
+    function end() {
+      if (y0 === null) return;
+      const close = dy > 70;
+      y0 = null;
+      box.style.transition = '';
+      box.style.transform = '';
+      if (close) { P.view.sheet = false; P.renderAll(state, now()); }
+    }
+    grab.addEventListener('touchend', end);
+    grab.addEventListener('touchcancel', end);
+    grab.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); P.view.sheet = false; P.renderAll(state, now()); }
+    });
   }
 
   function bindEvents() {
@@ -3195,6 +3416,7 @@ body.text-xlarge main { zoom: 1.25; }
     });
 
     document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && P.view.sheet) { P.view.sheet = false; P.renderAll(state, now()); return; }
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const island = e.target.closest && e.target.closest('.island');
       if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); }
@@ -3240,6 +3462,7 @@ body.text-xlarge main { zoom: 1.25; }
     NT.ui.settings.apply();
     NT.ui.map.mount();
     bindEvents();
+    bindSheet();
     P.renderAll(state, t);
 
     // Layar sambutan bila pemain pergi cukup lama; bila tidak, cukup toast untuk pembangunan yang selesai.
