@@ -4,7 +4,7 @@
     // 'local' = disimpan di browser. 'supabase' = disimpan di cloud (lihat README).
     storage: 'local',
     saveKey: 'nusantara-tycoon-save-v1',
-    supabase: { url: '', anonKey: '' },
+    supabase: { url: 'https://siqrhhllukvykpcqucty.supabase.co', anonKey: 'sb_publishable_V3dCHHNr7gZs6wxsW7swQQ_w9cT5fam' },
 
     autosaveMs: 5000,
 
