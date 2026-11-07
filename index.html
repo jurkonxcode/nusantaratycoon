@@ -22,13 +22,14 @@
         </div>
         <div class="stats">
           <div class="stat"><span>Kas</span><b id="stat-cash">Rp 0</b></div>
-          <div class="stat"><span>Peradaban</span><b id="stat-score">0</b></div>
+          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span>Peradaban</span><b id="stat-score">0</b></div>
         </div>
       </div>
 
       <nav class="tabs" role="tablist">
         <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
         <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
+        <button class="tab" data-action="tab" data-id="stats" role="tab">🏆 Capaian</button>
         <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
         <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan">⚙️</button>
       </nav>
@@ -40,6 +41,7 @@
       <section id="tab-map" class="tab-panel">
         <div class="map-layout">
           <div class="map-col">
+          <div id="guide"></div>
           <div class="info-row">
           <div class="goal" id="goal">
             <div class="goal-top">
@@ -59,6 +61,7 @@
           </div>
           <div class="side-col">
             <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
+            <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label">⬆ Upgrade termurah</span></button>
             <div id="sheet" class="sheet">
               <div class="sheet-box" id="sheet-box">
                 <div class="sheet-grab" id="sheet-grab" data-action="sheet-close" role="button" tabindex="0" aria-label="Tutup panel wilayah">
@@ -73,6 +76,7 @@
         </div>
       </section>
       <section id="tab-market" class="tab-panel"></section>
+      <section id="tab-stats" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
       <section id="tab-settings" class="tab-panel"></section>
     </main>
@@ -93,6 +97,7 @@
   <script src="js/core/raster.js"></script>
   <script src="js/core/state.js"></script>
   <script src="js/core/economy.js"></script>
+  <script src="js/core/achievements.js"></script>
   <script src="js/storage/local-storage.js"></script>
   <script src="js/storage/supabase-storage.js"></script>
   <script src="js/storage/index.js"></script>

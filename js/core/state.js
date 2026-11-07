@@ -6,6 +6,15 @@
   const D = NT.data;
   const VERSION = 1;
 
+  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs'];
+  const LOG_MAX = 40;
+
+  function freshStats() {
+    const o = {};
+    STAT_KEYS.forEach(function (k) { o[k] = 0; });
+    return o;
+  }
+
   function createInitialState(now) {
     const s = {
       version: VERSION,
@@ -16,7 +25,11 @@
       buildings: {},   // id -> { level, lastCollected }
       inventory: {},   // komoditas -> jumlah
       market: {},      // wilayah -> komoditas -> { stock, updatedAt }
-      jobs: []         // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
+      jobs: [],        // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
+      stats: freshStats(),  // penghitung untuk statistik, panduan, dan pencapaian
+      achievements: {},     // id pencapaian -> waktu terbuka (ms)
+      log: [],              // aktivitas terbaru: { t, i (ikon), x (teks) }, paling lama di depan
+      guideHidden: false    // panduan awal disembunyikan pemain
     };
 
     Object.keys(D.regions).forEach(function (id) {
@@ -69,8 +82,21 @@
       if (!j || !(j.endsAt > 0) || !(j.startedAt > 0) || !j.region || !base.regions[j.region]) return false;
       return j.kind === 'building' ? !!D.buildings[j.id] : (j.kind === 'infra' && !!D.infra[j.id]);
     });
+
+    STAT_KEYS.forEach(function (k) {
+      const v = Number(saved.stats && saved.stats[k]);
+      base.stats[k] = v > 0 && isFinite(v) ? v : 0;
+    });
+    Object.keys(saved.achievements || {}).forEach(function (id) {
+      const t = Number(saved.achievements[id]);
+      if (t > 0) base.achievements[id] = t;
+    });
+    base.log = (Array.isArray(saved.log) ? saved.log : []).filter(function (e) {
+      return e && Number(e.t) > 0 && typeof e.x === 'string';
+    }).slice(-LOG_MAX).map(function (e) { return { t: Number(e.t), i: String(e.i || '•').slice(0, 4), x: e.x.slice(0, 160) }; });
+    base.guideHidden = !!saved.guideHidden;
     return base;
   }
 
-  NT.state = { createInitialState: createInitialState, normalize: normalize };
+  NT.state = { createInitialState: createInitialState, normalize: normalize, LOG_MAX: LOG_MAX };
 })((window.NT = window.NT || {}));

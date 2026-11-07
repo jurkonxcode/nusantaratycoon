@@ -14,7 +14,9 @@
 
   const AWAY_MS = 2 * 60000;   // pergi lebih lama dari ini = tampilkan layar sambutan
   const SEEN_KEY = 'nt-lastseen';
-  const COST_ACTIONS = { 'upgrade-building': 1, 'upgrade-infra': 1, unlock: 1, speedup: 1 };
+  const COST_ACTIONS = { 'upgrade-building': 1, 'upgrade-infra': 1, unlock: 1, speedup: 1, cheapest: 1 };
+  // Aksi yang dicatat di log aktivitas (ikon di depan pesan toast-nya).
+  const LOG_ICONS = { sell: '💰', 'sell-everything': '💰', 'upgrade-building': '🔨', 'upgrade-infra': '🛣️', cheapest: '🔨', unlock: '🔓', speedup: '⚡' };
 
   function now() { return Date.now(); }
 
@@ -52,11 +54,40 @@
     }).join(', ');
   }
 
+  /* ---------- Log dan pencapaian ---------- */
+
+  function logEvent(icon, text) {
+    if (!state.log) state.log = [];
+    state.log.push({ t: now(), i: icon, x: text });
+    while (state.log.length > NT.state.LOG_MAX) state.log.shift();
+  }
+
+  // Cek pencapaian dan panduan; true bila ada yang baru (perlu simpan dan gambar ulang).
+  function checkProgress(quiet) {
+    const fresh = NT.achievements.evaluate(state, now());
+    let changed = fresh.length > 0;
+    if (quiet && fresh.length > 1) {
+      toast('🏆 ' + fresh.length + ' pencapaian terbuka dari kemajuanmu. Lihat di tab Capaian.', 'info');
+    } else {
+      fresh.forEach(function (a) { toast('🏆 Pencapaian: ' + a.name + '!', 'ok'); });
+    }
+    fresh.forEach(function (a) { logEvent('🏆', 'Pencapaian: ' + a.name); });
+    if (fresh.length && !quiet) NT.ui.fx.sfx('done');
+    if (!state.guideHidden && NT.achievements.guide(state).complete) {
+      state.guideHidden = true;
+      changed = true;
+      if (!quiet) toast('🎓 Panduan awal selesai. Selamat!', 'ok');
+    }
+    return changed;
+  }
+
   function celebrate(done, offline) {
     done.forEach(function (j) {
       const name = j.kind === 'building' ? NT.data.buildings[j.id].name
         : NT.data.infra[j.id].name + ' ' + NT.data.regions[j.region].name;
-      toast('✅ ' + name + (j.kind === 'building' && j.from === 0 ? ' selesai dibangun!' : ' naik ke Lv ' + j.to + '!'), 'ok');
+      const msg = name + (j.kind === 'building' && j.from === 0 ? ' selesai dibangun!' : ' naik ke Lv ' + j.to + '!');
+      toast('✅ ' + msg, 'ok');
+      logEvent('✅', msg);
     });
     NT.ui.fx.sfx('done');
     if (!offline) NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
@@ -164,6 +195,33 @@
       return res;
     },
 
+    cheapest: function () {
+      const c = E.cheapestUpgrade(state);
+      if (!c) return { ok: false, reason: 'Semua upgrade sudah level maksimum.' };
+      const res = c.kind === 'building' ? E.upgradeBuilding(state, c.id, now()) : E.upgradeInfra(state, c.region, c.id, now());
+      if (res.ok) {
+        res.message = '🔨 ' + c.label + (res.queued ? ' · selesai dalam ' + F.short(res.durationMs) : ' selesai!');
+        res.sfx = 'start';
+      }
+      return res;
+    },
+
+    term: function (el) {
+      const text = P.glossary[el.getAttribute('data-term')];
+      if (text) toast(text, 'info');
+      return { silent: true, skipRender: true };
+    },
+
+    'guide-toggle': function () { P.view.guideOpen = !P.view.guideOpen; return { silent: true }; },
+    'guide-hide': function () { state.guideHidden = true; P.view.guideOpen = false; persistSoon(); return { silent: true }; },
+    'guide-show': function () {
+      state.guideHidden = false;
+      P.view.guideOpen = true;
+      P.view.tab = 'map';
+      persistSoon();
+      return { silent: true };
+    },
+
     'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
 
     'market-region': function (el) {
@@ -179,6 +237,7 @@
       P.view.region = 'jawa';
       P.view.market = 'jawa';
       P.view.tab = 'map';
+      P.view.guideOpen = false;
       loadFailed = false;
       storage.reset().then(persist);
       return { ok: true, message: 'Game dimulai ulang.' };
@@ -201,6 +260,7 @@
     if (!res.silent) {
       if (res.ok) {
         if (res.message) toast(res.message, 'ok');
+        if (LOG_ICONS[name] && res.message) logEvent(LOG_ICONS[name], res.message.replace(/^🔨\s*/, ''));
         if (res.fx) NT.ui.fx.floatFromRect(rect, res.fx, res.fxClass);
         if (res.sfx === 'done') NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
         NT.ui.fx.sfx(res.sfx || 'click');
@@ -210,6 +270,7 @@
         NT.ui.fx.sfx('error');
       }
     }
+    if (!res.silent && res.ok && checkProgress(false)) persistSoon();
     if (!res.skipRender) P.renderAll(state, now());
   }
 
@@ -294,7 +355,9 @@
       if (e.key === 'Escape' && P.view.sheet) { P.view.sheet = false; P.renderAll(state, now()); return; }
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const island = e.target.closest && e.target.closest('.island');
-      if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); }
+      if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); return; }
+      const ts = e.target.closest && e.target.closest('.term-stat');
+      if (ts) { e.preventDefault(); handle('term', ts); }
     });
 
     document.addEventListener('change', function (e) {
@@ -344,12 +407,15 @@
     const away = lastSeen ? t - lastSeen : 0;
     const welcomed = saved && away > AWAY_MS && NT.ui.welcome.show(state, away, finishedAway, t);
     if (!welcomed && finishedAway.length) celebrate(finishedAway, true);
+    if (checkProgress(true)) { persistSoon(); P.renderAll(state, t); }
     touchSeen();
 
     setInterval(function () {
       const t2 = now();
+      if (!document.hidden) state.stats.playMs += 1000;
       const done = E.settle(state, t2);
-      if (done.length) { celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
+      const gained = checkProgress(false);
+      if (done.length || gained) { if (done.length) celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
     }, 1000);
     setInterval(persist, NT.config.autosaveMs);
   }

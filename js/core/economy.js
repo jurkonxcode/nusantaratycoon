@@ -70,7 +70,14 @@
     return Math.min(capacity(state, buildingId, now), productionRate(state, buildingId, now) * minutes);
   }
 
-  function collect(state, buildingId, now) {
+  // Penghitung statistik (untuk panduan, pencapaian, dan halaman Capaian).
+  function stat(state, key, n) {
+    if (!state.stats) state.stats = {};
+    state.stats[key] = (state.stats[key] || 0) + n;
+  }
+
+  // Pengumpulan murni tanpa statistik: dipakai internal (mis. sebelum upgrade mengubah laju produksi).
+  function gather(state, buildingId, now) {
     const b = D.buildings[buildingId];
     const sb = state.buildings[buildingId];
     if (!b || !sb) return fail('Bangunan belum dibangun.');
@@ -84,6 +91,12 @@
     // Sisa pecahan tetap dihitung, kecuali gudang sudah penuh.
     sb.lastCollected = isFull ? now : now - ((p - whole) / rate) * 60000;
     return { ok: true, commodity: b.produces, amount: whole };
+  }
+
+  function collect(state, buildingId, now) {
+    const res = gather(state, buildingId, now);
+    if (res.ok) { stat(state, 'collects', 1); stat(state, 'produced', res.amount); }
+    return res;
   }
 
   function collectAll(state, now) {
@@ -224,16 +237,18 @@
       if (busy) return busy;
       state.cash -= cost;
       jobsOf(state).push({ key: key, kind: 'building', id: buildingId, region: b.region, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      stat(state, lvl === 0 ? 'builds' : 'upgrades', 1);
       return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0, queued: true, durationMs: dur };
     }
 
-    collect(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
+    gather(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
     state.cash -= cost;
     if (lvl === 0) {
       state.buildings[buildingId] = { level: 1, lastCollected: now };
     } else {
       state.buildings[buildingId].level = lvl + 1;
     }
+    stat(state, lvl === 0 ? 'builds' : 'upgrades', 1);
     return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0 };
   }
 
@@ -256,15 +271,17 @@
       if (busy) return busy;
       state.cash -= cost;
       jobsOf(state).push({ key: key, kind: 'infra', id: infraId, region: regionId, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      stat(state, 'upgrades', 1);
       return { ok: true, cost: cost, level: lvl + 1, queued: true, durationMs: dur };
     }
 
     // Tol mengubah laju produksi, jadi amankan hasil semua bangunan di wilayah ini dulu.
     if (infraId === 'tol') {
-      D.regions[regionId].buildings.forEach(function (bid) { collect(state, bid, now); });
+      D.regions[regionId].buildings.forEach(function (bid) { gather(state, bid, now); });
     }
     state.cash -= cost;
     rs.infra[infraId] = lvl + 1;
+    stat(state, 'upgrades', 1);
     return { ok: true, cost: cost, level: lvl + 1 };
   }
 
@@ -277,28 +294,42 @@
     return v;
   }
 
-  // Target termurah berikutnya, supaya pemain selalu punya tujuan dekat.
-  function nextGoal(state) {
-    let best = null;
-    function consider(cost, label, icon) { if (!best || cost < best.cost) best = { cost: cost, label: label, icon: icon }; }
+  // Semua pembelian yang mungkin saat ini: bangun/naikkan bangunan, infrastruktur, dan (opsional) buka wilayah.
+  function candidates(state, includeUnlock) {
+    const list = [];
     Object.keys(D.regions).forEach(function (rid) {
       const r = D.regions[rid], rs = state.regions[rid];
       if (!rs || r.comingSoon) return;
-      if (!rs.unlocked) { consider(r.unlockCost, 'Buka ' + r.name, '🔓'); return; }
+      if (!rs.unlocked) {
+        if (includeUnlock) list.push({ cost: r.unlockCost, label: 'Buka ' + r.name, icon: '🔓', kind: 'unlock', id: rid, region: rid });
+        return;
+      }
       r.buildings.forEach(function (bid) {
         if (jobFor(state, 'b:' + bid)) return;
         const lvl = buildingLevel(state, bid);
-        consider(buildingCost(bid, lvl), (lvl ? 'Naikkan ' : 'Bangun ') + D.buildings[bid].name + (lvl ? ' ke Lv ' + (lvl + 1) : ''), D.buildings[bid].icon);
+        list.push({ cost: buildingCost(bid, lvl), icon: D.buildings[bid].icon, kind: 'building', id: bid, region: rid,
+          label: (lvl ? 'Naikkan ' : 'Bangun ') + D.buildings[bid].name + (lvl ? ' ke Lv ' + (lvl + 1) : '') });
       });
       Object.keys(D.infra).forEach(function (iid) {
         if (jobFor(state, 'i:' + rid + ':' + iid)) return;
         const lvl = infraLevel(state, rid, iid);
         if (lvl >= D.infra[iid].maxLevel) return;
-        consider(infraCost(rid, iid, lvl), D.infra[iid].name + ' ' + r.name + ' Lv ' + (lvl + 1), D.infra[iid].icon);
+        list.push({ cost: infraCost(rid, iid, lvl), icon: D.infra[iid].icon, kind: 'infra', id: iid, region: rid,
+          label: D.infra[iid].name + ' ' + r.name + ' Lv ' + (lvl + 1) });
       });
     });
-    return best;
+    return list;
   }
+
+  function cheapest(list) {
+    return list.reduce(function (best, c) { return !best || c.cost < best.cost ? c : best; }, null);
+  }
+
+  // Target termurah berikutnya, supaya pemain selalu punya tujuan dekat.
+  function nextGoal(state) { return cheapest(candidates(state, true)); }
+
+  // Upgrade (bangunan atau infrastruktur) termurah; dipakai tombol "Upgrade termurah".
+  function cheapestUpgrade(state) { return cheapest(candidates(state, false)); }
 
   function unlockRegion(state, regionId) {
     const r = D.regions[regionId];
@@ -308,6 +339,7 @@
     if (state.cash < r.unlockCost) return fail('Kas belum cukup.');
     state.cash -= r.unlockCost;
     rs.unlocked = true;
+    stat(state, 'unlocks', 1);
     return { ok: true, cost: r.unlockCost };
   }
 
@@ -392,6 +424,9 @@
     state.inventory[commodityId] -= qty;
     state.cash += q.net;
     state.totalEarned += q.net;
+    stat(state, 'sales', 1);
+    stat(state, 'sold', qty);
+    if (q.net > (state.stats.bestSale || 0)) state.stats.bestSale = q.net;
     return { ok: true, qty: qty, revenue: q.revenue, shipping: q.shipping, net: q.net };
   }
 
@@ -511,6 +546,7 @@
     speedupCost: speedupCost,
     incomePerMin: incomePerMin,
     nextGoal: nextGoal,
+    cheapestUpgrade: cheapestUpgrade,
     upgradeBuilding: upgradeBuilding,
     upgradeInfra: upgradeInfra,
     unlockRegion: unlockRegion,

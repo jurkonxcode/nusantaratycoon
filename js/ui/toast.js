@@ -1,4 +1,4 @@
-/* Notifikasi kecil di layar. */
+/* Notifikasi kecil di layar. kind: ok | warn | info. Teks panjang tampil lebih lama. */
 (function (NT) {
   NT.ui = NT.ui || {};
 
@@ -10,7 +10,8 @@
     el.textContent = message;
     host.appendChild(el);
     while (host.children.length > 3) host.removeChild(host.firstChild);
-    setTimeout(function () { el.classList.add('out'); }, 2800);
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3300);
+    const hold = kind === 'info' ? Math.min(9000, 2800 + message.length * 45) : 2800;
+    setTimeout(function () { el.classList.add('out'); }, hold);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, hold + 500);
   };
 })((window.NT = window.NT || {}));

@@ -9,7 +9,7 @@ const root = path.join(__dirname, '..', 'js');
 [
   'config.js',
   'data/commodities.js', 'data/events.js', 'data/buildings.js', 'data/regions.js',
-  'core/format.js', 'core/world.js', 'core/state.js', 'core/economy.js'
+  'core/format.js', 'core/world.js', 'core/state.js', 'core/economy.js', 'core/achievements.js'
 ].forEach(function (f) {
   vm.runInThisContext(fs.readFileSync(path.join(root, f), 'utf8'), { filename: f });
 });
@@ -180,6 +180,84 @@ test('priceSignal: tekanan jual besar membuat isyarat rendah', function () {
   const s = NT.state.createInitialState(t0);
   s.market.jawa.padi = { stock: 5000, updatedAt: t0 };
   assert.strictEqual(E.priceSignal(s, 'jawa', 'padi', t0).id, 'rendah');
+});
+
+test('statistik: collect, sell, upgrade, build, unlock menambah penghitung', function () {
+  const s = NT.state.createInitialState(t0);
+  s.cash = 1e6;
+  E.collect(s, 'sawah', t0 + 10 * MIN);
+  assert.strictEqual(s.stats.collects, 1);
+  assert.ok(s.stats.produced >= 60);
+  const sold = E.sell(s, 'padi', 'jawa', 10, t0 + 10 * MIN);
+  assert.strictEqual(s.stats.sales, 1);
+  assert.strictEqual(s.stats.sold, 10);
+  assert.ok(Math.abs(s.stats.bestSale - sold.net) < 1e-9);
+  E.upgradeBuilding(s, 'sawah', t0 + 11 * MIN);
+  E.upgradeBuilding(s, 'sentra_batik', t0 + 11 * MIN);
+  E.unlockRegion(s, 'sumatra');
+  assert.strictEqual(s.stats.upgrades, 1);
+  assert.strictEqual(s.stats.builds, 1);
+  assert.strictEqual(s.stats.unlocks, 1);
+});
+
+test('upgrade yang mengamankan hasil otomatis tidak dihitung sebagai panen pemain', function () {
+  const s = NT.state.createInitialState(t0);
+  s.cash = 1e6;
+  E.upgradeBuilding(s, 'sawah', t0 + 10 * MIN);
+  assert.strictEqual(s.stats.collects, 0);
+});
+
+test('normalize: statistik, pencapaian, dan log aman untuk save lama dan data rusak', function () {
+  const old = NT.state.normalize({ cash: 10, buildings: { sawah: { level: 1 } } }, t0);
+  assert.strictEqual(old.stats.sales, 0);
+  assert.deepStrictEqual(old.log, []);
+  const bad = NT.state.normalize({ cash: 1, stats: { sales: -5, sold: 'x', playMs: 7 }, achievements: { a: 5, b: 'q' },
+    log: [{ t: 1, i: '💰', x: 'ok' }, { t: 'z' }, null, { t: 2, x: 5 }] }, t0);
+  assert.strictEqual(bad.stats.sales, 0);
+  assert.strictEqual(bad.stats.sold, 0);
+  assert.strictEqual(bad.stats.playMs, 7);
+  assert.deepStrictEqual(Object.keys(bad.achievements), ['a']);
+  assert.strictEqual(bad.log.length, 1);
+});
+
+test('panduan: langkah selesai mengikuti state, dan save lama berpenghasilan dianggap selesai sebagian', function () {
+  const s = NT.state.createInitialState(t0);
+  assert.strictEqual(NT.achievements.guide(s).done, 0);
+  assert.strictEqual(NT.achievements.guide(s).current.id, 'collect');
+  const veteran = NT.state.normalize({ cash: 5, totalEarned: 5000, buildings: { sawah: { level: 3 }, sentra_batik: { level: 1 } },
+    regions: { jawa: { unlocked: true }, sumatra: { unlocked: true } } }, t0);
+  assert.ok(NT.achievements.guide(veteran).complete);
+});
+
+test('pencapaian: terbuka sekali, tidak diulang, dan sesuai syarat', function () {
+  const s = NT.state.createInitialState(t0);
+  assert.strictEqual(NT.achievements.evaluate(s, t0).length, 0);
+  s.cash = 1e6;
+  E.collect(s, 'sawah', t0 + 10 * MIN);
+  const first = NT.achievements.evaluate(s, t0 + 10 * MIN).map(function (a) { return a.id; });
+  assert.deepStrictEqual(first, ['panen']);
+  assert.strictEqual(NT.achievements.evaluate(s, t0 + 11 * MIN).length, 0);
+  s.totalEarned = 30000;
+  const more = NT.achievements.evaluate(s, t0 + 12 * MIN).map(function (a) { return a.id; });
+  assert.ok(more.indexOf('juragan') !== -1 && more.indexOf('saudagar') !== -1 && more.indexOf('konglomerat') === -1);
+});
+
+test('pencapaian: id unik dan semua punya ikon, nama, deskripsi', function () {
+  const ids = NT.achievements.list.map(function (a) { return a.id; });
+  assert.strictEqual(new Set(ids).size, ids.length);
+  NT.achievements.list.forEach(function (a) { assert.ok(a.icon && a.name && a.desc && typeof a.test === 'function'); });
+});
+
+test('cheapestUpgrade: memilih termurah, mengabaikan buka wilayah dan pekerjaan berjalan', function () {
+  const s = NT.state.createInitialState(t0);
+  const c = E.cheapestUpgrade(s);
+  assert.strictEqual(c.kind, 'building');
+  assert.strictEqual(c.id, 'sawah');
+  assert.strictEqual(c.cost, E.buildingCost('sawah', 1));
+  assert.notStrictEqual(E.nextGoal(s).kind, undefined);
+  s.regions.jawa.infra.tol = 5; s.regions.jawa.infra.pelabuhan = 5;
+  s.buildings.sawah.level = 40; s.buildings.sentra_batik = { level: 40, lastCollected: t0 };
+  assert.ok(E.cheapestUpgrade(s).cost > 1000);
 });
 
 console.log('\n' + passed + ' tes lolos');

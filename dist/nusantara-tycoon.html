@@ -512,6 +512,52 @@ body.text-xlarge main { zoom: 1.25; }
 .goods-hint { font-size: 12px; color: var(--gold-dark); min-height: 16px; margin-top: 4px; font-weight: 700; }
 .goods-quote { display: block; margin-top: 6px; font-size: 12px; min-height: 14px; }
 
+/* ---------- Paket C: panduan, capaian, istilah ---------- */
+#tab-stats { max-width: 980px; margin: 0 auto; }
+.toast.info { border-left-color: var(--sea-500); }
+.term, .term-tag { font: inherit; cursor: help; }
+button.term { background: none; border: 0; padding: 0; color: inherit; font-size: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
+button.term-tag { border: 0; text-decoration: underline dotted; text-underline-offset: 2px; }
+.term-stat { cursor: help; }
+.cheapest { margin-top: 8px; white-space: normal; line-height: 1.3; }
+.cheapest[data-none="1"] { opacity: .6; }
+
+.guide { background: var(--card); border: 1px solid var(--gold); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 12px; overflow: hidden; }
+.guide-head { display: flex; align-items: center; gap: 10px; width: 100%; background: transparent; border: 0; padding: 10px 14px 6px; font: inherit; text-align: left; cursor: pointer; color: var(--ink); }
+.guide-ico { font-size: 22px; }
+.guide-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.guide-text small { color: var(--gold-dark); font-weight: 800; font-size: 11px; text-transform: none; }
+.guide-text b { font-size: 14px; }
+.guide-caret { color: var(--muted); font-size: 14px; }
+.guidebar { margin: 0 14px 10px; }
+.guide-list { list-style: none; margin: 0; padding: 0 14px 4px; }
+.guide-list li { display: flex; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.guide-list li small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.guide-list li.done { opacity: .6; }
+.guide-list li.done b { text-decoration: line-through; }
+.guide-list li.cur { background: #fff7e0; margin: 0 -14px; padding: 8px 14px; }
+.guide-foot { padding: 6px 14px 12px; }
+
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+@media (min-width: 640px) { .tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.tile { background: var(--sand); border: 1px solid var(--sand-dark); border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.tile-ico { font-size: 18px; }
+.tile small { color: var(--muted); font-size: 11px; }
+.tile b { font-size: 15px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.card h2 .count { font-family: system-ui, sans-serif; font-size: 13px; font-weight: 800; color: var(--gold-dark); margin-left: 6px; }
+.badges { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+@media (min-width: 640px) { .badges { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.badge { border: 1px dashed var(--sand-dark); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 2px; background: #f3efe4; opacity: .65; min-width: 0; }
+.badge.got { opacity: 1; border: 1px solid var(--gold); background: linear-gradient(160deg, #fff9e6, #fff); box-shadow: var(--shadow-sm); }
+.badge-ico { font-size: 24px; }
+.badge b { font-size: 13px; }
+.badge small { color: var(--muted); font-size: 11px; line-height: 1.3; }
+.log { list-style: none; margin: 8px 0 0; padding: 0; }
+.log li { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.log li:first-child { border-top: 0; }
+.log small { color: var(--muted); font-size: 11px; white-space: nowrap; }
+@media (max-width: 520px) { .tab { font-size: 13px; padding-left: 2px; padding-right: 2px; } }
+
 </style>
 </head>
 <body>
@@ -529,13 +575,14 @@ body.text-xlarge main { zoom: 1.25; }
         </div>
         <div class="stats">
           <div class="stat"><span>Kas</span><b id="stat-cash">Rp 0</b></div>
-          <div class="stat"><span>Peradaban</span><b id="stat-score">0</b></div>
+          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span>Peradaban</span><b id="stat-score">0</b></div>
         </div>
       </div>
 
       <nav class="tabs" role="tablist">
         <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
         <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
+        <button class="tab" data-action="tab" data-id="stats" role="tab">🏆 Capaian</button>
         <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
         <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan">⚙️</button>
       </nav>
@@ -547,6 +594,7 @@ body.text-xlarge main { zoom: 1.25; }
       <section id="tab-map" class="tab-panel">
         <div class="map-layout">
           <div class="map-col">
+          <div id="guide"></div>
           <div class="info-row">
           <div class="goal" id="goal">
             <div class="goal-top">
@@ -566,6 +614,7 @@ body.text-xlarge main { zoom: 1.25; }
           </div>
           <div class="side-col">
             <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
+            <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label">⬆ Upgrade termurah</span></button>
             <div id="sheet" class="sheet">
               <div class="sheet-box" id="sheet-box">
                 <div class="sheet-grab" id="sheet-grab" data-action="sheet-close" role="button" tabindex="0" aria-label="Tutup panel wilayah">
@@ -580,6 +629,7 @@ body.text-xlarge main { zoom: 1.25; }
         </div>
       </section>
       <section id="tab-market" class="tab-panel"></section>
+      <section id="tab-stats" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
       <section id="tab-settings" class="tab-panel"></section>
     </main>
@@ -1226,6 +1276,15 @@ body.text-xlarge main { zoom: 1.25; }
   const D = NT.data;
   const VERSION = 1;
 
+  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs'];
+  const LOG_MAX = 40;
+
+  function freshStats() {
+    const o = {};
+    STAT_KEYS.forEach(function (k) { o[k] = 0; });
+    return o;
+  }
+
   function createInitialState(now) {
     const s = {
       version: VERSION,
@@ -1236,7 +1295,11 @@ body.text-xlarge main { zoom: 1.25; }
       buildings: {},   // id -> { level, lastCollected }
       inventory: {},   // komoditas -> jumlah
       market: {},      // wilayah -> komoditas -> { stock, updatedAt }
-      jobs: []         // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
+      jobs: [],        // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
+      stats: freshStats(),  // penghitung untuk statistik, panduan, dan pencapaian
+      achievements: {},     // id pencapaian -> waktu terbuka (ms)
+      log: [],              // aktivitas terbaru: { t, i (ikon), x (teks) }, paling lama di depan
+      guideHidden: false    // panduan awal disembunyikan pemain
     };
 
     Object.keys(D.regions).forEach(function (id) {
@@ -1289,10 +1352,23 @@ body.text-xlarge main { zoom: 1.25; }
       if (!j || !(j.endsAt > 0) || !(j.startedAt > 0) || !j.region || !base.regions[j.region]) return false;
       return j.kind === 'building' ? !!D.buildings[j.id] : (j.kind === 'infra' && !!D.infra[j.id]);
     });
+
+    STAT_KEYS.forEach(function (k) {
+      const v = Number(saved.stats && saved.stats[k]);
+      base.stats[k] = v > 0 && isFinite(v) ? v : 0;
+    });
+    Object.keys(saved.achievements || {}).forEach(function (id) {
+      const t = Number(saved.achievements[id]);
+      if (t > 0) base.achievements[id] = t;
+    });
+    base.log = (Array.isArray(saved.log) ? saved.log : []).filter(function (e) {
+      return e && Number(e.t) > 0 && typeof e.x === 'string';
+    }).slice(-LOG_MAX).map(function (e) { return { t: Number(e.t), i: String(e.i || '•').slice(0, 4), x: e.x.slice(0, 160) }; });
+    base.guideHidden = !!saved.guideHidden;
     return base;
   }
 
-  NT.state = { createInitialState: createInitialState, normalize: normalize };
+  NT.state = { createInitialState: createInitialState, normalize: normalize, LOG_MAX: LOG_MAX };
 })((window.NT = window.NT || {}));
 
 </script>
@@ -1369,7 +1445,14 @@ body.text-xlarge main { zoom: 1.25; }
     return Math.min(capacity(state, buildingId, now), productionRate(state, buildingId, now) * minutes);
   }
 
-  function collect(state, buildingId, now) {
+  // Penghitung statistik (untuk panduan, pencapaian, dan halaman Capaian).
+  function stat(state, key, n) {
+    if (!state.stats) state.stats = {};
+    state.stats[key] = (state.stats[key] || 0) + n;
+  }
+
+  // Pengumpulan murni tanpa statistik: dipakai internal (mis. sebelum upgrade mengubah laju produksi).
+  function gather(state, buildingId, now) {
     const b = D.buildings[buildingId];
     const sb = state.buildings[buildingId];
     if (!b || !sb) return fail('Bangunan belum dibangun.');
@@ -1383,6 +1466,12 @@ body.text-xlarge main { zoom: 1.25; }
     // Sisa pecahan tetap dihitung, kecuali gudang sudah penuh.
     sb.lastCollected = isFull ? now : now - ((p - whole) / rate) * 60000;
     return { ok: true, commodity: b.produces, amount: whole };
+  }
+
+  function collect(state, buildingId, now) {
+    const res = gather(state, buildingId, now);
+    if (res.ok) { stat(state, 'collects', 1); stat(state, 'produced', res.amount); }
+    return res;
   }
 
   function collectAll(state, now) {
@@ -1523,16 +1612,18 @@ body.text-xlarge main { zoom: 1.25; }
       if (busy) return busy;
       state.cash -= cost;
       jobsOf(state).push({ key: key, kind: 'building', id: buildingId, region: b.region, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      stat(state, lvl === 0 ? 'builds' : 'upgrades', 1);
       return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0, queued: true, durationMs: dur };
     }
 
-    collect(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
+    gather(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
     state.cash -= cost;
     if (lvl === 0) {
       state.buildings[buildingId] = { level: 1, lastCollected: now };
     } else {
       state.buildings[buildingId].level = lvl + 1;
     }
+    stat(state, lvl === 0 ? 'builds' : 'upgrades', 1);
     return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0 };
   }
 
@@ -1555,15 +1646,17 @@ body.text-xlarge main { zoom: 1.25; }
       if (busy) return busy;
       state.cash -= cost;
       jobsOf(state).push({ key: key, kind: 'infra', id: infraId, region: regionId, from: lvl, to: lvl + 1, startedAt: now, endsAt: now + dur, cost: cost });
+      stat(state, 'upgrades', 1);
       return { ok: true, cost: cost, level: lvl + 1, queued: true, durationMs: dur };
     }
 
     // Tol mengubah laju produksi, jadi amankan hasil semua bangunan di wilayah ini dulu.
     if (infraId === 'tol') {
-      D.regions[regionId].buildings.forEach(function (bid) { collect(state, bid, now); });
+      D.regions[regionId].buildings.forEach(function (bid) { gather(state, bid, now); });
     }
     state.cash -= cost;
     rs.infra[infraId] = lvl + 1;
+    stat(state, 'upgrades', 1);
     return { ok: true, cost: cost, level: lvl + 1 };
   }
 
@@ -1576,28 +1669,42 @@ body.text-xlarge main { zoom: 1.25; }
     return v;
   }
 
-  // Target termurah berikutnya, supaya pemain selalu punya tujuan dekat.
-  function nextGoal(state) {
-    let best = null;
-    function consider(cost, label, icon) { if (!best || cost < best.cost) best = { cost: cost, label: label, icon: icon }; }
+  // Semua pembelian yang mungkin saat ini: bangun/naikkan bangunan, infrastruktur, dan (opsional) buka wilayah.
+  function candidates(state, includeUnlock) {
+    const list = [];
     Object.keys(D.regions).forEach(function (rid) {
       const r = D.regions[rid], rs = state.regions[rid];
       if (!rs || r.comingSoon) return;
-      if (!rs.unlocked) { consider(r.unlockCost, 'Buka ' + r.name, '🔓'); return; }
+      if (!rs.unlocked) {
+        if (includeUnlock) list.push({ cost: r.unlockCost, label: 'Buka ' + r.name, icon: '🔓', kind: 'unlock', id: rid, region: rid });
+        return;
+      }
       r.buildings.forEach(function (bid) {
         if (jobFor(state, 'b:' + bid)) return;
         const lvl = buildingLevel(state, bid);
-        consider(buildingCost(bid, lvl), (lvl ? 'Naikkan ' : 'Bangun ') + D.buildings[bid].name + (lvl ? ' ke Lv ' + (lvl + 1) : ''), D.buildings[bid].icon);
+        list.push({ cost: buildingCost(bid, lvl), icon: D.buildings[bid].icon, kind: 'building', id: bid, region: rid,
+          label: (lvl ? 'Naikkan ' : 'Bangun ') + D.buildings[bid].name + (lvl ? ' ke Lv ' + (lvl + 1) : '') });
       });
       Object.keys(D.infra).forEach(function (iid) {
         if (jobFor(state, 'i:' + rid + ':' + iid)) return;
         const lvl = infraLevel(state, rid, iid);
         if (lvl >= D.infra[iid].maxLevel) return;
-        consider(infraCost(rid, iid, lvl), D.infra[iid].name + ' ' + r.name + ' Lv ' + (lvl + 1), D.infra[iid].icon);
+        list.push({ cost: infraCost(rid, iid, lvl), icon: D.infra[iid].icon, kind: 'infra', id: iid, region: rid,
+          label: D.infra[iid].name + ' ' + r.name + ' Lv ' + (lvl + 1) });
       });
     });
-    return best;
+    return list;
   }
+
+  function cheapest(list) {
+    return list.reduce(function (best, c) { return !best || c.cost < best.cost ? c : best; }, null);
+  }
+
+  // Target termurah berikutnya, supaya pemain selalu punya tujuan dekat.
+  function nextGoal(state) { return cheapest(candidates(state, true)); }
+
+  // Upgrade (bangunan atau infrastruktur) termurah; dipakai tombol "Upgrade termurah".
+  function cheapestUpgrade(state) { return cheapest(candidates(state, false)); }
 
   function unlockRegion(state, regionId) {
     const r = D.regions[regionId];
@@ -1607,6 +1714,7 @@ body.text-xlarge main { zoom: 1.25; }
     if (state.cash < r.unlockCost) return fail('Kas belum cukup.');
     state.cash -= r.unlockCost;
     rs.unlocked = true;
+    stat(state, 'unlocks', 1);
     return { ok: true, cost: r.unlockCost };
   }
 
@@ -1691,6 +1799,9 @@ body.text-xlarge main { zoom: 1.25; }
     state.inventory[commodityId] -= qty;
     state.cash += q.net;
     state.totalEarned += q.net;
+    stat(state, 'sales', 1);
+    stat(state, 'sold', qty);
+    if (q.net > (state.stats.bestSale || 0)) state.stats.bestSale = q.net;
     return { ok: true, qty: qty, revenue: q.revenue, shipping: q.shipping, net: q.net };
   }
 
@@ -1810,6 +1921,7 @@ body.text-xlarge main { zoom: 1.25; }
     speedupCost: speedupCost,
     incomePerMin: incomePerMin,
     nextGoal: nextGoal,
+    cheapestUpgrade: cheapestUpgrade,
     upgradeBuilding: upgradeBuilding,
     upgradeInfra: upgradeInfra,
     unlockRegion: unlockRegion,
@@ -1829,6 +1941,120 @@ body.text-xlarge main { zoom: 1.25; }
     rank: rank,
     _fmt: fmt
   };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Panduan awal dan pencapaian. Murni logika (tanpa DOM), hanya membaca state.
+ * Syarat diturunkan dari state + statistik, jadi save lama (tanpa statistik) tetap benar.
+ */
+(function (NT) {
+  const D = NT.data;
+  const E = NT.economy;
+
+  function sumLevels(state) {
+    return Object.keys(state.buildings).reduce(function (a, id) { return a + state.buildings[id].level; }, 0);
+  }
+  function openRegions(state) {
+    return Object.keys(state.regions).filter(function (id) { return state.regions[id].unlocked && !D.regions[id].start; }).length;
+  }
+  function playable(state) {
+    return Object.keys(state.regions).filter(function (id) { return !D.regions[id].comingSoon; });
+  }
+  function maxInfra(state, infraId) {
+    return Object.keys(state.regions).reduce(function (m, id) { return Math.max(m, state.regions[id].infra[infraId] || 0); }, 0);
+  }
+  function st(state, k) { return (state.stats && state.stats[k]) || 0; }
+
+  /* ---------- Panduan awal: 5 langkah ---------- */
+
+  const STEPS = [
+    { id: 'collect', icon: '📦', title: 'Kumpulkan hasil panen',
+      hint: 'Ketuk tombol “Kumpulkan semua hasil” di bawah peta.',
+      done: function (s) { return st(s, 'collects') > 0 || s.totalEarned > 0; } },
+    { id: 'sell', icon: '⚖️', title: 'Jual hasil di tab Pasar',
+      hint: 'Buka tab Pasar, lalu ketuk “Jual semua” pada padi.',
+      done: function (s) { return st(s, 'sales') > 0 || s.totalEarned > 0; } },
+    { id: 'upgrade', icon: '⬆️', title: 'Naikkan level Sawah',
+      hint: 'Pilih Jawa di peta, lalu ketuk tombol ⬆ pada Sawah.',
+      done: function (s) {
+        return st(s, 'upgrades') > 0 || sumLevels(s) > 1 || s.jobs.some(function (j) { return j.kind === 'building' && j.from > 0; });
+      } },
+    { id: 'build', icon: '🔨', title: 'Bangun bangunan baru',
+      hint: 'Bangun Sentra Batik di Jawa untuk komoditas kedua.',
+      done: function (s) {
+        return st(s, 'builds') > 0 || Object.keys(s.buildings).length > 1 || s.jobs.some(function (j) { return j.kind === 'building' && j.from === 0; });
+      } },
+    { id: 'unlock', icon: '🔓', title: 'Buka wilayah baru',
+      hint: 'Pilih Sumatra di peta dan ketuk “Buka wilayah”.',
+      done: function (s) { return st(s, 'unlocks') > 0 || openRegions(s) > 0; } }
+  ];
+
+  function guide(state) {
+    const steps = STEPS.map(function (x) { return { id: x.id, icon: x.icon, title: x.title, hint: x.hint, done: !!x.done(state) }; });
+    const doneCount = steps.filter(function (x) { return x.done; }).length;
+    const current = steps.filter(function (x) { return !x.done; })[0] || null;
+    return { steps: steps, done: doneCount, total: steps.length, current: current, complete: doneCount === steps.length };
+  }
+
+  /* ---------- Pencapaian ---------- */
+
+  const LIST = [
+    { id: 'panen', icon: '🌾', name: 'Panen Pertama', desc: 'Kumpulkan hasil panen pertamamu.',
+      test: function (s) { return st(s, 'collects') > 0; } },
+    { id: 'dagang', icon: '🤝', name: 'Dagang Pertama', desc: 'Jual barang untuk pertama kali.',
+      test: function (s) { return st(s, 'sales') > 0; } },
+    { id: 'lulus', icon: '🎓', name: 'Lulus Panduan', desc: 'Selesaikan kelima langkah panduan awal.',
+      test: function (s) { return guide(s).complete; } },
+    { id: 'juragan', icon: '💰', name: 'Juragan Kecil', desc: 'Total pendapatan mencapai Rp 1.000.',
+      test: function (s) { return s.totalEarned >= 1000; } },
+    { id: 'saudagar', icon: '🪙', name: 'Saudagar', desc: 'Total pendapatan mencapai Rp 25.000.',
+      test: function (s) { return s.totalEarned >= 25000; } },
+    { id: 'konglomerat', icon: '👑', name: 'Konglomerat Nusantara', desc: 'Total pendapatan mencapai Rp 250.000.',
+      test: function (s) { return s.totalEarned >= 250000; } },
+    { id: 'lumbung', icon: '🧺', name: 'Lumbung Besar', desc: 'Kumpulkan 1.000 satuan hasil.',
+      test: function (s) { return st(s, 'produced') >= 1000; } },
+    { id: 'gudang', icon: '🏭', name: 'Gudang Raksasa', desc: 'Kumpulkan 25.000 satuan hasil.',
+      test: function (s) { return st(s, 'produced') >= 25000; } },
+    { id: 'besar', icon: '💎', name: 'Penjualan Besar', desc: 'Satu kali jual menghasilkan Rp 1.000 atau lebih.',
+      test: function (s) { return st(s, 'bestSale') >= 1000; } },
+    { id: 'mandor', icon: '🔨', name: 'Mandor Andal', desc: 'Bangun atau naikkan level 10 kali.',
+      test: function (s) { return st(s, 'builds') + st(s, 'upgrades') >= 10; } },
+    { id: 'arsitek', icon: '📐', name: 'Arsitek Nusantara', desc: 'Bangun atau naikkan level 40 kali.',
+      test: function (s) { return st(s, 'builds') + st(s, 'upgrades') >= 40; } },
+    { id: 'jelajah', icon: '🧭', name: 'Penjelajah', desc: 'Buka wilayah pertama selain Jawa.',
+      test: function (s) { return openRegions(s) >= 1; } },
+    { id: 'semua', icon: '🏝️', name: 'Tiga Pulau', desc: 'Buka semua wilayah yang tersedia.',
+      test: function (s) { return playable(s).every(function (id) { return s.regions[id].unlocked; }); } },
+    { id: 'tol', icon: '🛣️', name: 'Jalan Mulus', desc: 'Bangun jalan tol pertamamu.',
+      test: function (s) { return maxInfra(s, 'tol') >= 1; } },
+    { id: 'pelabuhan', icon: '⚓', name: 'Pelaut Handal', desc: 'Bangun pelabuhan pertamamu.',
+      test: function (s) { return maxInfra(s, 'pelabuhan') >= 1; } },
+    { id: 'maks', icon: '🏗️', name: 'Infrastruktur Maksimal', desc: 'Capai level maksimum pada satu infrastruktur.',
+      test: function (s) {
+        return Object.keys(D.infra).some(function (iid) { return maxInfra(s, iid) >= D.infra[iid].maxLevel; });
+      } },
+    { id: 'kota', icon: '🏘️', name: 'Kota Dagang', desc: 'Capai gelar Kota Dagang.',
+      test: function (s) { return E.rank(E.score(s)).current.min >= 150; } },
+    { id: 'provinsi', icon: '🏛️', name: 'Provinsi Makmur', desc: 'Capai gelar Provinsi Makmur.',
+      test: function (s) { return E.rank(E.score(s)).current.min >= 900; } },
+    { id: 'setia', icon: '⏳', name: 'Pemain Setia', desc: 'Bermain selama 1 jam (waktu layar terbuka).',
+      test: function (s) { return st(s, 'playMs') >= 3600000; } }
+  ];
+
+  // Tandai pencapaian yang baru terpenuhi; mengembalikan daftar yang baru terbuka.
+  function evaluate(state, now) {
+    if (!state.achievements) state.achievements = {};
+    const fresh = [];
+    LIST.forEach(function (a) {
+      if (state.achievements[a.id]) return;
+      if (a.test(state)) { state.achievements[a.id] = now; fresh.push(a); }
+    });
+    return fresh;
+  }
+
+  NT.achievements = { list: LIST, evaluate: evaluate, guide: guide, STEPS: STEPS };
 })((window.NT = window.NT || {}));
 
 </script>
@@ -1958,7 +2184,7 @@ body.text-xlarge main { zoom: 1.25; }
 
 </script>
   <script>
-/* Notifikasi kecil di layar. */
+/* Notifikasi kecil di layar. kind: ok | warn | info. Teks panjang tampil lebih lama. */
 (function (NT) {
   NT.ui = NT.ui || {};
 
@@ -1970,8 +2196,9 @@ body.text-xlarge main { zoom: 1.25; }
     el.textContent = message;
     host.appendChild(el);
     while (host.children.length > 3) host.removeChild(host.firstChild);
-    setTimeout(function () { el.classList.add('out'); }, 2800);
-    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3300);
+    const hold = kind === 'info' ? Math.min(9000, 2800 + message.length * 45) : 2800;
+    setTimeout(function () { el.classList.add('out'); }, hold);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, hold + 500);
   };
 })((window.NT = window.NT || {}));
 
@@ -2502,9 +2729,24 @@ body.text-xlarge main { zoom: 1.25; }
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false };
 
   function $(id) { return document.getElementById(id); }
+
+  // Istilah yang bisa diketuk untuk melihat penjelasannya (aksi "term").
+  const GLOSSARY = {
+    ongkir: 'Ongkir: biaya kirim per satuan barang bila dijual di wilayah lain. Makin jauh dan makin berat barangnya, makin mahal. Pelabuhan menurunkannya.',
+    paceklik: 'Paceklik: masa panen sedikit. Produksi turun, tetapi harga biasanya naik.',
+    raya: 'Panen raya: masa hasil berlimpah. Produksi naik, tetapi harga cenderung tertekan.',
+    peradaban: 'Skor peradaban: dihitung dari level bangunan, infrastruktur, wilayah yang terbuka, dan total pendapatan. Makin tinggi, makin besar gelarmu.',
+    tekanan: 'Tekanan pasar: menjual banyak barang sekaligus menurunkan harga di pasar itu, lalu pulih pelan-pelan. Sebar penjualan ke beberapa pasar.',
+    tol: 'Jalan tol: menaikkan produksi semua bangunan di wilayah itu 20% per level.',
+    pelabuhan: 'Pelabuhan: memotong ongkir kirim antar wilayah. Pelabuhan di asal dan tujuan sama-sama berpengaruh.'
+  };
+
+  function term(label, key) {
+    return '<button type="button" class="term" data-action="term" data-term="' + key + '">' + label + '</button>';
+  }
 
   /* ---------- Panel wilayah ---------- */
 
@@ -2640,7 +2882,7 @@ body.text-xlarge main { zoom: 1.25; }
         '</div>' +
         '<div class="goods-price">' +
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
-          '<span class="muted">ongkir <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
+          '<span class="muted">' + term('ongkir', 'ongkir') + ' <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
           '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
           '<span data-live="signal" data-c="' + cid + '"></span>' +
         '</div>' +
@@ -2683,6 +2925,77 @@ body.text-xlarge main { zoom: 1.25; }
       '<polyline class="sp-past" points="' + past + '"/>' +
       '<polyline class="sp-fut" points="' + fut + '"/>' +
       '<circle class="sp-dot" cx="' + x(mid) + '" cy="' + y(ser[mid].price) + '" r="3.2"/></svg>';
+  }
+
+  /* ---------- Panduan awal ---------- */
+
+  function renderGuide(state) {
+    const host = $('guide');
+    if (!host) return;
+    const g = NT.achievements.guide(state);
+    if (state.guideHidden || g.complete) { host.innerHTML = ''; return; }
+    const open = view.guideOpen;
+    const list = g.steps.map(function (x) {
+      const cur = g.current && g.current.id === x.id;
+      return '<li class="' + (x.done ? 'done' : (cur ? 'cur' : '')) + '"><span class="gk">' + (x.done ? '✅' : (cur ? '👉' : '⬜')) + '</span>' +
+        '<span><b>' + x.icon + ' ' + x.title + '</b>' + (cur ? '<small>' + x.hint + '</small>' : '') + '</span></li>';
+    }).join('');
+    host.innerHTML =
+      '<div class="guide' + (open ? ' open' : '') + '">' +
+        '<button class="guide-head" data-action="guide-toggle" aria-expanded="' + open + '">' +
+          '<span class="guide-ico">🎓</span>' +
+          '<span class="guide-text"><small>Panduan awal · ' + g.done + '/' + g.total + '</small><b>' + g.current.title + '</b></span>' +
+          '<span class="guide-caret" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>' +
+        '</button>' +
+        '<div class="bar guidebar"><i style="width:' + (g.done / g.total * 100) + '%"></i></div>' +
+        (open ? '<ol class="guide-list">' + list + '</ol>' +
+          '<div class="guide-foot"><button class="btn" data-action="guide-hide">Sembunyikan panduan</button></div>' : '') +
+      '</div>';
+  }
+
+  /* ---------- Tab capaian: statistik, pencapaian, log ---------- */
+
+  function ago(ms) {
+    if (ms < 45000) return 'baru saja';
+    return F.duration(ms) + ' lalu';
+  }
+
+  function renderStats(state, now) {
+    const st = state.stats || {};
+    const A = NT.achievements;
+    const opened = Object.keys(state.regions).filter(function (id) { return state.regions[id].unlocked; }).length;
+    const total = Object.keys(state.regions).length;
+    const tiles = [
+      ['💰', 'Total pendapatan', F.money(state.totalEarned)],
+      ['📦', 'Hasil dikumpulkan', F.num(st.produced || 0)],
+      ['🤝', 'Barang terjual', F.num(st.sold || 0)],
+      ['💎', 'Penjualan terbesar', F.money(st.bestSale || 0)],
+      ['🔨', 'Pembangunan', F.num((st.builds || 0) + (st.upgrades || 0))],
+      ['🗺️', 'Wilayah terbuka', opened + ' dari ' + total],
+      ['⏱️', 'Waktu bermain', '<span data-live="playtime"></span>'],
+      ['📅', 'Mulai bermain', new Date(state.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })]
+    ].map(function (t) {
+      return '<div class="tile"><span class="tile-ico">' + t[0] + '</span><small>' + t[1] + '</small><b>' + t[2] + '</b></div>';
+    }).join('');
+
+    const got = A.list.filter(function (a) { return state.achievements[a.id]; });
+    const badges = A.list.map(function (a) {
+      const t = state.achievements[a.id];
+      return '<div class="badge' + (t ? ' got' : '') + '" title="' + a.desc + '">' +
+        '<span class="badge-ico">' + (t ? a.icon : '🔒') + '</span><b>' + a.name + '</b><small>' + a.desc + '</small></div>';
+    }).join('');
+
+    const log = (state.log || []).slice().reverse().map(function (e) {
+      return '<li><span class="log-ico">' + e.i + '</span><span class="log-x">' + e.x + '</span><small>' + ago(now - e.t) + '</small></li>';
+    }).join('');
+
+    $('tab-stats').innerHTML =
+      '<div class="card"><h2>Statistik</h2><div class="tiles">' + tiles + '</div></div>' +
+      '<div class="card"><h2>Pencapaian <span class="count">' + got.length + '/' + A.list.length + '</span></h2>' +
+        '<div class="bar"><i style="width:' + got.length / A.list.length * 100 + '%"></i></div>' +
+        '<div class="badges">' + badges + '</div></div>' +
+      '<div class="card"><h2>Aktivitas terbaru</h2>' +
+        (log ? '<ul class="log">' + log + '</ul>' : '<p class="muted">Belum ada aktivitas. Mulailah berdagang!</p>') + '</div>';
   }
 
   /* ---------- Tab info ---------- */
@@ -2795,6 +3108,8 @@ body.text-xlarge main { zoom: 1.25; }
       '<div class="card set-card"><h2>Bantuan</h2>' +
         setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di tab Info.',
           '<button class="btn" data-action="tab" data-id="about">Buka Info</button>') +
+        setRow('Panduan awal', 'Tampilkan lagi daftar langkah pertama di tab Peta (bila belum selesai).',
+          '<button class="btn" data-action="guide-show">Tampilkan</button>') +
       '</div>';
 
     if (keep) {
@@ -2857,6 +3172,8 @@ body.text-xlarge main { zoom: 1.25; }
     $('sheet').classList.toggle('open', !!view.sheet);
     document.body.classList.toggle('sheet-open', !!view.sheet && view.tab === 'map');
     renderMarket(state, now);
+    renderGuide(state);
+    renderStats(state, now);
     renderAbout(state);
     renderSettings();
     tick(state, now);
@@ -2959,7 +3276,8 @@ body.text-xlarge main { zoom: 1.25; }
     });
     each('[data-live="season"]', function (el) {
       const tag = NT.world.harvestTag(el.getAttribute('data-c'), now);
-      el.innerHTML = tag ? '<span class="tag ' + tag.id + '">' + tag.text + '</span>' : '';
+      const html = tag ? '<button type="button" class="tag term-tag ' + tag.id + '" data-action="term" data-term="' + tag.id + '">' + tag.text + '</button>' : '';
+      if (el.__h !== html) { el.__h = html; el.innerHTML = html; }
     });
     each('[data-live="km"]', function (el) {
       const km = E.distanceKm(D.commodities[el.getAttribute('data-c')].region, view.market);
@@ -3013,6 +3331,19 @@ body.text-xlarge main { zoom: 1.25; }
       el.disabled = qty === 'all' ? have < 1 : have < Number(qty);
     });
 
+    // Capaian dan upgrade termurah
+    each('[data-live="playtime"]', function (el) { el.textContent = F.duration((state.stats && state.stats.playMs) || 0); });
+    const cu = E.cheapestUpgrade(state);
+    const cbtn = document.querySelector('.cheapest');
+    if (cbtn) {
+      cbtn.setAttribute('data-cost', cu ? cu.cost : 0);
+      cbtn.setAttribute('data-none', cu ? '0' : '1');
+      const lab = cbtn.querySelector('[data-live="cheapest-label"]');
+      const txt = cu ? '⬆ Upgrade termurah: ' + cu.label + ' · ' + F.money(cu.cost) : 'Semua upgrade sudah maksimal';
+      if (lab && lab.textContent !== txt) lab.textContent = txt;
+      if (!cu) cbtn.disabled = true;
+    }
+
     // Info
     each('[data-live="rank-big"]', function (el) { el.textContent = rk.current.name + ' · skor ' + F.num(sc); });
     each('[data-live="rank-bar"]', function (el) {
@@ -3024,7 +3355,7 @@ body.text-xlarge main { zoom: 1.25; }
     });
   }
 
-  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick };
+  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick, glossary: GLOSSARY };
 })((window.NT = window.NT || {}));
 
 </script>
@@ -3139,7 +3470,9 @@ body.text-xlarge main { zoom: 1.25; }
 
   const AWAY_MS = 2 * 60000;   // pergi lebih lama dari ini = tampilkan layar sambutan
   const SEEN_KEY = 'nt-lastseen';
-  const COST_ACTIONS = { 'upgrade-building': 1, 'upgrade-infra': 1, unlock: 1, speedup: 1 };
+  const COST_ACTIONS = { 'upgrade-building': 1, 'upgrade-infra': 1, unlock: 1, speedup: 1, cheapest: 1 };
+  // Aksi yang dicatat di log aktivitas (ikon di depan pesan toast-nya).
+  const LOG_ICONS = { sell: '💰', 'sell-everything': '💰', 'upgrade-building': '🔨', 'upgrade-infra': '🛣️', cheapest: '🔨', unlock: '🔓', speedup: '⚡' };
 
   function now() { return Date.now(); }
 
@@ -3177,11 +3510,40 @@ body.text-xlarge main { zoom: 1.25; }
     }).join(', ');
   }
 
+  /* ---------- Log dan pencapaian ---------- */
+
+  function logEvent(icon, text) {
+    if (!state.log) state.log = [];
+    state.log.push({ t: now(), i: icon, x: text });
+    while (state.log.length > NT.state.LOG_MAX) state.log.shift();
+  }
+
+  // Cek pencapaian dan panduan; true bila ada yang baru (perlu simpan dan gambar ulang).
+  function checkProgress(quiet) {
+    const fresh = NT.achievements.evaluate(state, now());
+    let changed = fresh.length > 0;
+    if (quiet && fresh.length > 1) {
+      toast('🏆 ' + fresh.length + ' pencapaian terbuka dari kemajuanmu. Lihat di tab Capaian.', 'info');
+    } else {
+      fresh.forEach(function (a) { toast('🏆 Pencapaian: ' + a.name + '!', 'ok'); });
+    }
+    fresh.forEach(function (a) { logEvent('🏆', 'Pencapaian: ' + a.name); });
+    if (fresh.length && !quiet) NT.ui.fx.sfx('done');
+    if (!state.guideHidden && NT.achievements.guide(state).complete) {
+      state.guideHidden = true;
+      changed = true;
+      if (!quiet) toast('🎓 Panduan awal selesai. Selamat!', 'ok');
+    }
+    return changed;
+  }
+
   function celebrate(done, offline) {
     done.forEach(function (j) {
       const name = j.kind === 'building' ? NT.data.buildings[j.id].name
         : NT.data.infra[j.id].name + ' ' + NT.data.regions[j.region].name;
-      toast('✅ ' + name + (j.kind === 'building' && j.from === 0 ? ' selesai dibangun!' : ' naik ke Lv ' + j.to + '!'), 'ok');
+      const msg = name + (j.kind === 'building' && j.from === 0 ? ' selesai dibangun!' : ' naik ke Lv ' + j.to + '!');
+      toast('✅ ' + msg, 'ok');
+      logEvent('✅', msg);
     });
     NT.ui.fx.sfx('done');
     if (!offline) NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
@@ -3289,6 +3651,33 @@ body.text-xlarge main { zoom: 1.25; }
       return res;
     },
 
+    cheapest: function () {
+      const c = E.cheapestUpgrade(state);
+      if (!c) return { ok: false, reason: 'Semua upgrade sudah level maksimum.' };
+      const res = c.kind === 'building' ? E.upgradeBuilding(state, c.id, now()) : E.upgradeInfra(state, c.region, c.id, now());
+      if (res.ok) {
+        res.message = '🔨 ' + c.label + (res.queued ? ' · selesai dalam ' + F.short(res.durationMs) : ' selesai!');
+        res.sfx = 'start';
+      }
+      return res;
+    },
+
+    term: function (el) {
+      const text = P.glossary[el.getAttribute('data-term')];
+      if (text) toast(text, 'info');
+      return { silent: true, skipRender: true };
+    },
+
+    'guide-toggle': function () { P.view.guideOpen = !P.view.guideOpen; return { silent: true }; },
+    'guide-hide': function () { state.guideHidden = true; P.view.guideOpen = false; persistSoon(); return { silent: true }; },
+    'guide-show': function () {
+      state.guideHidden = false;
+      P.view.guideOpen = true;
+      P.view.tab = 'map';
+      persistSoon();
+      return { silent: true };
+    },
+
     'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
 
     'market-region': function (el) {
@@ -3304,6 +3693,7 @@ body.text-xlarge main { zoom: 1.25; }
       P.view.region = 'jawa';
       P.view.market = 'jawa';
       P.view.tab = 'map';
+      P.view.guideOpen = false;
       loadFailed = false;
       storage.reset().then(persist);
       return { ok: true, message: 'Game dimulai ulang.' };
@@ -3326,6 +3716,7 @@ body.text-xlarge main { zoom: 1.25; }
     if (!res.silent) {
       if (res.ok) {
         if (res.message) toast(res.message, 'ok');
+        if (LOG_ICONS[name] && res.message) logEvent(LOG_ICONS[name], res.message.replace(/^🔨\s*/, ''));
         if (res.fx) NT.ui.fx.floatFromRect(rect, res.fx, res.fxClass);
         if (res.sfx === 'done') NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
         NT.ui.fx.sfx(res.sfx || 'click');
@@ -3335,6 +3726,7 @@ body.text-xlarge main { zoom: 1.25; }
         NT.ui.fx.sfx('error');
       }
     }
+    if (!res.silent && res.ok && checkProgress(false)) persistSoon();
     if (!res.skipRender) P.renderAll(state, now());
   }
 
@@ -3419,7 +3811,9 @@ body.text-xlarge main { zoom: 1.25; }
       if (e.key === 'Escape' && P.view.sheet) { P.view.sheet = false; P.renderAll(state, now()); return; }
       if (e.key !== 'Enter' && e.key !== ' ') return;
       const island = e.target.closest && e.target.closest('.island');
-      if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); }
+      if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); return; }
+      const ts = e.target.closest && e.target.closest('.term-stat');
+      if (ts) { e.preventDefault(); handle('term', ts); }
     });
 
     document.addEventListener('change', function (e) {
@@ -3469,12 +3863,15 @@ body.text-xlarge main { zoom: 1.25; }
     const away = lastSeen ? t - lastSeen : 0;
     const welcomed = saved && away > AWAY_MS && NT.ui.welcome.show(state, away, finishedAway, t);
     if (!welcomed && finishedAway.length) celebrate(finishedAway, true);
+    if (checkProgress(true)) { persistSoon(); P.renderAll(state, t); }
     touchSeen();
 
     setInterval(function () {
       const t2 = now();
+      if (!document.hidden) state.stats.playMs += 1000;
       const done = E.settle(state, t2);
-      if (done.length) { celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
+      const gained = checkProgress(false);
+      if (done.length || gained) { if (done.length) celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
     }, 1000);
     setInterval(persist, NT.config.autosaveMs);
   }

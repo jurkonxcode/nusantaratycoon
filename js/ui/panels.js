@@ -8,9 +8,24 @@
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false };
 
   function $(id) { return document.getElementById(id); }
+
+  // Istilah yang bisa diketuk untuk melihat penjelasannya (aksi "term").
+  const GLOSSARY = {
+    ongkir: 'Ongkir: biaya kirim per satuan barang bila dijual di wilayah lain. Makin jauh dan makin berat barangnya, makin mahal. Pelabuhan menurunkannya.',
+    paceklik: 'Paceklik: masa panen sedikit. Produksi turun, tetapi harga biasanya naik.',
+    raya: 'Panen raya: masa hasil berlimpah. Produksi naik, tetapi harga cenderung tertekan.',
+    peradaban: 'Skor peradaban: dihitung dari level bangunan, infrastruktur, wilayah yang terbuka, dan total pendapatan. Makin tinggi, makin besar gelarmu.',
+    tekanan: 'Tekanan pasar: menjual banyak barang sekaligus menurunkan harga di pasar itu, lalu pulih pelan-pelan. Sebar penjualan ke beberapa pasar.',
+    tol: 'Jalan tol: menaikkan produksi semua bangunan di wilayah itu 20% per level.',
+    pelabuhan: 'Pelabuhan: memotong ongkir kirim antar wilayah. Pelabuhan di asal dan tujuan sama-sama berpengaruh.'
+  };
+
+  function term(label, key) {
+    return '<button type="button" class="term" data-action="term" data-term="' + key + '">' + label + '</button>';
+  }
 
   /* ---------- Panel wilayah ---------- */
 
@@ -146,7 +161,7 @@
         '</div>' +
         '<div class="goods-price">' +
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
-          '<span class="muted">ongkir <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
+          '<span class="muted">' + term('ongkir', 'ongkir') + ' <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
           '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
           '<span data-live="signal" data-c="' + cid + '"></span>' +
         '</div>' +
@@ -189,6 +204,77 @@
       '<polyline class="sp-past" points="' + past + '"/>' +
       '<polyline class="sp-fut" points="' + fut + '"/>' +
       '<circle class="sp-dot" cx="' + x(mid) + '" cy="' + y(ser[mid].price) + '" r="3.2"/></svg>';
+  }
+
+  /* ---------- Panduan awal ---------- */
+
+  function renderGuide(state) {
+    const host = $('guide');
+    if (!host) return;
+    const g = NT.achievements.guide(state);
+    if (state.guideHidden || g.complete) { host.innerHTML = ''; return; }
+    const open = view.guideOpen;
+    const list = g.steps.map(function (x) {
+      const cur = g.current && g.current.id === x.id;
+      return '<li class="' + (x.done ? 'done' : (cur ? 'cur' : '')) + '"><span class="gk">' + (x.done ? '✅' : (cur ? '👉' : '⬜')) + '</span>' +
+        '<span><b>' + x.icon + ' ' + x.title + '</b>' + (cur ? '<small>' + x.hint + '</small>' : '') + '</span></li>';
+    }).join('');
+    host.innerHTML =
+      '<div class="guide' + (open ? ' open' : '') + '">' +
+        '<button class="guide-head" data-action="guide-toggle" aria-expanded="' + open + '">' +
+          '<span class="guide-ico">🎓</span>' +
+          '<span class="guide-text"><small>Panduan awal · ' + g.done + '/' + g.total + '</small><b>' + g.current.title + '</b></span>' +
+          '<span class="guide-caret" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>' +
+        '</button>' +
+        '<div class="bar guidebar"><i style="width:' + (g.done / g.total * 100) + '%"></i></div>' +
+        (open ? '<ol class="guide-list">' + list + '</ol>' +
+          '<div class="guide-foot"><button class="btn" data-action="guide-hide">Sembunyikan panduan</button></div>' : '') +
+      '</div>';
+  }
+
+  /* ---------- Tab capaian: statistik, pencapaian, log ---------- */
+
+  function ago(ms) {
+    if (ms < 45000) return 'baru saja';
+    return F.duration(ms) + ' lalu';
+  }
+
+  function renderStats(state, now) {
+    const st = state.stats || {};
+    const A = NT.achievements;
+    const opened = Object.keys(state.regions).filter(function (id) { return state.regions[id].unlocked; }).length;
+    const total = Object.keys(state.regions).length;
+    const tiles = [
+      ['💰', 'Total pendapatan', F.money(state.totalEarned)],
+      ['📦', 'Hasil dikumpulkan', F.num(st.produced || 0)],
+      ['🤝', 'Barang terjual', F.num(st.sold || 0)],
+      ['💎', 'Penjualan terbesar', F.money(st.bestSale || 0)],
+      ['🔨', 'Pembangunan', F.num((st.builds || 0) + (st.upgrades || 0))],
+      ['🗺️', 'Wilayah terbuka', opened + ' dari ' + total],
+      ['⏱️', 'Waktu bermain', '<span data-live="playtime"></span>'],
+      ['📅', 'Mulai bermain', new Date(state.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })]
+    ].map(function (t) {
+      return '<div class="tile"><span class="tile-ico">' + t[0] + '</span><small>' + t[1] + '</small><b>' + t[2] + '</b></div>';
+    }).join('');
+
+    const got = A.list.filter(function (a) { return state.achievements[a.id]; });
+    const badges = A.list.map(function (a) {
+      const t = state.achievements[a.id];
+      return '<div class="badge' + (t ? ' got' : '') + '" title="' + a.desc + '">' +
+        '<span class="badge-ico">' + (t ? a.icon : '🔒') + '</span><b>' + a.name + '</b><small>' + a.desc + '</small></div>';
+    }).join('');
+
+    const log = (state.log || []).slice().reverse().map(function (e) {
+      return '<li><span class="log-ico">' + e.i + '</span><span class="log-x">' + e.x + '</span><small>' + ago(now - e.t) + '</small></li>';
+    }).join('');
+
+    $('tab-stats').innerHTML =
+      '<div class="card"><h2>Statistik</h2><div class="tiles">' + tiles + '</div></div>' +
+      '<div class="card"><h2>Pencapaian <span class="count">' + got.length + '/' + A.list.length + '</span></h2>' +
+        '<div class="bar"><i style="width:' + got.length / A.list.length * 100 + '%"></i></div>' +
+        '<div class="badges">' + badges + '</div></div>' +
+      '<div class="card"><h2>Aktivitas terbaru</h2>' +
+        (log ? '<ul class="log">' + log + '</ul>' : '<p class="muted">Belum ada aktivitas. Mulailah berdagang!</p>') + '</div>';
   }
 
   /* ---------- Tab info ---------- */
@@ -301,6 +387,8 @@
       '<div class="card set-card"><h2>Bantuan</h2>' +
         setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di tab Info.',
           '<button class="btn" data-action="tab" data-id="about">Buka Info</button>') +
+        setRow('Panduan awal', 'Tampilkan lagi daftar langkah pertama di tab Peta (bila belum selesai).',
+          '<button class="btn" data-action="guide-show">Tampilkan</button>') +
       '</div>';
 
     if (keep) {
@@ -363,6 +451,8 @@
     $('sheet').classList.toggle('open', !!view.sheet);
     document.body.classList.toggle('sheet-open', !!view.sheet && view.tab === 'map');
     renderMarket(state, now);
+    renderGuide(state);
+    renderStats(state, now);
     renderAbout(state);
     renderSettings();
     tick(state, now);
@@ -465,7 +555,8 @@
     });
     each('[data-live="season"]', function (el) {
       const tag = NT.world.harvestTag(el.getAttribute('data-c'), now);
-      el.innerHTML = tag ? '<span class="tag ' + tag.id + '">' + tag.text + '</span>' : '';
+      const html = tag ? '<button type="button" class="tag term-tag ' + tag.id + '" data-action="term" data-term="' + tag.id + '">' + tag.text + '</button>' : '';
+      if (el.__h !== html) { el.__h = html; el.innerHTML = html; }
     });
     each('[data-live="km"]', function (el) {
       const km = E.distanceKm(D.commodities[el.getAttribute('data-c')].region, view.market);
@@ -519,6 +610,19 @@
       el.disabled = qty === 'all' ? have < 1 : have < Number(qty);
     });
 
+    // Capaian dan upgrade termurah
+    each('[data-live="playtime"]', function (el) { el.textContent = F.duration((state.stats && state.stats.playMs) || 0); });
+    const cu = E.cheapestUpgrade(state);
+    const cbtn = document.querySelector('.cheapest');
+    if (cbtn) {
+      cbtn.setAttribute('data-cost', cu ? cu.cost : 0);
+      cbtn.setAttribute('data-none', cu ? '0' : '1');
+      const lab = cbtn.querySelector('[data-live="cheapest-label"]');
+      const txt = cu ? '⬆ Upgrade termurah: ' + cu.label + ' · ' + F.money(cu.cost) : 'Semua upgrade sudah maksimal';
+      if (lab && lab.textContent !== txt) lab.textContent = txt;
+      if (!cu) cbtn.disabled = true;
+    }
+
     // Info
     each('[data-live="rank-big"]', function (el) { el.textContent = rk.current.name + ' · skor ' + F.num(sc); });
     each('[data-live="rank-bar"]', function (el) {
@@ -530,5 +634,5 @@
     });
   }
 
-  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick };
+  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick, glossary: GLOSSARY };
 })((window.NT = window.NT || {}));

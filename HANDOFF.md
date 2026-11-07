@@ -91,6 +91,7 @@ js/
     economy.js              SEMUA aturan: produksi, pasar, ongkir, upgrade, skor (NT.economy)
     world.js                musim (bulan WIB) dan peristiwa acak deterministik (NT.world)
     raster.js               poligon -> grid sel untuk peta (NT.raster)
+    achievements.js         panduan awal 5 langkah + 19 pencapaian (NT.achievements); murni logika
   storage/
     local-storage.js        driver localStorage
     supabase-storage.js     driver Supabase (satu baris JSON per pemain)
@@ -122,6 +123,8 @@ teks berasal dari data game sendiri, jadi aman, tapi berubah begitu ada nama pem
   regions:   { jawa: { unlocked: true, infra: { tol: 0, pelabuhan: 0 } }, sumatra: {...}, sulawesi: {...} },
   buildings: { sawah: { level: 1, lastCollected: <ms> }, ... },   // hanya bangunan yang sudah dibangun
   inventory: { padi: 0, batik: 0, kopi: 0, karet: 0, kakao: 0, cengkeh: 0 },
+  stats: { collects, produced, sales, sold, upgrades, builds, unlocks, bestSale, playMs },  // sesi 7
+  achievements: { <id>: <waktu terbuka ms> }, log: [{ t, i, x }], guideHidden: false,        // sesi 7
   market:    { jawa: { padi: { stock: 0, updatedAt: <ms> } }, ... } // tekanan pasokan hasil penjualan pemain
 }
 ```
@@ -372,3 +375,39 @@ State: `view.sheet` (hanya di UI, tidak disimpan). Saat terbuka, `body.sheet-ope
 | Sesi | File yang berubah |
 |---|---|
 | 6 (paket B) | `index.html`, `css/style.css`, `js/main.js`, `js/core/economy.js`, `js/ui/panels.js`, `tests/economy.test.js`, `dist/nusantara-tycoon.html`; baru: `tests/browser_paket_b.py`; `HANDOFF.md` |
+
+## 21. Sesi 7: Paket C (7 November 2026)
+
+**State baru** (`core/state.js`; save lama otomatis diisi nol lewat `normalize`, tanpa migrasi): `stats`, `achievements`, `log` (maks 40, paling lama di depan), `guideHidden`.
+- `stats` dihitung di `core/economy.js` lewat `stat(state, key, n)`: `collect` (dan `collectAll`) -> `collects`, `produced`; `sell` -> `sales`, `sold`, `bestSale`;
+  `upgradeBuilding/Infra` -> `builds` (level 0 ke 1) atau `upgrades`; `unlockRegion` -> `unlocks`. Pengumpulan otomatis sebelum upgrade memakai `gather` (tanpa statistik).
+- `playMs` ditambah 1000 tiap detik oleh loop di `main.js` selama tab terlihat. Waktu pakai jam perangkat, jadi bisa dicurangi seperti hal lain di tahap 1.
+
+**Panduan awal** (`NT.achievements.guide(state)`): 5 langkah (kumpulkan, jual, naikkan level Sawah, bangun bangunan baru, buka wilayah).
+Syarat diturunkan dari state **dan** statistik, jadi pemain lama tidak melihat panduan yang sudah terlampaui. Kartu ringkas di atas peta (ketuk untuk membuka daftar);
+hilang sendiri saat selesai, atau lewat "Sembunyikan"; bisa ditampilkan lagi di Pengaturan > Bantuan. Cukup ubah `STEPS` untuk menambah/mengganti langkah.
+
+**Pencapaian** (`NT.achievements.list`, 19 buah): tiap entri `{ id, icon, name, desc, test(state) }`. `evaluate(state, now)` menandai yang baru terpenuhi (sekali saja) dan mengembalikannya.
+Dipanggil dari `checkProgress` di `main.js` setelah aksi berhasil, tiap detik, dan saat membuka game. Saat membuka game dengan lebih dari satu pencapaian baru (pemain lama) hanya muncul satu toast ringkasan.
+Menambah pencapaian = satu objek di `LIST` (+ penghitung baru di `stats` bila perlu, daftarkan di `STAT_KEYS` di `state.js`).
+
+**Tab 🏆 Capaian** (`renderStats`): 8 ubin statistik, kisi lencana (terkunci tampil 🔒 dan redup), log aktivitas (waktu relatif dihitung saat render ulang, bukan tiap detik).
+Log diisi `logEvent` di `main.js` untuk: jual, pembangunan/upgrade, buka wilayah, percepat, pembangunan selesai, pencapaian. Pengumpulan hasil sengaja tidak dicatat (terlalu sering).
+
+**Upgrade termurah**: tombol di bawah "Kumpulkan semua" (aksi `cheapest`, `E.cheapestUpgrade`): bangunan atau infrastruktur termurah yang belum dikerjakan; tidak termasuk buka wilayah.
+`nextGoal` kini memakai `candidates()` yang sama (hasil ditambah `kind`, `id`, `region`). Ikut konfirmasi pembelian mahal.
+
+**Istilah**: `GLOSSARY` di `panels.js`; elemen `button.term[data-term]` (ongkir, label panen raya/paceklik, kartu Peradaban) memicu toast penjelasan (`kind: 'info'`, tampil lebih lama sesuai panjang teks).
+
+**Belum / catatan**
+- Zoom dan geser peta yang lebih halus (butir di paket C lama) belum dikerjakan; belum jelas apa yang terasa kurang. Catat dulu dari uji main.
+- Layar Selamat datang kembali belum memakai statistik atau pencapaian.
+- Tidak ada hadiah kas dari pencapaian (hanya lencana); bisa jadi ide keseimbangan nanti.
+- Pengaturan "Konfirmasi pembelian" masih memakai `window.confirm`.
+- `tests/browser_smoke.py` tetap tidak ada di zip yang diterima (lihat bagian 20).
+
+**Tes:** `tests/economy.test.js` menjadi 24 tes (statistik, normalize, panduan, pencapaian, termurah); `tests/browser_paket_c.py` 33 pengecekan (HP 390px, pemain lama, desktop 1280px). Paket B tetap hijau (22).
+
+| Sesi | File yang berubah |
+|---|---|
+| 7 (paket C) | `index.html`, `css/style.css`, `js/main.js`, `js/core/economy.js`, `js/core/state.js`, `js/ui/panels.js`, `js/ui/toast.js`, `tests/economy.test.js`, `dist/nusantara-tycoon.html`; baru: `js/core/achievements.js`, `tests/browser_paket_c.py`; `HANDOFF.md` |
