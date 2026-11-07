@@ -16,6 +16,19 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
 
+  // Derau mulus (interpolasi antar titik kisi) supaya hutan dan dataran tinggi membentuk gugusan, bukan bintik acak.
+  function smooth(x, y, salt, scale) {
+    const fx = x / scale, fy = y / scale;
+    const x0 = Math.floor(fx), y0 = Math.floor(fy);
+    const tx = fx - x0, ty = fy - y0;
+    const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+    const a = noise(x0, y0, salt), b = noise(x0 + 1, y0, salt), c = noise(x0, y0 + 1, salt), d = noise(x0 + 1, y0 + 1, salt);
+    return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy;
+  }
+
+  // Ketinggian semu 0..1 untuk satu sel daratan.
+  function height(x, y) { return 0.82 * smooth(x, y, 1, 5) + 0.18 * noise(x, y, 2); }
+
   // Gabungkan sel berurutan dalam satu baris menjadi satu persegi panjang (path ringkas).
   function runsPath(grid, test) {
     const d = [];
@@ -41,30 +54,34 @@
     return isSea(grid, x - 1, y) || isSea(grid, x + 1, y) || isSea(grid, x, y - 1) || isSea(grid, x, y + 1);
   }
 
-  // Pantai berpasir hanya sebagian sel tepi, supaya pulau sempit (Jawa) tetap tampak hijau.
-  function sandy(grid, x, y) { return coastal(grid, x, y) && noise(x, y, 3) < 0.55; }
+  // Pantai berpasir: sel tepi, dengan sedikit selang-seling supaya garis pantai tidak tampak seperti bingkai.
+  function sandy(grid, x, y) { return coastal(grid, x, y) && noise(x, y, 3) < 0.78; }
 
   function landPaths(grid, id) {
     const own = function (i) { return grid.owner[i] === id; };
+    const inland = function (x, y, i) { return own(i) && !sandy(grid, x, y); };
     return '' +
       '<path class="px-sand" d="' + runsPath(grid, function (x, y, i) { return own(i) && sandy(grid, x, y); }) + '"/>' +
-      '<path class="px-grass" d="' + runsPath(grid, function (x, y, i) { return own(i) && !sandy(grid, x, y) && noise(x, y, 1) < 0.62; }) + '"/>' +
-      '<path class="px-forest" d="' + runsPath(grid, function (x, y, i) { const n = noise(x, y, 1); return own(i) && !sandy(grid, x, y) && n >= 0.62 && n < 0.86; }) + '"/>' +
-      '<path class="px-dark" d="' + runsPath(grid, function (x, y, i) { return own(i) && !sandy(grid, x, y) && noise(x, y, 1) >= 0.86; }) + '"/>';
+      '<path class="px-grass" d="' + runsPath(grid, function (x, y, i) { return inland(x, y, i) && height(x, y) < 0.56; }) + '"/>' +
+      '<path class="px-forest" d="' + runsPath(grid, function (x, y, i) { const h = height(x, y); return inland(x, y, i) && h >= 0.56 && h < 0.72; }) + '"/>' +
+      '<path class="px-dark" d="' + runsPath(grid, function (x, y, i) { return inland(x, y, i) && height(x, y) >= 0.72; }) + '"/>';
   }
 
   function pt(lonlat) { return NT.raster.toPx(lonlat[0], lonlat[1]); }
 
   function islandMarkup(grid, r) {
     const pin = pt(r.map.pin), label = pt(r.map.label);
+    const text = r.short || r.name;
+    const lw = Math.round(text.length * 9.6 + 20);
     return '' +
       '<g class="island" data-region="' + r.id + '" tabindex="0" role="button" aria-label="' + r.name + '">' +
         '<g class="island-land">' + landPaths(grid, r.id) + '</g>' +
         '<g class="dyn" data-dyn="' + r.id + '"></g>' +
-        '<text class="island-label" x="' + label.x + '" y="' + label.y + '" text-anchor="middle">' + (r.short || r.name) + '</text>' +
+        '<g class="island-tag"><rect class="label-bg" x="' + (label.x - lw / 2) + '" y="' + (label.y - 17) + '" width="' + lw + '" height="25" rx="7"/>' +
+        '<text class="island-label" x="' + label.x + '" y="' + label.y + '" text-anchor="middle">' + text + '</text></g>' +
         '<g class="pin" transform="translate(' + pin.x + ',' + pin.y + ')">' +
-          '<circle class="pin-pulse" r="15"/>' +
-          '<circle class="pin-dot" r="15"/>' +
+          '<circle class="pin-pulse" r="17"/>' +
+          '<circle class="pin-dot" r="17"/>' +
           '<text class="pin-icon" text-anchor="middle" dy="7">' + r.icon + '</text>' +
         '</g>' +
       '</g>';
@@ -80,14 +97,48 @@
     }).join('');
   }
 
+  // Nama perairan, hanya digambar bila titiknya jatuh di laut dalam (tidak menimpa pulau atau label).
+  const SEAS = [
+    ['Samudra Hindia', 99.5, -8.6], ['Laut Cina Selatan', 108.5, 5.6], ['Laut Jawa', 111.5, -4.9],
+    ['Laut Banda', 128.6, -6.5], ['Samudra Pasifik', 132.5, 5.6], ['Laut Arafura', 136.2, -9.6], ['Selat Makassar', 117.6, -1.6]
+  ];
+
+  function seaLabels(grid) {
+    return SEAS.map(function (s) {
+      const c = NT.raster.toCell(s[1], s[2]);
+      const x = Math.floor(c.cx), y = Math.floor(c.cy);
+      const span = Math.ceil(s[0].length * 0.9 / 2);   // sel yang ditempati teks, kira-kira
+      for (let dx = -span; dx <= span; dx += 2) {
+        if (x + dx < 0 || x + dx >= grid.W || y < 0 || y >= grid.H || grid.dist[y * grid.W + x + dx] < 3) return '';
+      }
+      const p = NT.raster.toPx(s[1], s[2]);
+      return '<text class="sea-label" x="' + p.x.toFixed(0) + '" y="' + p.y.toFixed(0) + '" text-anchor="middle">' + s[0] + '</text>';
+    }).join('');
+  }
+
+  // Garis bujur/lintang tipis tiap 5 derajat (hiasan kartografi).
+  function graticule(W, H) {
+    let d = '';
+    for (let lon = 100; lon < G.lon1; lon += 5) { const x = NT.raster.toPx(lon, 0).x; d += 'M' + x + ' 0V' + H; }
+    for (let lat = 5; lat > G.lat1; lat -= 5) { const y = NT.raster.toPx(95, lat).y; d += 'M0 ' + y + 'H' + W; }
+    return '<path class="graticule" d="' + d + '"/>';
+  }
+
+  function compass(x, y) {
+    return '<g class="compass" transform="translate(' + x + ',' + y + ')">' +
+      '<circle r="26" class="cp-ring"/><path class="cp-n" d="M0-22L6 0H-6Z"/><path class="cp-s" d="M0 22L6 0H-6Z"/>' +
+      '<text class="cp-t" y="-30" text-anchor="middle">U</text></g>';
+  }
+
   function build() {
     const grid = NT.raster.grid();
     const W = grid.W * S, H = grid.H * S;
     const sea = [1, 2, 3].map(function (n) {
       return '<path class="px-sea s' + n + '" d="' + runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === n; }) + '"/>';
     }).join('');
-    const sparkle = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 7) > 0.955; });
-    const sparkle2 = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 9) > 0.955; });
+    const sparkle = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 7) > 0.975; });
+    const sparkle2 = runsPath(grid, function (x, y, i) { return grid.owner[i] === null && grid.dist[i] === 9 && noise(x, y, 9) > 0.975; });
+    const cp = NT.raster.toPx(139.4, 5.0);
     const neighbor = '<path class="px-neighbor" d="' + runsPath(grid, function (x, y, i) { return grid.owner[i] === 'neighbor'; }) + '"/>';
     const islands = Object.keys(D.regions).map(function (id) { return islandMarkup(grid, D.regions[id]); }).join('');
 
@@ -95,8 +146,8 @@
     '<svg class="map-svg" viewBox="0 0 ' + W + ' ' + H + '" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peta Nusantara">' +
       '<rect class="px-deep" width="' + W + '" height="' + H + '"/>' +
       '<path class="sparkle a" d="' + sparkle + '"/><path class="sparkle b" d="' + sparkle2 + '"/>' +
-      sea + neighbor + islands +
-      '<g class="ships">' + shipsMarkup() + '</g>' +
+      graticule(W, H) + sea + neighbor + seaLabels(grid) + islands +
+      '<g class="ships">' + shipsMarkup() + '</g>' + compass(cp.x, cp.y) +
     '</svg>';
   }
 

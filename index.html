@@ -10,46 +10,58 @@
 <body>
   <div class="batik-strip" aria-hidden="true"></div>
 
-  <div id="app">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-logo" aria-hidden="true">🏝️</span>
-        <div>
-          <h1>Nusantara Tycoon</h1>
-          <p id="rank-name">Desa Rintisan</p>
+  <header class="masthead">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="brand">
+          <span class="brand-logo" aria-hidden="true">🏝️</span>
+          <div>
+            <h1>Nusantara Tycoon</h1>
+            <p id="rank-name">Desa Rintisan</p>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span>Kas</span><b id="stat-cash">Rp 0</b></div>
+          <div class="stat"><span>Peradaban</span><b id="stat-score">0</b></div>
         </div>
       </div>
-      <div class="stats">
-        <div class="stat"><span>Kas</span><b id="stat-cash">Rp 0</b></div>
-        <div class="stat"><span>Peradaban</span><b id="stat-score">0</b></div>
-      </div>
-    </header>
 
-    <nav class="tabs" role="tablist">
-      <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
-      <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
-      <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
-      <button class="tab mini" id="btn-mute" data-action="mute" aria-label="Suara">🔊</button>
-    </nav>
+      <nav class="tabs" role="tablist">
+        <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
+        <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
+        <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
+        <button class="tab mini" id="btn-mute" data-action="mute" aria-label="Suara">🔊</button>
+      </nav>
+    </div>
+  </header>
 
+  <div id="app" class="wrap">
     <main>
       <section id="tab-map" class="tab-panel">
-        <div class="goal" id="goal">
-          <div class="goal-top">
-            <span class="goal-ico" id="goal-ico">🎯</span>
-            <div class="goal-text"><small>Target berikutnya</small><b id="goal-title">…</b></div>
-            <div class="builders" id="builders" title="Tukang yang sedang bekerja"></div>
+        <div class="map-layout">
+          <div class="map-col">
+          <div class="info-row">
+          <div class="goal" id="goal">
+            <div class="goal-top">
+              <span class="goal-ico" id="goal-ico">🎯</span>
+              <div class="goal-text"><small>Target berikutnya</small><b id="goal-title">…</b></div>
+              <div class="builders" id="builders" title="Tukang yang sedang bekerja"></div>
+            </div>
+            <div class="bar goalbar"><i id="goal-bar"></i></div>
+            <small id="goal-eta"></small>
           </div>
-          <div class="bar goalbar"><i id="goal-bar"></i></div>
-          <small id="goal-eta"></small>
+          <div id="world-banner" class="world-banner"></div>
         </div>
-        <div id="world-banner" class="world-banner"></div>
-        <div class="map-card">
-          <div class="map-scroll"><div id="map"></div></div>
-          <div id="region-chips" class="region-chips"></div>
+            <div class="map-card">
+              <div class="map-scroll"><div id="map"></div></div>
+              <div id="region-chips" class="region-chips"></div>
+            </div>
+          </div>
+          <div class="side-col">
+            <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
+            <div id="region-panel"></div>
+          </div>
         </div>
-        <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
-        <div id="region-panel"></div>
       </section>
       <section id="tab-market" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
