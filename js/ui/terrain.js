@@ -8,6 +8,7 @@
   NT.ui = NT.ui || {};
   const G = NT.data.geo;
   const K = 2;   // piksel kanvas per satuan viewBox
+  const SLICE_MS = 8;   // jatah kerja per irisan saat menghitung tekstur; sisanya untuk menggambar bingkai dan menerima sentuhan
   const W = Math.ceil((G.lon1 - G.lon0) / G.cellDeg) * G.cellPx;
   const H = Math.ceil((G.lat0 - G.lat1) / G.cellDeg) * G.cellPx;
 
@@ -165,30 +166,36 @@
   function smooth(a, b, x) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
 
   // Jarak (piksel) ke sel bertanda 1 terdekat, pendekatan chamfer dua sapuan.
-  function dt(seed, w, h) {
+  function* dtGen(seed, w, h) {
     const d = new Float32Array(w * h), R2 = 1.414;
-    for (let i = 0; i < d.length; i++) d[i] = seed[i] ? 0 : 1e9;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = y * w + x; let v = d[i];
-      if (v === 0) continue;
-      if (x > 0) v = Math.min(v, d[i - 1] + 1);
-      if (y > 0) {
-        v = Math.min(v, d[i - w] + 1);
-        if (x > 0) v = Math.min(v, d[i - w - 1] + R2);
-        if (x < w - 1) v = Math.min(v, d[i - w + 1] + R2);
+    for (let i = 0; i < d.length; i++) { d[i] = seed[i] ? 0 : 1e9; if (!(i & 0x3FFFF)) yield; }
+    for (let y = 0; y < h; y++) {
+      if (!(y & 7)) yield;
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x; let v = d[i];
+        if (v === 0) continue;
+        if (x > 0) v = Math.min(v, d[i - 1] + 1);
+        if (y > 0) {
+          v = Math.min(v, d[i - w] + 1);
+          if (x > 0) v = Math.min(v, d[i - w - 1] + R2);
+          if (x < w - 1) v = Math.min(v, d[i - w + 1] + R2);
+        }
+        d[i] = v;
       }
-      d[i] = v;
     }
-    for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
-      const i = y * w + x; let v = d[i];
-      if (v === 0) continue;
-      if (x < w - 1) v = Math.min(v, d[i + 1] + 1);
-      if (y < h - 1) {
-        v = Math.min(v, d[i + w] + 1);
-        if (x < w - 1) v = Math.min(v, d[i + w + 1] + R2);
-        if (x > 0) v = Math.min(v, d[i + w - 1] + R2);
+    for (let y = h - 1; y >= 0; y--) {
+      if (!(y & 7)) yield;
+      for (let x = w - 1; x >= 0; x--) {
+        const i = y * w + x; let v = d[i];
+        if (v === 0) continue;
+        if (x < w - 1) v = Math.min(v, d[i + 1] + 1);
+        if (y < h - 1) {
+          v = Math.min(v, d[i + w] + 1);
+          if (x < w - 1) v = Math.min(v, d[i + w + 1] + R2);
+          if (x > 0) v = Math.min(v, d[i + w - 1] + R2);
+        }
+        d[i] = v;
       }
-      d[i] = v;
     }
     return d;
   }
@@ -222,16 +229,46 @@
     ctx.fill();
   }
 
-  function alphaOf(c) {
-    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, a = new Uint8Array(c.width * c.height);
-    for (let i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
+  /* ---------- Pembagi waktu ----------
+   * Perhitungan tekstur berat ditulis sebagai generator yang memberi kendali tiap beberapa baris. Pemanggil sinkron
+   * (drain) menghabiskan semuanya; pemanggil async (runSliced) menjalankannya per irisan ~8 ms supaya browser sempat
+   * menggambar dan menerima sentuhan, dan bisa membatalkannya kapan saja (pemain mulai menggeser lagi). */
+  function drain(gen) {
+    let r;
+    do { r = gen.next(); } while (!r.done);
+    return r.value;
+  }
+
+  function runSliced(gen, budgetMs, isStale, done) {
+    const mc = typeof MessageChannel === 'function' ? new MessageChannel() : null;
+    function next() { if (mc) mc.port2.postMessage(0); else setTimeout(step, 0); }
+    function end() { if (mc) { mc.port1.onmessage = null; mc.port1.close(); } }
+    function step() {
+      if (isStale()) { try { gen.return(); } catch (e) { /* abaikan */ } end(); return; }
+      const t0 = performance.now();
+      let r;
+      do { r = gen.next(); } while (!r.done && performance.now() - t0 < budgetMs);
+      if (r.done) { end(); done(r.value); } else next();
+    }
+    if (mc) mc.port1.onmessage = step;
+    next();
+  }
+
+  // Baca kanal alfa kanvas per pita baris (getImageData sekaligus untuk kanvas besar memblokir puluhan milidetik).
+  function* alphaGen(c) {
+    const w = c.width, h = c.height, ctx = c.getContext('2d'), a = new Uint8Array(w * h), band = Math.max(16, Math.floor(262144 / w));
+    for (let y0 = 0; y0 < h; y0 += band) {
+      const bh = Math.min(band, h - y0), d = ctx.getImageData(0, y0, w, bh).data, off = y0 * w;
+      for (let i = 0, n = w * bh; i < n; i++) a[off + i] = d[i * 4 + 3];
+      yield;
+    }
     return a;
   }
 
   // Hitung tekstur laut dan darat untuk satu jendela (default: seluruh peta pada K). Derau memakai koordinat dunia,
   // jadi jendela mana pun menghasilkan gambar yang sama dengan potongan peta penuh, hanya lebih tajam bila k lebih besar.
   // Jarak ke pantai (dt) dihitung di dalam jendela: pemanggil harus memberi tepi >= EDGE satuan di luar area yang dipakai.
-  function compute(o) {
+  function* computeGen(o) {
     o = o || { x: 0, y: 0, w: W, h: H, k: K };
     const k = o.k, ox = o.x, oy = o.y;
     const w = Math.ceil(o.w * k), h = Math.ceil(o.h * k), N = w * h;
@@ -239,14 +276,27 @@
     let ctx = play.getContext('2d'); ctx.fillStyle = '#fff';
     Object.keys(G.polygons).forEach(function (id) { if (id !== 'neighbor') fillRings(ctx, shape(id), o); });
     ctx = nbc.getContext('2d'); ctx.fillStyle = '#fff'; fillRings(ctx, shape('neighbor'), o);
-    const aP = alphaOf(play), aN = alphaOf(nbc), land = new Uint8Array(N);
-    for (let i = 0; i < N; i++) land[i] = Math.max(aP[i], aN[i]);
+    const aP = yield* alphaGen(play), aN = yield* alphaGen(nbc), land = new Uint8Array(N);
+    for (let i = 0; i < N; i++) { land[i] = Math.max(aP[i], aN[i]); if (!(i & 0x3FFFF)) yield; }
 
-    function seedFrom(c, stroke) { return alphaOf(c); }
     const shelfC = canvas(w, h); ctx = shelfC.getContext('2d'); ctx.fillStyle = '#fff';
     fillRings(ctx, SHELVES.map(function (r) { return chaikin(chaikin(toPxRing(r))); }), o);
-    const aS = seedFrom(shelfC);
-    function ridgeSeed(list) {
+    const aS = yield* alphaGen(shelfC);
+    // Wilayah "segera hadir" dan sekitarnya (tepi 12 satuan): bayangan dan buihnya dibuat lebih pudar, sama seperti pulaunya.
+    const soonC = canvas(w, h); ctx = soonC.getContext('2d'); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round'; ctx.lineWidth = 24 * k;
+    let anySoon = false;
+    Object.keys(G.polygons).forEach(function (id) {
+      const rg = NT.data.regions && NT.data.regions[id];
+      if (!rg || !rg.comingSoon) return;
+      anySoon = true; fillRings(ctx, shape(id), o);
+      shape(id).forEach(function (ring) {
+        ctx.beginPath();
+        ring.forEach(function (p, i) { const px = (p.x - ox) * k, py = (p.y - oy) * k; if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+        ctx.closePath(); ctx.stroke();
+      });
+    });
+    const aSoon = anySoon ? yield* alphaGen(soonC) : null;
+    function* ridgeSeed(list) {
       const c = canvas(w, h), x = c.getContext('2d');
       x.strokeStyle = '#fff'; x.lineWidth = 3 * k; x.lineCap = 'round'; x.lineJoin = 'round';
       list.forEach(function (l) {
@@ -254,19 +304,21 @@
         l.forEach(function (q, i) { const p = NT.raster.toPx(q[0], q[1]), px = (p.x - ox) * k, py = (p.y - oy) * k; if (i) x.lineTo(px, py); else x.moveTo(px, py); });
         x.stroke();
       });
-      return alphaOf(c);
+      return yield* alphaGen(c);
     }
 
     const sLand = new Uint8Array(N), sSea = new Uint8Array(N), sOut = new Uint8Array(N);
-    for (let i = 0; i < N; i++) { sLand[i] = land[i] > 127 ? 1 : 0; sSea[i] = sLand[i] ? 0 : 1; sOut[i] = aS[i] < 128 ? 1 : 0; }
-    const dSea = dt(sLand, w, h), dIn = dt(sSea, w, h), dShelf = dt(sOut, w, h);
-    const rh = ridgeSeed(RIDGE_HIGH), rm = ridgeSeed(RIDGE_MID);
-    for (let i = 0; i < N; i++) { sLand[i] = rh[i] > 40 ? 1 : 0; sSea[i] = rm[i] > 40 ? 1 : 0; }
-    const dH = dt(sLand, w, h), dM = dt(sSea, w, h);
+    for (let i = 0; i < N; i++) { sLand[i] = land[i] > 127 ? 1 : 0; sSea[i] = sLand[i] ? 0 : 1; sOut[i] = aS[i] < 128 ? 1 : 0; if (!(i & 0x3FFFF)) yield; }
+    const dSea = yield* dtGen(sLand, w, h), dIn = yield* dtGen(sSea, w, h), dShelf = yield* dtGen(sOut, w, h);
+    const rh = yield* ridgeSeed(RIDGE_HIGH), rm = yield* ridgeSeed(RIDGE_MID);
+    for (let i = 0; i < N; i++) { sLand[i] = rh[i] > 40 ? 1 : 0; sSea[i] = rm[i] > 40 ? 1 : 0; if (!(i & 0x3FFFF)) yield; }
+    const dH = yield* dtGen(sLand, w, h), dM = yield* dtGen(sSea, w, h);
 
     // Ketinggian 0..1 (hanya daratan).
     const hgt = new Float32Array(N);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      if (!(y & 3)) yield;
+      for (let x = 0; x < w; x++) {
       const i = y * w + x;
       if (land[i] < 128) continue;
       const vx = ox + x / k, vy = oy + y / k;
@@ -275,6 +327,7 @@
       const n1 = fbm(vx, vy, 14, 4, 11), n2 = fbm(vx, vy, 5, 3, 21), n3 = fbm(vx, vy, 2.2, 2, 31);
       const v = (0.07 + 0.30 * n1) * (0.3 + 0.7 * inl) + rH * (0.55 + 0.45 * n2) + rM * (0.30 + 0.32 * n2) + 0.05 * (n3 - 0.5);
       hgt[i] = Math.max(0, Math.min(1, v));
+      }
     }
     // Kerucut gunung api: kenaikan mulus dengan kawah kecil di puncak.
     VOLCANOES.forEach(function (vc) {
@@ -293,7 +346,14 @@
 
     const seaImg = new ImageData(w, h), landImg = new ImageData(w, h), sd = seaImg.data, ld = landImg.data;
     const sh = Math.max(1, Math.round(1.5 * k)), hw = W / 2, hh2 = H / 2;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    // Bayangan jatuh dan buih pantai pulau (dulu dua lapisan vektor ber-filter blur yang digambar ulang tiap bingkai geser):
+    // dipanggang ke tekstur laut. Siluet bayangan digeser (2,5; 6) satuan lalu dikaburkan sigma 2,4; buih = garis tebal 4 satuan
+    // di pantai, juga dikaburkan. Jarak bertanda d (satuan; positif di laut) dari transformasi jarak yang sudah ada.
+    const SDX = Math.round(2.5 * k), SDY = Math.round(6 * k), SIG = 2 * 2.4;
+    function inside(d) { return 1 - smooth(-SIG, SIG, d); }
+    for (let y = 0; y < h; y++) {
+      if (!(y & 3)) yield;
+      for (let x = 0; x < w; x++) {
       const i = y * w + x, oo = i * 4, vx = ox + x / k, vy = oy + y / k;
       if (land[i] >= 128 || (aP[i] > 0 || aN[i] > 0)) {
         // ----- Darat -----
@@ -348,8 +408,21 @@
       if (ds < 0.8) { const f = 0.5 * (1 - ds / 0.8); r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
       const j = (y - sh) * w + (x - sh);
       if (y >= sh && x >= sh && land[j] > 127 && land[i] < 128) { r *= 0.72; g *= 0.74; b *= 0.78; }
+      if (y >= SDY && x >= SDX && ds < 22) {
+        const js = (y - SDY) * w + (x - SDX);
+        const dsh = land[js] >= 128 ? -dIn[js] / k : dSea[js] / k;
+        const fade = aSoon && aSoon[i] > 127 ? 0.6 : 1;
+        if (dsh < SIG) {                                   // bayangan: warna #021822, kepekatan 0,42
+          const a = 0.42 * inside(dsh) * fade;
+          r += (2 - r) * a; g += (24 - g) * a; b += (34 - b) * a;
+        }
+        const d0 = land[i] >= 128 ? -dIn[i] / k : ds;
+        const fm = (inside(d0 - 2) - inside(d0 + 2)) * 0.3 * fade;   // buih: warna #eafcff, kepekatan 0,3
+        if (fm > 0.002) { r += (234 - r) * fm; g += (252 - g) * fm; b += (255 - b) * fm; }
+      }
       const dx = (vx - hw) / hw, dy = (vy - hh2) / hh2, vg = 1 - 0.2 * smooth(0.55, 1.15, Math.sqrt(dx * dx + dy * dy));
       sd[oo] = r * vg; sd[oo + 1] = g * vg; sd[oo + 2] = b * vg; sd[oo + 3] = 255;
+      }
     }
     const sea = canvas(w, h), lnd = canvas(w, h);
     sea.getContext('2d').putImageData(seaImg, 0, 0);
@@ -358,6 +431,9 @@
     drawRivers(lc, o);
     return { sea: sea, land: lnd };
   }
+
+  // Versi sinkron (dipakai tes dan pemanggil lama): hasil identik dengan versi beririsan.
+  function compute(o) { return drain(computeGen(o)); }
 
   // Sungai: garis berliku (derau tegak lurus arah aliran), melebar ke muara; hanya tampil di atas daratan.
   function drawRivers(ctx, o) {
@@ -393,21 +469,25 @@
   }
 
   // Hitung tekstur setelah peta tampil, lalu pasang ke elemen <image data-tex>.
-  function attach(host) {
+  function attach(host, done) {
     setTimeout(function () {
-      const r = compute();
-      host.querySelectorAll('image[data-tex]').forEach(function (img) {
-        const id = img.getAttribute('data-tex');
-        let src = r.sea, type = 'image/jpeg';
-        if (id !== 'sea') {
-          const b = boxOf(id), c = canvas(b.w * K, b.h * K);
-          c.getContext('2d').drawImage(r.land, b.x * K, b.y * K, b.w * K, b.h * K, 0, 0, b.w * K, b.h * K);
-          src = c; type = 'image/png';
-        }
-        toURL(src, type, function (url) {
-          img.setAttribute('href', url);
-          const ph = img.parentNode && img.parentNode.querySelector('.ph');
-          if (ph) ph.remove();
+      runSliced(computeGen(), SLICE_MS, function () { return false; }, function (r) {
+        const imgs = host.querySelectorAll('image[data-tex]');
+        let left = imgs.length;
+        imgs.forEach(function (img) {
+          const id = img.getAttribute('data-tex');
+          let src = r.sea, type = 'image/jpeg';
+          if (id !== 'sea') {
+            const b = boxOf(id), c = canvas(b.w * K, b.h * K);
+            c.getContext('2d').drawImage(r.land, b.x * K, b.y * K, b.w * K, b.h * K, 0, 0, b.w * K, b.h * K);
+            src = c; type = 'image/png';
+          }
+          toURL(src, type, function (url) {
+            img.setAttribute('href', url);
+            const ph = img.parentNode && img.parentNode.querySelector('.ph');
+            if (ph) ph.remove();
+            if (!--left && done) done();
+          });
         });
       });
     }, 30);
@@ -460,8 +540,6 @@
     // Sudah cukup: area terlihat tercakup dan ketajamannya tidak kalah dari yang dibutuhkan.
     if (hi && covers(hi, rect) && hi.k >= pl.k) return false;
     const my = ++gen;
-    const r = compute(pl.ext);
-    const seaC = crop(r.sea, pl.ext, pl.inner, pl.k), landC = crop(r.land, pl.ext, pl.inner, pl.k);
     const urls = [];
     let left = 2, seaUrl = null, landUrl = null;
     function finish() {
@@ -482,14 +560,21 @@
       hi = { x: pl.inner.x, y: pl.inner.y, w: pl.inner.w, h: pl.inner.h, k: pl.k, urls: urls };
       if (done) done(hi);
     }
-    toURL(seaC, 'image/jpeg', function (u) { seaUrl = u; urls.push(u); if (!--left) finish(); });
-    toURL(landC, 'image/png', function (u) { landUrl = u; urls.push(u); if (!--left) finish(); });
+    // Hitung beririsan (UI tetap lancar); bila pemain mulai menyentuh peta lagi, cancel() menaikkan gen dan hitungan dibuang.
+    runSliced(computeGen(pl.ext), SLICE_MS, function () { return my !== gen; }, function (r) {
+      const seaC = crop(r.sea, pl.ext, pl.inner, pl.k), landC = crop(r.land, pl.ext, pl.inner, pl.k);
+      toURL(seaC, 'image/jpeg', function (u) { seaUrl = u; urls.push(u); if (!--left) finish(); });
+      toURL(landC, 'image/png', function (u) { landUrl = u; urls.push(u); if (!--left) finish(); });
+    });
     return true;
   }
 
+  // Batalkan render tajam yang sedang berjalan (gambar tajam yang sudah terpasang tetap dipakai).
+  function cancel() { gen++; }
+
   NT.ui.terrain = {
     W: W, H: H, K: K, EDGE: EDGE, defs: defs, landMarkup: landMarkup, pathOf: pathOf, boxOf: boxOf, attach: attach, shape: shape,
-    render: compute, plan: plan, refine: refine, clearRefine: clearRefine,
+    render: compute, renderGen: computeGen, drain: drain, plan: plan, refine: refine, clearRefine: clearRefine, cancel: cancel,
     state: function () { return hi ? { x: hi.x, y: hi.y, w: hi.w, h: hi.h, k: hi.k } : null; }
   };
 })((window.NT = window.NT || {}));

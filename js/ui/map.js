@@ -69,12 +69,12 @@
 
   function pt(lonlat) { return NT.raster.toPx(lonlat[0], lonlat[1]); }
 
-  // Kedalaman pulau: bayangan jatuh di laut, buih pantai, dan sisi tebing (pulau tampak terangkat dari laut).
+  // Kedalaman pulau: sisi tebing (pulau tampak terangkat dari laut). Bayangan jatuh dan buih pantai dulu juga lapisan vektor
+  // ber-filter blur di sini, tetapi digambar ulang tiap bingkai geser (peta desktop hanya ~30 fps); sekarang dipanggang
+  // ke tekstur laut (terrain.js, compute). Sisi tebing tetap vektor karena warnanya berubah menurut status pulau.
   function depthMarkup(id) {
     const d = NT.ui.terrain.pathOf(id);
     return '<g class="island-depth">' +
-      '<path class="id-shadow" d="' + d + '" transform="translate(2.5,6)"/>' +
-      '<path class="id-foam" d="' + d + '"/>' +
       '<path class="id-side2" d="' + d + '" transform="translate(0,3.6)"/>' +
       '<path class="id-side" d="' + d + '" transform="translate(0,1.8)"/>' +
     '</g>';
@@ -155,7 +155,7 @@
 
     return '' +
     '<svg class="map-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peta Nusantara">' +
-      T.defs() + '<defs><filter id="soft" x="-4%" y="-4%" width="108%" height="108%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>' +
+      T.defs() +
       '<rect class="px-deep" width="' + W + '" height="' + H + '"/>' + seaImg +
       graticule(W, H) + neighbor + seaLabels(grid) + '<g class="ships">' + shipsMarkup() + '</g>' + islands + compass(cp.x, cp.y) +
     '</svg>';
@@ -304,8 +304,12 @@
       (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }
 
+  // Kotak peta di-cache: getBoundingClientRect setelah viewBox berubah memaksa layout ulang sinkron di tiap gerakan jari.
+  // Dibuang saat pointerdown, gulir, atau ukuran berubah.
+  function stageRect() { return view.rect || (view.rect = view.stage.getBoundingClientRect()); }
+
   function relPoint(e) {
-    const r = view.stage.getBoundingClientRect();
+    const r = stageRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
@@ -323,10 +327,15 @@
     view.raf = 0;
     if (!view.cur) return;
     view.svg.setAttribute('viewBox', VP.viewBoxOf(view.cur, view.ctx));
-    updateScaleUi();
+    // Variabel CSS, penggaris, dan tombol hanya bergantung pada skala: lewati saat hanya menggeser (menulis variabel CSS
+    // pada <svg> membuat gaya seluruh isi peta dihitung ulang).
+    if (view.cur.scale !== view.lastScale) {
+      view.lastScale = view.cur.scale;
+      updateScaleUi();
+      const lim = VP.limits(view.ctx);
+      if (view.btn.in) { view.btn.in.disabled = view.cur.scale >= lim.max * 0.999; view.btn.out.disabled = view.cur.scale <= lim.min * 1.001; }
+    }
     queueRefine();
-    const lim = VP.limits(view.ctx);
-    if (view.btn.in) { view.btn.in.disabled = view.cur.scale >= lim.max * 0.999; view.btn.out.disabled = view.cur.scale <= lim.min * 1.001; }
   }
 
   /* ---------- Z2: ukuran elemen UI mengikuti zoom, penggaris km, tekstur tajam ---------- */
@@ -382,9 +391,18 @@
 
   function cancelAnim() { if (view.anim) { cancelAnimationFrame(view.anim); view.anim = 0; } }
 
+  // Pemain mulai menyentuh atau menggerakkan peta: hentikan render tekstur tajam yang sedang berjalan (jatah CPU-nya
+  // dipakai untuk gerakan); queueRefine() dipanggil lagi setelah jari lepas.
+  function interrupt() {
+    clearTimeout(view.refT); view.refT = 0;
+    const T = NT.ui.terrain;
+    if (T && T.cancel) T.cancel();
+  }
+
   // Pindah halus ke view target (pusat dan skala diinterpolasi); tanpa animasi bila "Hemat animasi" menyala.
   function animateTo(target) {
     cancelAnim();
+    interrupt();
     if (!view.cur) return;
     if (reducedMotion()) { setView(target, true); return; }
     const c = view.ctx, from = view.cur;
@@ -405,7 +423,8 @@
   }
 
   function measure() {
-    const r = view.stage.getBoundingClientRect();
+    view.rect = null;
+    const r = stageRect();
     return { w: r.width, h: r.height };
   }
 
@@ -414,6 +433,7 @@
     const box = measure();
     if (box.w < 1 || box.h < 1) return;        // tab peta sedang tersembunyi
     const old = view.ctx;
+    view.lastScale = 0;                        // batas zoom bergantung pada ukuran kotak: perbarui tombol
     view.ctx = { world: old.world, box: box, maxZoom: old.maxZoom, maxPx: old.maxPx };
     if (!view.cur) {
       let saved = null;
@@ -437,6 +457,8 @@
     stage.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       cancelAnim();
+      interrupt();
+      if (!pts.size) view.rect = null;
       pts.set(e.pointerId, relPoint(e));
       if (pts.size === 1) { down = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId }; suppressClick = false; }
       else { if (down) down.moved = true; suppressClick = true; }   // jari kedua = pinch, bukan ketukan
@@ -458,7 +480,8 @@
         try { stage.setPointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
         stage.classList.add('dragging');
         // Selisih dihitung dari titik sentuh awal supaya tidak ada lompatan sebesar ambang.
-        prev.x = down.x - stage.getBoundingClientRect().left; prev.y = down.y - stage.getBoundingClientRect().top;
+        const sr = stageRect();
+        prev.x = down.x - sr.left; prev.y = down.y - sr.top;
       }
       pts.set(e.pointerId, cur);
       if (down && down.moved) setView(VP.panBy(view.cur, cur.x - prev.x, cur.y - prev.y, view.ctx), true);
@@ -470,6 +493,7 @@
       if (pts.size >= 1) { if (down) down.moved = true; return; }   // satu jari lepas: sisa jari lanjut menggeser
       try { stage.releasePointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
       stage.classList.remove('dragging');
+      queueRefine();                       // render tajam yang tadi dibatalkan dilanjutkan setelah jari lepas
       const wasTap = down && !down.moved && e.type === 'pointerup';
       down = null;
       if (!wasTap) { lastTap = null; return; }
@@ -499,6 +523,7 @@
       if (e.deltaY > 0 && !e.ctrlKey && view.cur.scale <= lim.min * 1.001) return;
       e.preventDefault();
       cancelAnim();
+      interrupt();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : (e.deltaMode === 2 ? 300 : 1));
       const p = relPoint(e);
       setView(VP.zoomAt(view.cur, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0016)), p.x, p.y, view.ctx), true);
@@ -550,6 +575,7 @@
     bindGestures();
     if (window.ResizeObserver) new ResizeObserver(onResize).observe(view.stage);
     else window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', function () { view.rect = null; }, { passive: true });
     onResize();
     window.addEventListener('pagehide', function () { if (view.saveTimer) saveNow(); });
   }
