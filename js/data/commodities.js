@@ -122,6 +122,30 @@
         prod:  [0.4, 0.4, 0.5, 0.8, 1.2, 1.6, 1.8, 1.9, 1.8, 1.5, 0.7, 0.4],
         price: [1.1, 1.1, 1.1, 1.05, 1.0, 0.95, 0.9, 0.9, 0.9, 0.95, 1.05, 1.1]
       }
+    }),
+    lada: make({
+      id: 'lada', exportClass: 'bebas', name: 'Lada', icon: '🟤', region: 'sumatra', realRpPerKg: 100000, unitKg: 50, marketDepth: 80,
+      seasonNote: 'Panen utama Mei-Agu (Lampung, Bangka); musim hujan berkepanjangan menurunkan hasil',
+      season: {
+        prod:  [0.6, 0.6, 0.7, 0.9, 1.3, 1.5, 1.5, 1.3, 0.9, 0.7, 0.6, 0.6],
+        price: [1.08, 1.08, 1.05, 1.0, 0.94, 0.9, 0.9, 0.94, 1.0, 1.04, 1.08, 1.08]
+      }
+    }),
+    timah: make({
+      id: 'timah', exportClass: 'bebas', name: 'Timah', icon: '🔩', region: 'sumatra', realRpPerKg: 500000, unitKg: 50, marketDepth: 50,
+      seasonNote: 'Penambangan lebih lancar saat kemarau; gelombang laut tinggi (Des-Feb) menghambat tambang apung',
+      season: {
+        prod:  [0.8, 0.8, 0.9, 1.0, 1.05, 1.1, 1.15, 1.15, 1.1, 1.05, 0.95, 0.85],
+        price: [1.02, 1.02, 1.01, 1.0, 1.0, 0.99, 0.99, 0.99, 1.0, 1.0, 1.01, 1.02]
+      }
+    }),
+    minyak: make({
+      id: 'minyak', exportClass: 'terbatas', exportRule: { quotaPct: 0.25 }, name: 'Minyak Bumi', icon: '🛢️', region: 'sumatra', realRpPerKg: 9000, unitKg: 136, freightFactor: 0.35, marketDepth: 250,
+      seasonNote: 'Sumur dan pipa relatif stabil sepanjang tahun; banjir besar di dataran Riau sesekali mengganggu angkutan',
+      season: {
+        prod:  [0.95, 0.95, 0.98, 1.0, 1.02, 1.03, 1.03, 1.03, 1.02, 1.0, 0.98, 0.97],
+        price: [1.01, 1.01, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.01]
+      }
     })
   };
 })((window.NT = window.NT || {}));

@@ -232,12 +232,14 @@ import art_v2 as _v2
 from art_tiers import decorate
 import art_kalimantan as _kal
 import art_jawa as _jw
+import art_sumatra as _sm
 s_sawit, s_batubara, i_sawit, i_batubara = _kal.s_sawit, _kal.s_batubara, _kal.i_sawit, _kal.i_batubara
 s_sawah, s_batik, s_kopi, s_karet, s_kakao, s_cengkeh = _v2.s_sawah, _v2.s_batik, _v2.s_kopi, _v2.s_karet, _v2.s_kakao, _v2.s_cengkeh
 s_pelabuhan, s_kapal, s_tol = _v2.s_pelabuhan, _v2.s_kapal, _v2.s_tol
 i_padi, i_batik, i_kopi, i_karet, i_kakao, i_cengkeh, i_koin = _v2.i_padi, _v2.i_batik, _v2.i_kopi, _v2.i_karet, _v2.i_kakao, _v2.i_cengkeh, _v2.i_koin
 kawung_tile = _v2.kawung_tile
 s_teh, s_tebu, s_tembakau, s_garam, i_teh, i_gula, i_tembakau, i_garam = _jw.s_teh, _jw.s_tebu, _jw.s_tembakau, _jw.s_garam, _jw.i_teh, _jw.i_gula, _jw.i_tembakau, _jw.i_garam
+s_lada, s_timah, s_minyak, i_lada, i_timah, i_minyak = _sm.s_lada, _sm.s_timah, _sm.s_minyak, _sm.i_lada, _sm.i_timah, _sm.i_minyak
 
 if __name__ == '__main__':
     out('logo/logo-mark.svg', logo_mark())
@@ -245,12 +247,12 @@ if __name__ == '__main__':
     out('logo/logo-stacked.svg', logo_stacked(False)); out('logo/logo-stacked-dark.svg', logo_stacked(True))
     out('icons/favicon.svg', favicon()); out('icons/app-icon.svg', app_icon(.86)); out('icons/app-icon-maskable.svg', app_icon(.66, 'square'))
     out('patterns/batik-kawung.svg', kawung_tile())
-    for n, f in [('sawah', s_sawah), ('sentra_batik', s_batik), ('kebun_kopi', s_kopi), ('kebun_karet', s_karet), ('kebun_kakao', s_kakao), ('kebun_cengkeh', s_cengkeh), ('kebun_sawit', s_sawit), ('tambang_batubara', s_batubara), ('kebun_teh', s_teh), ('kebun_tebu', s_tebu), ('kebun_tembakau', s_tembakau), ('tambak_garam', s_garam), ('pelabuhan', s_pelabuhan), ('kapal', s_kapal), ('tol', s_tol)]:
+    for n, f in [('sawah', s_sawah), ('sentra_batik', s_batik), ('kebun_kopi', s_kopi), ('kebun_karet', s_karet), ('kebun_kakao', s_kakao), ('kebun_cengkeh', s_cengkeh), ('kebun_sawit', s_sawit), ('tambang_batubara', s_batubara), ('kebun_teh', s_teh), ('kebun_tebu', s_tebu), ('kebun_tembakau', s_tembakau), ('tambak_garam', s_garam), ('kebun_lada', s_lada), ('tambang_timah', s_timah), ('sumur_minyak', s_minyak), ('pelabuhan', s_pelabuhan), ('kapal', s_kapal), ('tol', s_tol)]:
         out(f'sprites/{n}.svg', f())
         if n not in ('kapal', 'tol'):
             for t in (2, 3):
                 out(f'sprites/{n}_t{t}.svg', decorate(n, t))
-    for n, f in [('padi', i_padi), ('batik', i_batik), ('kopi', i_kopi), ('karet', i_karet), ('kakao', i_kakao), ('cengkeh', i_cengkeh), ('sawit', i_sawit), ('batubara', i_batubara), ('teh', i_teh), ('gula', i_gula), ('tembakau', i_tembakau), ('garam', i_garam), ('koin', i_koin)]:
+    for n, f in [('padi', i_padi), ('batik', i_batik), ('kopi', i_kopi), ('karet', i_karet), ('kakao', i_kakao), ('cengkeh', i_cengkeh), ('sawit', i_sawit), ('batubara', i_batubara), ('teh', i_teh), ('gula', i_gula), ('tembakau', i_tembakau), ('garam', i_garam), ('lada', i_lada), ('timah', i_timah), ('minyak', i_minyak), ('koin', i_koin)]:
         out(f'commodities/{n}.svg', f())
     out('social/banner.svg', cover(1280, 320, 210, True)); out('social/og-image.svg', cover(1200, 630, 330, True))
     out('../manifest.webmanifest', webmanifest())

@@ -646,7 +646,7 @@ Slot peta (jatuh di daratan, jarak antar slot >= 22 px): garam [107.5,-6.2], teh
 **Aset:** `tools/art_jawa.py` (baru) membuat 4 sprite dan 4 ikon; `make_assets.py` dan `art_tiers.py` (warna aksen) diperluas; hiasan `_t2`/`_t3` otomatis. `js/ui/assets.js` dibangun ulang (aset lama tidak berubah byte-nya). Sprite memakai SVG biasa (3-28 KB, setara kebun kopi/sawah).
 **Tes:** `tests/jawa.test.js` (10 baru). `economy.test.js` tes `cheapestUpgrade` kini memaksimalkan SEMUA bangunan Jawa (bukan hanya 2). Total 25 + 10 + 10 + 10 + 11 + 20 lolos. Save lama aman (normalize mengisi bangunan baru level 0).
 **Belum:** sprite dan ikon belum dilihat di browser (lingkungan pembuat tidak punya perender SVG): cek tampilan di peta dan tab Pasar; keseimbangan angka lewat bermain; fakta resmi (BPS/Kementan) untuk layar Info.
-**Berikutnya:** 2b Sumatra (timah, lada, minyak bumi).
+**Berikutnya:** 2b Sumatra (selesai di sesi 18, bagian 32).
 
 | Sesi | File yang berubah |
 |---|---|
@@ -674,3 +674,33 @@ Rencana ada di `HANDOFF-LANJUTAN-2.md` (bagian 4). Hanya Z1 yang dikerjakan; Z2 
 | Sesi | File yang berubah |
 |---|---|
 | 17 | baru: `js/core/viewport.js`, `tests/viewport.test.js`, `tests/browser_zoom.py`; diubah: `js/ui/map.js`, `js/config.js`, `index.html`, `css/style.css`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+---
+
+## 32. Sesi 18: Fase 2b, Sumatra (timah, lada, minyak bumi) (8 November 2026)
+
+Mengikuti resep `HANDOFF-LANJUTAN-3.md` bagian 3, pola sama dengan Fase 2a.
+
+**Yang ditambah.**
+- Komoditas: `lada` (`bebas`), `timah` (`bebas`), `minyak` (`terbatas`, `exportRule: { quotaPct: 0.25 }`, `freightFactor: 0.35`, satuan 1 barel = 136 kg). Musim 12 bulan untuk semuanya.
+- Bangunan: `kebun_lada` (1500 / 0,55), `tambang_timah` (3800 / 0,28), `sumur_minyak` (5000 / 7). Terdaftar di wilayah Sumatra dengan slot peta `[105.2,-4.9]`, `[106.1,-2.1]`, `[101.0,1.6]`.
+- Permintaan 3 komoditas di keempat wilayah yang bisa dimainkan (Sumatra 0,9, lainnya 1,1 sampai 1,4) dan di pasar ekspor (lihat `js/data/exports.js`).
+- Aset: `tools/art_sumatra.py` (3 sprite, 3 ikon), terhubung ke `make_assets.py` dan `art_tiers.py` (warna aksen). `assets.js` naik dari sekitar 380 KB ke 451 KB; `dist/` 704 KB. Aset lama tidak berubah (dibandingkan berkas demi berkas).
+- Ikon emoji lada sengaja 🟤 (⚫ sudah dipakai batubara).
+
+**Keputusan yang saya ambil sendiri (belum dikonfirmasi pemilik, mudah diubah di `commodities.js`).** Lada dan timah `bebas`; minyak `terbatas` kuota dalam negeri 25% (sama dengan DMO batubara). Rencana HANDOFF-LANJUTAN-3: timah jadi `terbatas` + `needBuilding` (smelter) di Fase 5.
+
+**Keseimbangan** (`node tools/balance.js`, balik modal level 1 di pasar terbaik): lada 17,0 mnt, timah 16,8 mnt, minyak 17,5 mnt (sasaran 5 sampai 25). Kurva tidak patah. Harga nyata (lada Rp 100.000/kg, timah Rp 500.000/kg, minyak Rp 9.000/kg) adalah perkiraan kasar, **perlu verifikasi** ke sumber resmi.
+
+**Tes:** `tests/sumatra.test.js` (12 baru). Semua tes Node lolos: 25, 10, 10, 10, 12 (sumatra), 11, 12, 20. `economy.test.js` (`cheapestUpgrade`) tidak perlu diubah.
+
+**Belum / diketahui.**
+- Sprite dan ikon baru hanya dilihat sebagai gambar SVG terpisah (Chromium), BELUM di dalam peta dan tab Pasar. Risiko utama: tumpukan sprite `sumur_minyak` dan pin Sumatra (31 px, lolos aturan 22 px). Cek di HP.
+- Titik `tambang_timah` (Bangka) jatuh di daratan menurut raster, tetapi polygon pulau kecil itu kasar.
+- `node tools/simulate.js` tidak berguna sejak sesi 14: bot tetap di kas 50 dan sawah level 1, **identik pada kode sebelum perubahan ini** (bot belum memahami penjualan berwaktu). Jadi simulasi 48 jam TIDAK memvalidasi kemajuan permainan. Perlu diperbaiki sendiri.
+- Tes browser (`browser_*.py`) tidak dijalankan di sesi ini.
+- Fakta aturan ekspor minyak/timah belum diverifikasi, jangan ditulis ke layar Info.
+
+| Sesi | File yang berubah |
+|---|---|
+| 18 | `js/data/{commodities,buildings,regions,exports}.js`, `js/ui/assets.js`, `tools/{art_sumatra,make_assets,art_tiers}.py` (baru: `art_sumatra.py`), `assets/sprites/{kebun_lada,tambang_timah,sumur_minyak}*.svg`, `assets/commodities/{lada,timah,minyak}.svg`, `tests/sumatra.test.js`, `dist/nusantara-tycoon.html`, `HANDOFF.md` |
