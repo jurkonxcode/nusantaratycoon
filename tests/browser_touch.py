@@ -55,7 +55,7 @@ with sync_playwright() as p:
         pg.click('.chip[data-id="jawa"]'); pg.wait_for_timeout(700)
         small += [('panel', e) for e in pg.evaluate(AUDIT) if min(e['w'], e['h']) < 44]
         for tab in ('map', 'market', 'stats', 'about', 'settings'):
-            pg.click('.tab[data-id="%s"]' % tab); pg.wait_for_timeout(450)
+            (pg.click('.tab[data-id="kingdom"]'), pg.click('#kingdom-seg [data-id="%s"]' % tab)) if tab in ('stats','about','settings') else pg.click('.tab[data-id="%s"]' % tab); pg.wait_for_timeout(450)
             small += [(tab, e) for e in pg.evaluate(AUDIT) if min(e['w'], e['h']) < 44]
         bad = [(t, e) for t, e in small if not any(c in e['cls'].split() for c in INLINE)]
         check('%s: semua kontrol utama >= 44 px' % name, not bad, bad[:4])

@@ -8,8 +8,9 @@
     const el = document.createElement('div');
     el.className = 'toast ' + (kind || 'ok');
     el.textContent = message;
+    el.addEventListener('click', function () { if (el.parentNode) el.parentNode.removeChild(el); });
     host.appendChild(el);
-    while (host.children.length > 3) host.removeChild(host.firstChild);
+    while (host.children.length > 2) host.removeChild(host.firstChild);
     const hold = kind === 'info' ? Math.min(9000, 2800 + message.length * 45) : 2800;
     setTimeout(function () { el.classList.add('out'); }, hold);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, hold + 500);

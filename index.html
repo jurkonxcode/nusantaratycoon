@@ -41,9 +41,7 @@
       <nav class="tabs" role="tablist" aria-label="Menu utama">
         <button class="tab" data-action="tab" data-id="map" role="tab"><span class="ti" aria-hidden="true">🗺️</span><span class="tl">Peta</span></button>
         <button class="tab" data-action="tab" data-id="market" role="tab"><span class="ti" aria-hidden="true">⚖️</span><span class="tl">Pasar</span></button>
-        <button class="tab" data-action="tab" data-id="stats" role="tab"><span class="ti" aria-hidden="true">🏆</span><span class="tl">Capaian</span></button>
-        <button class="tab" data-action="tab" data-id="about" role="tab"><span class="ti" aria-hidden="true">ℹ️</span><span class="tl">Info</span></button>
-        <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan"><span class="ti" aria-hidden="true">⚙️</span><span class="tl">Atur</span></button>
+        <button class="tab" data-action="tab" data-id="kingdom" role="tab"><span class="ti" aria-hidden="true">🏛️</span><span class="tl">Kerajaan</span></button>
       </nav>
     </div>
   </header>
@@ -64,9 +62,10 @@
             <div class="bar goalbar"><i id="goal-bar"></i></div>
             <small id="goal-eta"></small>
           </div>
-          <div id="world-banner" class="world-banner" data-action="banner-toggle" role="button" tabindex="0" aria-label="Kabar dunia, ketuk untuk membuka"></div>
         </div>
             <div class="map-card">
+              <button id="world-bell" class="world-bell" data-action="banner-toggle" aria-label="Kabar dunia" aria-expanded="false"><span aria-hidden="true">🔔</span><i class="dot" aria-hidden="true"></i></button>
+              <div id="world-banner" class="world-banner" data-action="banner-toggle" role="button" tabindex="0" aria-label="Kabar dunia, ketuk untuk menutup"></div>
               <div class="map-scroll"><div id="map"></div></div>
               <div id="region-chips" class="region-chips"></div>
             </div>
@@ -90,6 +89,11 @@
         </div>
       </section>
       <section id="tab-market" class="tab-panel"></section>
+      <div id="kingdom-seg" class="segs kingdom-seg" role="tablist" aria-label="Kerajaan">
+        <button class="seg" data-action="kingdom-sub" data-id="stats" role="tab">🏆 Capaian</button>
+        <button class="seg" data-action="kingdom-sub" data-id="about" role="tab">ℹ️ Info</button>
+        <button class="seg" data-action="kingdom-sub" data-id="settings" role="tab">⚙️ Atur</button>
+      </div>
       <section id="tab-stats" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
       <section id="tab-settings" class="tab-panel"></section>

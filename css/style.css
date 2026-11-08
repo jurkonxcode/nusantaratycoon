@@ -1045,3 +1045,65 @@ details.how > summary { min-height: 38px; font-size: 13px; }
   .region-chips { padding: 6px 10px 8px; gap: 6px; }
   .chip { min-height: 38px; padding: 0 12px; font-size: 13px; }
 }
+
+/* =====================================================================================================
+   Sesi 25 (Sprint 1): satu misi, kabar dunia jadi lonceng, tiga tab, toast tidak menutupi misi
+   ===================================================================================================== */
+
+/* Tiga tab: Peta, Pasar, Kerajaan */
+@media (max-width: 979px) {
+  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Satu misi: selama panduan awal aktif, kartu "Target berikutnya" disembunyikan (panduan sudah memuat progres) */
+body.guide-on #goal { display: none; }
+body.guide-on .guide { margin-bottom: 0; }
+
+/* Kabar dunia: lonceng di pojok peta; isi muncul sebagai kartu mengambang saat diketuk */
+.map-card { position: relative; }
+.world-bell {
+  position: absolute; left: 10px; top: 10px; z-index: 6; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 20px; line-height: 1; cursor: pointer;
+  background: rgba(5, 31, 42, .82); color: #fff; border: 1.5px solid rgba(217, 164, 65, .75);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+}
+.world-bell .dot { display: none; position: absolute; top: 5px; right: 5px; width: 11px; height: 11px; border-radius: 50%; background: #e5484d; border: 2px solid #072a38; }
+.world-bell.new .dot { display: block; }
+.world-bell[aria-expanded="true"] { background: var(--gold); }
+.map-card .world-banner {
+  display: none; position: absolute; z-index: 7; left: 10px; right: 66px; top: 60px; margin: 0; padding: 10px 12px;
+  white-space: normal; overflow: visible; font-size: 13px; line-height: 1.4; border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35); cursor: pointer;
+}
+.map-card .world-banner.open { display: block; }
+.map-card .world-banner::after { content: none; }
+.map-card .world-banner > span { display: block; }
+.map-card .world-banner:not(.open) > span:not(.evt):not(:only-child) { display: block; }
+@media (min-width: 980px) {
+  .map-card .world-banner { right: 120px; max-width: 520px; }
+}
+
+/* Sub-menu Kerajaan: Capaian | Info | Atur */
+.kingdom-seg { display: none; margin: 0 0 12px; justify-content: center; gap: 6px; flex-wrap: nowrap; }
+.kingdom-seg.on { display: flex; }
+.kingdom-seg .seg { flex: 1 1 0; max-width: 180px; min-height: 44px; padding: 0 10px; font-size: 14px; white-space: nowrap; }
+
+/* Toast: di atas bar aksi, kecil, bisa diketuk untuk ditutup; tidak lagi menutupi kartu misi */
+.toast { pointer-events: auto; cursor: pointer; }
+@media (max-width: 979px) {
+  #toasts, body.sheet-open #toasts {
+    top: auto; bottom: calc(var(--nav-h) + var(--act-h, 64px) + 10px + env(safe-area-inset-bottom)); z-index: 50;
+  }
+  body.sheet-open #toasts { bottom: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom)); }
+  .toast { font-size: 13px; padding: 8px 12px; max-width: 360px; line-height: 1.35; }
+}
+
+/* Peta mengisi sisa layar: kartu atas kini hanya satu (misi), jadi peta lebih tinggi */
+@media (max-width: 639px) {
+  .map-scroll { height: max(320px, calc(100vh - var(--head-h) - var(--nav-h) - var(--act-h) - 178px - env(safe-area-inset-bottom))); }
+  body.guide-on .map-scroll { height: max(320px, calc(100vh - var(--head-h) - var(--nav-h) - var(--act-h) - 132px - env(safe-area-inset-bottom))); }
+  @supports (height: 100dvh) {
+    .map-scroll { height: max(320px, calc(100dvh - var(--head-h) - var(--nav-h) - var(--act-h) - 178px - env(safe-area-inset-bottom))); }
+    body.guide-on .map-scroll { height: max(320px, calc(100dvh - var(--head-h) - var(--nav-h) - var(--act-h) - 132px - env(safe-area-inset-bottom))); }
+  }
+}

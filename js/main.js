@@ -67,7 +67,7 @@
     const fresh = NT.achievements.evaluate(state, now());
     let changed = fresh.length > 0;
     if (quiet && fresh.length > 1) {
-      toast('🏆 ' + fresh.length + ' pencapaian terbuka dari kemajuanmu. Lihat di tab Capaian.', 'info');
+      toast('🏆 ' + fresh.length + ' pencapaian terbuka dari kemajuanmu. Lihat di Kerajaan › Capaian.', 'info');
     } else {
       fresh.forEach(function (a) { toast('🏆 Pencapaian: ' + a.name + '!', 'ok'); });
     }
@@ -112,7 +112,14 @@
       return { ok: true, message: 'Cadangan disimpan ke file.', sfx: 'coin' };
     },
 
-    'banner-toggle': function (el) { el.classList.toggle('open'); return { silent: true, skipRender: true }; },
+    'banner-toggle': function () {
+      const ban = document.getElementById('world-banner'), bell = document.getElementById('world-bell');
+      const open = !ban.classList.contains('open');
+      ban.classList.toggle('open', open);
+      bell.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { P.view.bannerSeen = ban.innerHTML; bell.classList.remove('new'); }
+      return { silent: true, skipRender: true };
+    },
     'reset-ask': function () { P.view.resetArmed = true; return { silent: true }; },
     'reset-cancel': function () { P.view.resetArmed = false; return { silent: true }; },
 
@@ -123,7 +130,15 @@
     },
 
     tab: function (el) {
-      P.view.tab = el.getAttribute('data-id');
+      const id = el.getAttribute('data-id');
+      if (id === 'stats' || id === 'about' || id === 'settings') { P.view.tab = 'kingdom'; P.view.sub = id; }
+      else P.view.tab = id;
+      P.view.resetArmed = false;
+      return { silent: true };
+    },
+
+    'kingdom-sub': function (el) {
+      P.view.sub = el.getAttribute('data-id');
       P.view.resetArmed = false;
       return { silent: true };
     },
@@ -430,7 +445,8 @@
       saved = await storage.load();
     } catch (e) {
       loadFailed = true;
-      toast('Gagal memuat data tersimpan: ' + e.message + '. Progres tidak akan disimpan sampai halaman dimuat ulang.', 'warn');
+      console.warn('Muat data gagal:', e && e.message);
+      toast('Penyimpanan online belum siap, progres belum tersimpan. Muat ulang halaman untuk mencoba lagi.', 'warn');
     }
 
     const t = now();

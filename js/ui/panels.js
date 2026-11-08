@@ -8,7 +8,7 @@
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
+  const view = { tab: 'map', sub: 'stats', bannerSeen: '', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -339,7 +339,9 @@
     const host = $('guide');
     if (!host) return;
     const g = NT.achievements.guide(state);
-    if (state.guideHidden || g.complete) { host.innerHTML = ''; return; }
+    const active = !(state.guideHidden || g.complete);
+    document.body.classList.toggle('guide-on', active);
+    if (!active) { host.innerHTML = ''; return; }
     const open = view.guideOpen;
     const list = g.steps.map(function (x) {
       const cur = g.current && g.current.id === x.id;
@@ -512,7 +514,7 @@
         '<div class="set-row set-danger">' + reset + '</div>' +
       '</div>' +
       '<div class="card set-card"><h2>Bantuan</h2>' +
-        setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di tab Info.',
+        setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di Kerajaan › Info.',
           '<button class="btn" data-action="tab" data-id="about">Buka Info</button>') +
         setRow('Panduan awal', 'Tampilkan lagi daftar langkah pertama di tab Peta (bila belum selesai).',
           '<button class="btn" data-action="guide-show">Tampilkan</button>') +
@@ -576,8 +578,15 @@
     document.querySelectorAll('.tab').forEach(function (t) {
       t.classList.toggle('on', t.getAttribute('data-id') === view.tab);
     });
+    const shown = view.tab === 'kingdom' ? view.sub : view.tab;
     document.querySelectorAll('.tab-panel').forEach(function (p) {
-      p.classList.toggle('on', p.id === 'tab-' + view.tab);
+      p.classList.toggle('on', p.id === 'tab-' + shown);
+    });
+    $('kingdom-seg').classList.toggle('on', view.tab === 'kingdom');
+    document.querySelectorAll('#kingdom-seg .seg').forEach(function (b) {
+      const on = b.getAttribute('data-id') === view.sub;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     NT.ui.map.update(state, view.region);
     renderChips(state);
@@ -622,6 +631,7 @@
     if (wh !== bannerCache) {
       bannerCache = wh;
       $('world-banner').innerHTML = wh;
+      $('world-bell').classList.toggle('new', wh !== view.bannerSeen);
       each('[data-live="world-now"]', function (el) { el.innerHTML = '<p>' + wh + '</p>'; });
     }
 

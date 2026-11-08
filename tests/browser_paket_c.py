@@ -58,7 +58,7 @@ with sync_playwright() as p:
     check('Langkah aktif menampilkan petunjuk', pg.locator('.guide-list li.cur small').count() == 1)
     pg.locator('.guide-head').click()
     check('Tab Capaian ada dan semua tab muat di layar 390px',
-          pg.locator('.tab[data-id="stats"]').is_visible() and pg.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+          pg.locator('.tab[data-id="kingdom"]').is_visible() and pg.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
           and pg.evaluate("(()=>{const t=document.querySelector('.tabs');return t.scrollWidth<=t.clientWidth+1})()"))
 
     pg.locator('.collect-all').click(); pg.wait_for_timeout(500)
@@ -89,7 +89,7 @@ with sync_playwright() as p:
     check('Ketuk ongkir menampilkan penjelasan', 'Ongkir:' in pg.locator('#toasts').inner_text())
 
     # Tab Capaian
-    pg.locator('.tab[data-id="stats"]').click(); pg.wait_for_timeout(400)
+    pg.locator('.tab[data-id=\"kingdom\"]').click(); pg.locator('#kingdom-seg [data-id=\"stats\"]').click(); pg.wait_for_timeout(400)
     check('Capaian: 8 ubin statistik', pg.locator('.tile').count() == 8)
     check('Capaian: badge terbuka >= 2', pg.locator('.badge.got').count() >= 2)
     check('Capaian: badge terkunci memakai 🔒', '🔒' in pg.locator('.badge:not(.got) .badge-ico').first.inner_text())
@@ -101,7 +101,7 @@ with sync_playwright() as p:
     # Sembunyikan panduan, lalu tampilkan lagi lewat Pengaturan
     pg.locator('.tab[data-id="map"]').click(); pg.locator('.guide-head').click(); pg.locator('[data-action="guide-hide"]').click(); pg.wait_for_timeout(300)
     check('Sembunyikan panduan menghapusnya', pg.locator('.guide').count() == 0)
-    pg.locator('.tab[data-id="settings"]').click(); pg.locator('[data-action="guide-show"]').click(); pg.wait_for_timeout(300)
+    pg.locator('.tab[data-id=\"kingdom\"]').click(); pg.locator('#kingdom-seg [data-id=\"settings\"]').click(); pg.locator('[data-action="guide-show"]').click(); pg.wait_for_timeout(300)
     check('Tampilkan lagi dari Pengaturan', pg.locator('.guide').count() == 1 and pg.evaluate("NT.ui.panels.view.tab") == 'map')
 
     pg.wait_for_timeout(600); pg.reload(); pg.wait_for_timeout(800)
@@ -116,7 +116,7 @@ with sync_playwright() as p:
     pv.goto(URL); pv.wait_for_timeout(900)
     check('Veteran: panduan tidak muncul (semua langkah sudah terlampaui)', pv.locator('.guide').count() == 0)
     check('Veteran: toast ringkasan pencapaian awal', 'pencapaian terbuka' in pv.locator('#toasts').inner_text())
-    pv.locator('.tab[data-id="stats"]').click(); pv.wait_for_timeout(300)
+    pv.locator('.tab[data-id=\"kingdom\"]').click(); pv.locator('#kingdom-seg [data-id=\"stats\"]').click(); pv.wait_for_timeout(300)
     check('Veteran: Juragan Kecil dan Saudagar terbuka', pv.locator('.badge.got b:text("Saudagar")').count() == 1 and pv.locator('.badge.got b:text("Juragan Kecil")').count() == 1)
     check('Veteran: Tiga Pulau belum terbuka', pv.locator('.badge.got b:text("Tiga Pulau")').count() == 0)
     check('Veteran: tanpa error JS', not errs_v)
@@ -125,7 +125,7 @@ with sync_playwright() as p:
     pd, errs_d = new_page(b, 1280, 800, NEWBIE)
     pd.goto(URL); pd.wait_for_timeout(800)
     check('Desktop: panduan dan tombol termurah tampil', pd.locator('.guide').is_visible() and pd.locator('.cheapest').is_visible())
-    pd.locator('.tab[data-id="stats"]').click(); pd.wait_for_timeout(300)
+    pd.locator('.tab[data-id=\"kingdom\"]').click(); pd.locator('#kingdom-seg [data-id=\"stats\"]').click(); pd.wait_for_timeout(300)
     check('Desktop: 4 ubin per baris', pd.evaluate("(()=>{const t=[...document.querySelectorAll('.tile')].map(e=>Math.round(e.getBoundingClientRect().top));return t.filter(x=>x===t[0]).length===4})()"))
     check('Desktop: tanpa error JS', not errs_d)
     pd.screenshot(path='/tmp/c_desk.png')

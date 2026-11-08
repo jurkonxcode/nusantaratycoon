@@ -1065,6 +1065,68 @@ details.how > summary { min-height: 38px; font-size: 13px; }
   .chip { min-height: 38px; padding: 0 12px; font-size: 13px; }
 }
 
+/* =====================================================================================================
+   Sesi 25 (Sprint 1): satu misi, kabar dunia jadi lonceng, tiga tab, toast tidak menutupi misi
+   ===================================================================================================== */
+
+/* Tiga tab: Peta, Pasar, Kerajaan */
+@media (max-width: 979px) {
+  .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* Satu misi: selama panduan awal aktif, kartu "Target berikutnya" disembunyikan (panduan sudah memuat progres) */
+body.guide-on #goal { display: none; }
+body.guide-on .guide { margin-bottom: 0; }
+
+/* Kabar dunia: lonceng di pojok peta; isi muncul sebagai kartu mengambang saat diketuk */
+.map-card { position: relative; }
+.world-bell {
+  position: absolute; left: 10px; top: 10px; z-index: 6; width: 44px; height: 44px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 20px; line-height: 1; cursor: pointer;
+  background: rgba(5, 31, 42, .82); color: #fff; border: 1.5px solid rgba(217, 164, 65, .75);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); box-shadow: 0 3px 10px rgba(0, 0, 0, .35);
+}
+.world-bell .dot { display: none; position: absolute; top: 5px; right: 5px; width: 11px; height: 11px; border-radius: 50%; background: #e5484d; border: 2px solid #072a38; }
+.world-bell.new .dot { display: block; }
+.world-bell[aria-expanded="true"] { background: var(--gold); }
+.map-card .world-banner {
+  display: none; position: absolute; z-index: 7; left: 10px; right: 66px; top: 60px; margin: 0; padding: 10px 12px;
+  white-space: normal; overflow: visible; font-size: 13px; line-height: 1.4; border-radius: 12px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35); cursor: pointer;
+}
+.map-card .world-banner.open { display: block; }
+.map-card .world-banner::after { content: none; }
+.map-card .world-banner > span { display: block; }
+.map-card .world-banner:not(.open) > span:not(.evt):not(:only-child) { display: block; }
+@media (min-width: 980px) {
+  .map-card .world-banner { right: 120px; max-width: 520px; }
+}
+
+/* Sub-menu Kerajaan: Capaian | Info | Atur */
+.kingdom-seg { display: none; margin: 0 0 12px; justify-content: center; gap: 6px; flex-wrap: nowrap; }
+.kingdom-seg.on { display: flex; }
+.kingdom-seg .seg { flex: 1 1 0; max-width: 180px; min-height: 44px; padding: 0 10px; font-size: 14px; white-space: nowrap; }
+
+/* Toast: di atas bar aksi, kecil, bisa diketuk untuk ditutup; tidak lagi menutupi kartu misi */
+.toast { pointer-events: auto; cursor: pointer; }
+@media (max-width: 979px) {
+  #toasts, body.sheet-open #toasts {
+    top: auto; bottom: calc(var(--nav-h) + var(--act-h, 64px) + 10px + env(safe-area-inset-bottom)); z-index: 50;
+  }
+  body.sheet-open #toasts { bottom: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom)); }
+  .toast { font-size: 13px; padding: 8px 12px; max-width: 360px; line-height: 1.35; }
+}
+
+/* Peta mengisi sisa layar: kartu atas kini hanya satu (misi), jadi peta lebih tinggi */
+@media (max-width: 639px) {
+  .map-scroll { height: max(320px, calc(100vh - var(--head-h) - var(--nav-h) - var(--act-h) - 178px - env(safe-area-inset-bottom))); }
+  body.guide-on .map-scroll { height: max(320px, calc(100vh - var(--head-h) - var(--nav-h) - var(--act-h) - 132px - env(safe-area-inset-bottom))); }
+  @supports (height: 100dvh) {
+    .map-scroll { height: max(320px, calc(100dvh - var(--head-h) - var(--nav-h) - var(--act-h) - 178px - env(safe-area-inset-bottom))); }
+    body.guide-on .map-scroll { height: max(320px, calc(100dvh - var(--head-h) - var(--nav-h) - var(--act-h) - 132px - env(safe-area-inset-bottom))); }
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1090,9 +1152,7 @@ details.how > summary { min-height: 38px; font-size: 13px; }
       <nav class="tabs" role="tablist" aria-label="Menu utama">
         <button class="tab" data-action="tab" data-id="map" role="tab"><span class="ti" aria-hidden="true">🗺️</span><span class="tl">Peta</span></button>
         <button class="tab" data-action="tab" data-id="market" role="tab"><span class="ti" aria-hidden="true">⚖️</span><span class="tl">Pasar</span></button>
-        <button class="tab" data-action="tab" data-id="stats" role="tab"><span class="ti" aria-hidden="true">🏆</span><span class="tl">Capaian</span></button>
-        <button class="tab" data-action="tab" data-id="about" role="tab"><span class="ti" aria-hidden="true">ℹ️</span><span class="tl">Info</span></button>
-        <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan"><span class="ti" aria-hidden="true">⚙️</span><span class="tl">Atur</span></button>
+        <button class="tab" data-action="tab" data-id="kingdom" role="tab"><span class="ti" aria-hidden="true">🏛️</span><span class="tl">Kerajaan</span></button>
       </nav>
     </div>
   </header>
@@ -1113,9 +1173,10 @@ details.how > summary { min-height: 38px; font-size: 13px; }
             <div class="bar goalbar"><i id="goal-bar"></i></div>
             <small id="goal-eta"></small>
           </div>
-          <div id="world-banner" class="world-banner" data-action="banner-toggle" role="button" tabindex="0" aria-label="Kabar dunia, ketuk untuk membuka"></div>
         </div>
             <div class="map-card">
+              <button id="world-bell" class="world-bell" data-action="banner-toggle" aria-label="Kabar dunia" aria-expanded="false"><span aria-hidden="true">🔔</span><i class="dot" aria-hidden="true"></i></button>
+              <div id="world-banner" class="world-banner" data-action="banner-toggle" role="button" tabindex="0" aria-label="Kabar dunia, ketuk untuk menutup"></div>
               <div class="map-scroll"><div id="map"></div></div>
               <div id="region-chips" class="region-chips"></div>
             </div>
@@ -1139,6 +1200,11 @@ details.how > summary { min-height: 38px; font-size: 13px; }
         </div>
       </section>
       <section id="tab-market" class="tab-panel"></section>
+      <div id="kingdom-seg" class="segs kingdom-seg" role="tablist" aria-label="Kerajaan">
+        <button class="seg" data-action="kingdom-sub" data-id="stats" role="tab">🏆 Capaian</button>
+        <button class="seg" data-action="kingdom-sub" data-id="about" role="tab">ℹ️ Info</button>
+        <button class="seg" data-action="kingdom-sub" data-id="settings" role="tab">⚙️ Atur</button>
+      </div>
       <section id="tab-stats" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
       <section id="tab-settings" class="tab-panel"></section>
@@ -3588,8 +3654,9 @@ details.how > summary { min-height: 38px; font-size: 13px; }
     const el = document.createElement('div');
     el.className = 'toast ' + (kind || 'ok');
     el.textContent = message;
+    el.addEventListener('click', function () { if (el.parentNode) el.parentNode.removeChild(el); });
     host.appendChild(el);
-    while (host.children.length > 3) host.removeChild(host.firstChild);
+    while (host.children.length > 2) host.removeChild(host.firstChild);
     const hold = kind === 'info' ? Math.min(9000, 2800 + message.length * 45) : 2800;
     setTimeout(function () { el.classList.add('out'); }, hold);
     setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, hold + 500);
@@ -5163,7 +5230,7 @@ details.how > summary { min-height: 38px; font-size: 13px; }
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
+  const view = { tab: 'map', sub: 'stats', bannerSeen: '', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -5494,7 +5561,9 @@ details.how > summary { min-height: 38px; font-size: 13px; }
     const host = $('guide');
     if (!host) return;
     const g = NT.achievements.guide(state);
-    if (state.guideHidden || g.complete) { host.innerHTML = ''; return; }
+    const active = !(state.guideHidden || g.complete);
+    document.body.classList.toggle('guide-on', active);
+    if (!active) { host.innerHTML = ''; return; }
     const open = view.guideOpen;
     const list = g.steps.map(function (x) {
       const cur = g.current && g.current.id === x.id;
@@ -5667,7 +5736,7 @@ details.how > summary { min-height: 38px; font-size: 13px; }
         '<div class="set-row set-danger">' + reset + '</div>' +
       '</div>' +
       '<div class="card set-card"><h2>Bantuan</h2>' +
-        setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di tab Info.',
+        setRow('Cara bermain', 'Panduan singkat, kalender panen, dan rencana pengembangan ada di Kerajaan › Info.',
           '<button class="btn" data-action="tab" data-id="about">Buka Info</button>') +
         setRow('Panduan awal', 'Tampilkan lagi daftar langkah pertama di tab Peta (bila belum selesai).',
           '<button class="btn" data-action="guide-show">Tampilkan</button>') +
@@ -5731,8 +5800,15 @@ details.how > summary { min-height: 38px; font-size: 13px; }
     document.querySelectorAll('.tab').forEach(function (t) {
       t.classList.toggle('on', t.getAttribute('data-id') === view.tab);
     });
+    const shown = view.tab === 'kingdom' ? view.sub : view.tab;
     document.querySelectorAll('.tab-panel').forEach(function (p) {
-      p.classList.toggle('on', p.id === 'tab-' + view.tab);
+      p.classList.toggle('on', p.id === 'tab-' + shown);
+    });
+    $('kingdom-seg').classList.toggle('on', view.tab === 'kingdom');
+    document.querySelectorAll('#kingdom-seg .seg').forEach(function (b) {
+      const on = b.getAttribute('data-id') === view.sub;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-selected', on ? 'true' : 'false');
     });
     NT.ui.map.update(state, view.region);
     renderChips(state);
@@ -5777,6 +5853,7 @@ details.how > summary { min-height: 38px; font-size: 13px; }
     if (wh !== bannerCache) {
       bannerCache = wh;
       $('world-banner').innerHTML = wh;
+      $('world-bell').classList.toggle('new', wh !== view.bannerSeen);
       each('[data-live="world-now"]', function (el) { el.innerHTML = '<p>' + wh + '</p>'; });
     }
 
@@ -6400,7 +6477,7 @@ details.how > summary { min-height: 38px; font-size: 13px; }
     const fresh = NT.achievements.evaluate(state, now());
     let changed = fresh.length > 0;
     if (quiet && fresh.length > 1) {
-      toast('🏆 ' + fresh.length + ' pencapaian terbuka dari kemajuanmu. Lihat di tab Capaian.', 'info');
+      toast('🏆 ' + fresh.length + ' pencapaian terbuka dari kemajuanmu. Lihat di Kerajaan › Capaian.', 'info');
     } else {
       fresh.forEach(function (a) { toast('🏆 Pencapaian: ' + a.name + '!', 'ok'); });
     }
@@ -6445,7 +6522,14 @@ details.how > summary { min-height: 38px; font-size: 13px; }
       return { ok: true, message: 'Cadangan disimpan ke file.', sfx: 'coin' };
     },
 
-    'banner-toggle': function (el) { el.classList.toggle('open'); return { silent: true, skipRender: true }; },
+    'banner-toggle': function () {
+      const ban = document.getElementById('world-banner'), bell = document.getElementById('world-bell');
+      const open = !ban.classList.contains('open');
+      ban.classList.toggle('open', open);
+      bell.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) { P.view.bannerSeen = ban.innerHTML; bell.classList.remove('new'); }
+      return { silent: true, skipRender: true };
+    },
     'reset-ask': function () { P.view.resetArmed = true; return { silent: true }; },
     'reset-cancel': function () { P.view.resetArmed = false; return { silent: true }; },
 
@@ -6456,7 +6540,15 @@ details.how > summary { min-height: 38px; font-size: 13px; }
     },
 
     tab: function (el) {
-      P.view.tab = el.getAttribute('data-id');
+      const id = el.getAttribute('data-id');
+      if (id === 'stats' || id === 'about' || id === 'settings') { P.view.tab = 'kingdom'; P.view.sub = id; }
+      else P.view.tab = id;
+      P.view.resetArmed = false;
+      return { silent: true };
+    },
+
+    'kingdom-sub': function (el) {
+      P.view.sub = el.getAttribute('data-id');
       P.view.resetArmed = false;
       return { silent: true };
     },
@@ -6763,7 +6855,8 @@ details.how > summary { min-height: 38px; font-size: 13px; }
       saved = await storage.load();
     } catch (e) {
       loadFailed = true;
-      toast('Gagal memuat data tersimpan: ' + e.message + '. Progres tidak akan disimpan sampai halaman dimuat ulang.', 'warn');
+      console.warn('Muat data gagal:', e && e.message);
+      toast('Penyimpanan online belum siap, progres belum tersimpan. Muat ulang halaman untuk mencoba lagi.', 'warn');
     }
 
     const t = now();
