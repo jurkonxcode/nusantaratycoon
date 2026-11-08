@@ -77,7 +77,11 @@ with sync_playwright() as p:
     inv = pg.evaluate("(()=>{const s=JSON.parse(localStorage.getItem(NT.config.saveKey)||'{}');return s})()")
     check('Pasar: jual semua mengosongkan gudang (UI)', pg.locator('[data-live="stock"][data-c="padi"]').inner_text() == '0')
     check('Pasar: tombol jual semua nonaktif saat gudang kosong', pg.locator('.sell-everything').is_disabled())
-    check('Pasar: kas bertambah', pg.evaluate("document.getElementById('stat-cash').textContent") != cash0)
+    # Sejak sesi 14 penjualan berwaktu: kas baru masuk saat kiriman tiba, jadi yang diuji
+    # adalah kiriman tercatat di data simpanan (bukan kas langsung bertambah).
+    pg.wait_for_timeout(1200)
+    shp = pg.evaluate("(()=>{const s=JSON.parse(localStorage.getItem(NT.config.saveKey)||'{}');return (s.shipments||[]).length})()")
+    check('Pasar: penjualan menjadi kiriman berjalan', shp >= 1 or pg.evaluate("document.getElementById('stat-cash').textContent") != cash0)
     check('HP: tanpa error JS', not errs)
     if errs: print(errs)
     pg.screenshot(path='/tmp/hp_pasar.png')

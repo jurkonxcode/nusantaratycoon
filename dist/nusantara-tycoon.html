@@ -151,6 +151,7 @@ body {
 
 /* Tombol zoom peta */
 .map-zoom { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; flex-direction: column; gap: 6px; }
+@media (max-width: 759px) { .map-zoom { top: 6px; right: 6px; gap: 4px; } .map-zoom .mz-btn { width: 38px; height: 38px; font-size: 20px; border-radius: 10px; opacity: .92; } }
 .mz-btn {
   width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border-radius: 12px;
   font: 700 22px/1 "Segoe UI", system-ui, sans-serif; color: var(--sea-800); background: rgba(255, 250, 240, .94);
@@ -3840,7 +3841,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
   function build() {
     const grid = NT.raster.grid();
     const W = grid.W * S, H = grid.H * S;
-    const cp = NT.raster.toPx(139.4, 5.0);
+    const cp = NT.raster.toPx(135.2, 2.4);
     const T = NT.ui.terrain;
     const seaImg = '<image data-tex="sea" x="0" y="0" width="' + W + '" height="' + H + '" preserveAspectRatio="none"/>';
     const neighbor = '<g class="neighbor-land">' + T.landMarkup('neighbor') + '</g>';

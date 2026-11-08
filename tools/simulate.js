@@ -68,13 +68,16 @@ function play(interval, label) {
   const reports = [];
   while (now - T0 <= HOURS * 3600000) {
     E.settle(s, now);
+    E.settleShipments(s, now);   // kas baru masuk saat kiriman tiba (penjualan berwaktu sejak sesi 14)
     E.collectAll(s, now);
     // jual semua ke pasar terbaik per komoditas
     Object.keys(D.commodities).forEach(function (cid) {
       const have = Math.floor(s.inventory[cid] || 0);
       if (have < 1) return;
       const bm = E.bestMarket(s, cid, now);
-      const r = bm && E.sell(s, cid, bm.regionId, have, now);
+      let r = bm && E.sell(s, cid, bm.regionId, have, now);
+      // slot kapal penuh atau pasar tak terjangkau: jual lewat truk ke wilayah asal
+      if ((!r || !r.ok) && s.regions[D.commodities[cid].region] && s.regions[D.commodities[cid].region].unlocked) r = E.sell(s, cid, D.commodities[cid].region, have, now);
       if (r && r.ok) income[cid] = (income[cid] || 0) + r.net;
     });
     // beli selagi ada yang terjangkau dan pembangun kosong

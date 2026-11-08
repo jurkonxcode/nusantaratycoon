@@ -763,3 +763,22 @@ Melanjutkan `HANDOFF-LANJUTAN-3.md` bagian 5 (Z2 dikerjakan sebelum 2c/2d karena
 | Sesi | File yang berubah |
 |---|---|
 | 20 | `js/ui/terrain.js`, `js/ui/map.js`, `js/core/viewport.js`, `js/config.js`, `css/style.css`, `tests/viewport.test.js`, `tests/browser_z2.py` (baru), `dist/nusantara-tycoon.html`, `HANDOFF.md` |
+
+## 35. Sesi 21: audit dan perbaikan kecil (8 November 2026)
+
+Pemilik mengunggah repo (commit `a4954861`) dan meminta game diperiksa lalu disempurnakan. Sesi ini audit: semua tes dijalankan, game dibuka di Chromium desktop (1280x800) dan HP (390x780, dpr 2) dengan save buatan (4 wilayah terbuka, semua bangunan Lv 4).
+
+**Temuan audit.** Game berjalan tanpa galat JS. Sprite Sumatra (lada, timah, minyak) tampil di peta dan tidak bertumpuk berat; sprite Jawa juga tampil. Fase 2b dan Z2 sudah ada di repo, sedangkan `HANDOFF-LANJUTAN-3.md` masih menganggapnya belum.
+
+**Diperbaiki.**
+1. Tombol zoom menutupi kompas (desktop) dan pin Kalimantan (HP). Kompas dipindah ke `NT.raster.toPx(135.2, 2.4)` (`js/ui/map.js`); di layar < 760 px tombol zoom 38 px dan lebih dekat ke tepi (`css/style.css`).
+2. Tes lama `browser_paket_b.py` "Pasar: kas bertambah" gagal sejak sesi 14 karena penjualan berwaktu. Sekarang menguji bahwa penjualan menjadi kiriman berjalan. Hasil 22 lolos, 0 gagal.
+3. `tools/simulate.js` tidak lagi macet di kas 50: bot memanggil `E.settleShipments` dan menjual lewat truk ke wilayah asal bila slot kapal penuh. Simulasi 48 jam sekarang bermakna.
+
+**Hasil simulasi 48 jam (angka kasar, bot serakah, bukan pemain nyata).** Aktif (cek tiap 5 menit): sekitar 57 rb/mnt, 3 wilayah terbuka dalam 5 jam. Santai (tiap 60 menit): sekitar 14 rb/mnt. Harian (tiap 8 jam): sekitar 0,6 rb/mnt, hanya Jawa. **Selisih pemain harian dan aktif sekitar 100x**: bahan keputusan desain (gudang penuh 6 jam, waktu bangun). Belum diubah.
+
+**Belum diuji.** HP sungguhan, Safari/iOS, dan Fase 2c/2d (butuh `HANDOFF-LANJUTAN.md` bagian 9, tidak ada di unggahan).
+
+| Sesi | File yang berubah |
+|---|---|
+| 21 | `js/ui/map.js`, `css/style.css`, `tests/browser_paket_b.py`, `tools/simulate.js`, `dist/nusantara-tycoon.html`, `HANDOFF.md` |

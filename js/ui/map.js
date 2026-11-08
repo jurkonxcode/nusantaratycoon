@@ -147,7 +147,7 @@
   function build() {
     const grid = NT.raster.grid();
     const W = grid.W * S, H = grid.H * S;
-    const cp = NT.raster.toPx(139.4, 5.0);
+    const cp = NT.raster.toPx(135.2, 2.4);
     const T = NT.ui.terrain;
     const seaImg = '<image data-tex="sea" x="0" y="0" width="' + W + '" height="' + H + '" preserveAspectRatio="none"/>';
     const neighbor = '<g class="neighbor-land">' + T.landMarkup('neighbor') + '</g>';
