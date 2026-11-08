@@ -100,3 +100,8 @@ Cukup untuk uji coba bersama teman, belum untuk kompetisi.
 - **Efek**: angka melayang, confetti saat selesai, kas bergulir, tombol berdenyut saat gudang separuh penuh, suara sintetis
   (tombol 🔊 untuk senyap). Semua angka ada di `js/config.js` (`buildBaseSec`, `buildGrowth`, `maxBuilders`, `speedupCostShare`).
 - Tes: `node tests/jobs.test.js`. Matikan timer untuk uji lama dengan `buildTimeEnabled: false`.
+
+## Tampilan dan navigasi (sesi 22)
+
+Menu utama ada di bawah layar pada HP dan tablet (mudah dijangkau jempol) dan di header pada desktop. Semua tombol utama
+berukuran minimal 44 px. Tombol upgrade yang belum terjangkau terisi sesuai kas yang sudah ada. Tes sentuhan: `python3 tests/browser_touch.py`.

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b3d4f">
+  <meta name="theme-color" content="#051f2a">
   <title>Nusantara Tycoon</title>
   <link rel="icon" href="favicon.ico" sizes="any">
   <link rel="icon" type="image/svg+xml" href="assets/icons/favicon.svg">
@@ -625,15 +625,211 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 .goal-ico .art-ico, .wb-ico .art-ico { width: 30px; height: 30px; margin: 0 auto; }
 .art { pointer-events: none; filter: drop-shadow(0 1.5px 1px rgba(2, 24, 34, .5)); }
 .island-depth { pointer-events: none; }
-.id-shadow { fill: #021822; opacity: .42; filter: url(#soft); }
-.id-foam { fill: none; stroke: #eafcff; stroke-width: 4; stroke-linejoin: round; opacity: .3; filter: url(#soft); }
 .id-side { fill: #8a7650; stroke: #8a7650; stroke-width: 1; }
 .id-side2 { fill: #4b3b25; stroke: #4b3b25; stroke-width: 1; }
 .island.locked .id-side, .island.soon .id-side { fill: #8d9082; stroke: #8d9082; }
 .island.locked .id-side2, .island.soon .id-side2 { fill: #5d6158; stroke: #5d6158; }
 .island.soon .island-depth { opacity: .6; }
-.calm .id-shadow, .calm .id-foam { filter: none; }
 .row-icon .art-ico { width: 36px; height: 36px; }
+
+/* =====================================================================================================
+   Sesi 22: perombakan tata letak, navigasi, dan area sentuh
+   - Header ringkas (satu baris), navigasi di BAWAH layar pada HP (zona jempol), di atas pada desktop.
+   - Semua kontrol utama minimal 44x44 px; teks tidak kurang dari 12 px.
+   - Kartu status (target, musim) bergaya terang dan ringkas; tombol yang belum terjangkau terisi sesuai kas.
+   ===================================================================================================== */
+:root { --nav-h: 64px; --head-h: 66px; --radius: 14px; --gap: 14px; }
+
+html { -webkit-text-size-adjust: 100%; }
+button, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+body { padding-bottom: 0; }
+.wrap { padding: 0 12px; }
+@media (min-width: 640px) { .wrap { padding: 0 20px; } }
+#app { padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom)); }
+@media (min-width: 980px) { #app { padding-bottom: 48px; } }
+
+/* ---------- Header ---------- */
+.batik-strip { height: 4px; }
+.masthead {
+  position: sticky; top: 0; z-index: 30; margin-bottom: var(--gap);
+  background: linear-gradient(180deg, var(--sea-950), var(--sea-900));
+  border-bottom: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 2px 12px rgba(5, 31, 42, .28);
+}
+.topbar { padding: 8px 0; gap: 10px; }
+.brand { gap: 10px; }
+img.brand-logo { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+.brand h1 { font-size: 18px; letter-spacing: .2px; }
+.brand p { font-size: 12px; margin: 1px 0 0; }
+.stats { gap: 8px; flex: none; }
+.stat {
+  min-width: 0; padding: 5px 12px; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-end;
+  justify-content: center; line-height: 1.2; min-height: 48px;
+}
+.stat span { font-size: 12px; opacity: .78; }
+.stat b { font-size: 16px; }
+.stat-sub { display: none; font-size: 12px; font-weight: 600; color: var(--gold); white-space: nowrap; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+.term-stat { cursor: pointer; }
+@media (min-width: 760px) { .stat { min-height: 56px; } .stat-sub { display: block; min-height: 15px; } }
+@media (max-width: 440px) {
+  .brand h1 { font-size: 14px; line-height: 1.15; max-width: 92px; }
+  .brand p { font-size: 12px; max-width: 92px; line-height: 1.15; }
+  img.brand-logo { width: 34px; height: 34px; }
+  .stat { padding: 4px 10px; }
+  .stat b { font-size: 15px; }
+}
+
+/* ---------- Navigasi ---------- */
+.tabs { gap: 4px; }
+.tab {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  padding: 0 16px; border: 0; border-radius: 999px; font-size: 14px; font-weight: 700; color: #b9d6de; background: transparent;
+  transition: color .15s, background .15s;
+}
+.tab .ti { font-size: 18px; line-height: 1; }
+.tab:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+.tab.on { color: #fff; background: rgba(217, 164, 65, .2); box-shadow: inset 0 0 0 1px rgba(217, 164, 65, .6); }
+.tab.mini { margin-left: 0; width: auto; padding: 0 16px; }
+.tab:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+@media (min-width: 980px) {
+  .masthead .wrap { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 24px; }
+  .topbar { display: contents; }
+  .brand { order: 1; }
+  .tabs { order: 2; justify-self: center; padding: 8px 0; }
+  .stats { order: 3; }
+  .map-col { top: 84px; }
+}
+
+@media (max-width: 979px) {
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: rgba(5, 31, 42, .98);
+    border-top: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 -6px 20px rgba(3, 20, 28, .3);
+  }
+  .tab { flex-direction: column; gap: 2px; min-height: 52px; padding: 4px 2px; border-radius: 12px; font-size: 12px; }
+  .tab .ti { font-size: 22px; }
+  .tab.on { background: rgba(217, 164, 65, .16); box-shadow: none; }
+  .tab.on::before {
+    content: ""; position: absolute; top: -6px; left: 24%; right: 24%; height: 3px; border-radius: 0 0 3px 3px; background: var(--gold);
+  }
+  #toasts { bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index: 50; }
+  body.sheet-open #toasts { bottom: auto; top: calc(var(--head-h) + 8px); }
+  .sheet { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+  .sheet-box { padding-bottom: 0; max-height: min(56vh, 560px); max-height: min(56dvh, 560px); }
+  .sheet-grab { min-height: 56px; }
+  .sheet-x { width: 44px; height: 44px; font-size: 16px; }
+}
+
+/* ---------- Kartu status: target dan musim ---------- */
+.info-row { gap: 10px; margin-bottom: 10px; }
+@media (min-width: 640px) and (max-width: 979px) { .info-row { grid-template-columns: 1.3fr 1fr; } }
+.goal {
+  background: var(--card); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+  padding: 12px 14px; margin: 0; border-radius: var(--radius);
+}
+.goal-top { gap: 12px; }
+.goal-text small { color: var(--muted); opacity: 1; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+.goal-text b { font-size: 15px; line-height: 1.3; }
+.goalbar { background: var(--sand-dark); height: 8px; margin: 10px 0 6px; }
+.goal small#goal-eta { color: var(--muted); opacity: 1; font-size: 13px; }
+.builders {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 800;
+  background: var(--sand); color: var(--sea-800); border: 1px solid var(--sand-dark);
+}
+.builders.busy { background: var(--gold); color: #3a2605; border-color: var(--gold-dark); }
+.world-banner {
+  background: var(--card); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+  padding: 10px 14px; font-size: 14px; gap: 2px 12px; align-items: center;
+}
+.world-banner .evt { color: #8a5a00; }
+.world-banner .evt.good { color: #1f6b34; }
+.guide-head { min-height: 52px; }
+.guide-text small { font-size: 12px; }
+
+/* ---------- Peta dan kontrolnya ---------- */
+.map-card { border-radius: 18px; }
+@media (max-width: 759px) {
+  .map-scroll { height: clamp(280px, 42vh, 460px); }
+  .map-zoom { top: 8px; right: 8px; gap: 6px; }
+  .map-zoom .mz-btn { width: 44px; height: 44px; font-size: 22px; border-radius: 12px; opacity: .95; }
+}
+.region-chips { gap: 8px; padding: 8px 12px 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; font-size: 14px; }
+.bubble-hit { fill: transparent; }
+
+/* Tombol aksi cepat di bawah peta */
+.side-col { display: flex; flex-direction: column; gap: 10px; }
+.side-col .card:first-child, .side-col .btn.collect-all, .side-col .btn.cheapest { margin-top: 0; }
+.btn.wide { min-height: 52px; font-size: 15px; margin-top: 0; border-radius: 14px; }
+.btn.cheapest { min-height: 48px; font-size: 14px; white-space: normal; line-height: 1.25; text-align: center; }
+
+/* ---------- Tombol, chip, segmen: minimal 44 px ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 10px 16px;
+  font-size: 14px; border-radius: 12px;
+}
+/* Tombol berbiaya yang belum terjangkau: terisi sebanyak kas yang sudah terkumpul (--fill ditulis js/ui/panels.js) */
+.btn.primary:disabled {
+  opacity: 1; filter: none; color: #6b5420; border-color: var(--sand-dark);
+  background: linear-gradient(90deg, #ecc977 var(--fill, 0%), #f1e9d2 var(--fill, 0%));
+}
+.btn:disabled:not(.primary) { opacity: .55; }
+.seg { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; font-size: 14px; }
+.segs { gap: 8px; }
+.segs.mini .seg { padding: 0 14px; font-size: 14px; }
+.row { gap: 12px; padding: 14px 0; }
+.row-actions { gap: 8px; }
+.lvl { font-size: 12px; padding: 2px 8px; }
+.goods { padding: 16px; border-radius: 16px; }
+.goods-actions .btn { min-height: 48px; }
+.tag { font-size: 12px; padding: 2px 8px; }
+.goods-stock small, .tile small, .badge small, .log small { font-size: 12px; }
+.spark-axis { font-size: 11px; }
+
+/* Istilah yang bisa diketuk: luas sentuh diperbesar tanpa menggeser teks di sekitarnya */
+button.term { padding: 8px 3px; margin: -8px -3px; }
+button.term-tag { display: inline-flex; align-items: center; min-height: 32px; padding: 0 10px; vertical-align: middle; }
+
+/* Tombol geser: tinggi sentuh 44 px, jalur visual tetap 30 px */
+.switch, .switch.on { width: 60px; height: 44px; background: transparent; border-radius: 0; }
+.switch::before { content: ""; position: absolute; left: 4px; top: 7px; width: 52px; height: 30px; border-radius: 999px; background: #c9c2ad; transition: background .15s; }
+.switch.on::before { background: var(--green); }
+.switch i { top: 10px; left: 7px; z-index: 1; }
+.switch.on i { transform: translateX(22px); }
+
+/* ---------- Kartu dan judul ---------- */
+.card { border-radius: 16px; padding: 16px; }
+.card h2 { font-family: inherit; font-weight: 800; font-size: 20px; letter-spacing: -.2px; }
+.set-text small { font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) { .tab, .switch::before { transition: none; } }
+
+/* Penyetelan lanjutan sesi 22 */
+.row-actions { flex: none; width: 158px; }
+.row-actions .btn { width: 100%; padding-left: 10px; padding-right: 10px; }
+@media (max-width: 520px) { .row-actions { width: 100%; flex-direction: row; } .row-actions .btn { flex: 1; } }
+@media (max-width: 759px) {
+  .map-scroll { height: clamp(260px, 38vh, 440px); }
+  .goal { padding: 10px 12px; }
+  .goalbar { margin: 8px 0 4px; }
+  .goal-ico, .goal-ico .art-ico { width: 32px; height: 32px; }
+  .guide-head { padding-top: 8px; }
+  .info-row { margin-bottom: 8px; }
+  .masthead { margin-bottom: 10px; }
+  .stat { min-height: 44px; }
+}
+
+/* Penjelasan pasar dilipat: informasi tetap ada, layar pertama tidak penuh teks */
+details.how { margin-top: 4px; }
+details.how > summary {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; font-weight: 700; font-size: 14px; color: var(--sea-700);
+  list-style: none; -webkit-tap-highlight-color: transparent;
+}
+details.how > summary::-webkit-details-marker { display: none; }
+details.how > summary::before { content: "\25B8"; font-size: 14px; transition: transform .15s; }
+details.how[open] > summary::before { transform: rotate(90deg); }
+details.how > summary:focus-visible { outline: 3px solid var(--sea-500); outline-offset: 2px; border-radius: 8px; }
+details.how > p { margin: 0 0 6px; }
 
 </style>
 </head>
@@ -651,17 +847,17 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
           </div>
         </div>
         <div class="stats">
-          <div class="stat"><span>Kas</span><b id="stat-cash">Rp 0</b></div>
-          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span>Peradaban</span><b id="stat-score">0</b></div>
+          <div class="stat stat-cash"><span>Kas</span><b id="stat-cash">Rp 0</b><small class="stat-sub" id="stat-income" title="Perkiraan pemasukan per menit">&nbsp;</small></div>
+          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span>Peradaban</span><b id="stat-score">0</b><small class="stat-sub" id="stat-rankpct">&nbsp;</small></div>
         </div>
       </div>
 
-      <nav class="tabs" role="tablist">
-        <button class="tab" data-action="tab" data-id="map" role="tab">🗺️ Peta</button>
-        <button class="tab" data-action="tab" data-id="market" role="tab">⚖️ Pasar</button>
-        <button class="tab" data-action="tab" data-id="stats" role="tab">🏆 Capaian</button>
-        <button class="tab" data-action="tab" data-id="about" role="tab">ℹ️ Info</button>
-        <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan">⚙️</button>
+      <nav class="tabs" role="tablist" aria-label="Menu utama">
+        <button class="tab" data-action="tab" data-id="map" role="tab"><span class="ti" aria-hidden="true">🗺️</span><span class="tl">Peta</span></button>
+        <button class="tab" data-action="tab" data-id="market" role="tab"><span class="ti" aria-hidden="true">⚖️</span><span class="tl">Pasar</span></button>
+        <button class="tab" data-action="tab" data-id="stats" role="tab"><span class="ti" aria-hidden="true">🏆</span><span class="tl">Capaian</span></button>
+        <button class="tab" data-action="tab" data-id="about" role="tab"><span class="ti" aria-hidden="true">ℹ️</span><span class="tl">Info</span></button>
+        <button class="tab mini" data-action="tab" data-id="settings" role="tab" aria-label="Pengaturan" title="Pengaturan"><span class="ti" aria-hidden="true">⚙️</span><span class="tl">Atur</span></button>
       </nav>
     </div>
   </header>
@@ -3204,6 +3400,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
   NT.ui = NT.ui || {};
   const G = NT.data.geo;
   const K = 2;   // piksel kanvas per satuan viewBox
+  const SLICE_MS = 8;   // jatah kerja per irisan saat menghitung tekstur; sisanya untuk menggambar bingkai dan menerima sentuhan
   const W = Math.ceil((G.lon1 - G.lon0) / G.cellDeg) * G.cellPx;
   const H = Math.ceil((G.lat0 - G.lat1) / G.cellDeg) * G.cellPx;
 
@@ -3361,30 +3558,36 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
   function smooth(a, b, x) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
 
   // Jarak (piksel) ke sel bertanda 1 terdekat, pendekatan chamfer dua sapuan.
-  function dt(seed, w, h) {
+  function* dtGen(seed, w, h) {
     const d = new Float32Array(w * h), R2 = 1.414;
-    for (let i = 0; i < d.length; i++) d[i] = seed[i] ? 0 : 1e9;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = y * w + x; let v = d[i];
-      if (v === 0) continue;
-      if (x > 0) v = Math.min(v, d[i - 1] + 1);
-      if (y > 0) {
-        v = Math.min(v, d[i - w] + 1);
-        if (x > 0) v = Math.min(v, d[i - w - 1] + R2);
-        if (x < w - 1) v = Math.min(v, d[i - w + 1] + R2);
+    for (let i = 0; i < d.length; i++) { d[i] = seed[i] ? 0 : 1e9; if (!(i & 0x3FFFF)) yield; }
+    for (let y = 0; y < h; y++) {
+      if (!(y & 7)) yield;
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x; let v = d[i];
+        if (v === 0) continue;
+        if (x > 0) v = Math.min(v, d[i - 1] + 1);
+        if (y > 0) {
+          v = Math.min(v, d[i - w] + 1);
+          if (x > 0) v = Math.min(v, d[i - w - 1] + R2);
+          if (x < w - 1) v = Math.min(v, d[i - w + 1] + R2);
+        }
+        d[i] = v;
       }
-      d[i] = v;
     }
-    for (let y = h - 1; y >= 0; y--) for (let x = w - 1; x >= 0; x--) {
-      const i = y * w + x; let v = d[i];
-      if (v === 0) continue;
-      if (x < w - 1) v = Math.min(v, d[i + 1] + 1);
-      if (y < h - 1) {
-        v = Math.min(v, d[i + w] + 1);
-        if (x < w - 1) v = Math.min(v, d[i + w + 1] + R2);
-        if (x > 0) v = Math.min(v, d[i + w - 1] + R2);
+    for (let y = h - 1; y >= 0; y--) {
+      if (!(y & 7)) yield;
+      for (let x = w - 1; x >= 0; x--) {
+        const i = y * w + x; let v = d[i];
+        if (v === 0) continue;
+        if (x < w - 1) v = Math.min(v, d[i + 1] + 1);
+        if (y < h - 1) {
+          v = Math.min(v, d[i + w] + 1);
+          if (x < w - 1) v = Math.min(v, d[i + w + 1] + R2);
+          if (x > 0) v = Math.min(v, d[i + w - 1] + R2);
+        }
+        d[i] = v;
       }
-      d[i] = v;
     }
     return d;
   }
@@ -3418,16 +3621,46 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     ctx.fill();
   }
 
-  function alphaOf(c) {
-    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, a = new Uint8Array(c.width * c.height);
-    for (let i = 0; i < a.length; i++) a[i] = d[i * 4 + 3];
+  /* ---------- Pembagi waktu ----------
+   * Perhitungan tekstur berat ditulis sebagai generator yang memberi kendali tiap beberapa baris. Pemanggil sinkron
+   * (drain) menghabiskan semuanya; pemanggil async (runSliced) menjalankannya per irisan ~8 ms supaya browser sempat
+   * menggambar dan menerima sentuhan, dan bisa membatalkannya kapan saja (pemain mulai menggeser lagi). */
+  function drain(gen) {
+    let r;
+    do { r = gen.next(); } while (!r.done);
+    return r.value;
+  }
+
+  function runSliced(gen, budgetMs, isStale, done) {
+    const mc = typeof MessageChannel === 'function' ? new MessageChannel() : null;
+    function next() { if (mc) mc.port2.postMessage(0); else setTimeout(step, 0); }
+    function end() { if (mc) { mc.port1.onmessage = null; mc.port1.close(); } }
+    function step() {
+      if (isStale()) { try { gen.return(); } catch (e) { /* abaikan */ } end(); return; }
+      const t0 = performance.now();
+      let r;
+      do { r = gen.next(); } while (!r.done && performance.now() - t0 < budgetMs);
+      if (r.done) { end(); done(r.value); } else next();
+    }
+    if (mc) mc.port1.onmessage = step;
+    next();
+  }
+
+  // Baca kanal alfa kanvas per pita baris (getImageData sekaligus untuk kanvas besar memblokir puluhan milidetik).
+  function* alphaGen(c) {
+    const w = c.width, h = c.height, ctx = c.getContext('2d'), a = new Uint8Array(w * h), band = Math.max(16, Math.floor(262144 / w));
+    for (let y0 = 0; y0 < h; y0 += band) {
+      const bh = Math.min(band, h - y0), d = ctx.getImageData(0, y0, w, bh).data, off = y0 * w;
+      for (let i = 0, n = w * bh; i < n; i++) a[off + i] = d[i * 4 + 3];
+      yield;
+    }
     return a;
   }
 
   // Hitung tekstur laut dan darat untuk satu jendela (default: seluruh peta pada K). Derau memakai koordinat dunia,
   // jadi jendela mana pun menghasilkan gambar yang sama dengan potongan peta penuh, hanya lebih tajam bila k lebih besar.
   // Jarak ke pantai (dt) dihitung di dalam jendela: pemanggil harus memberi tepi >= EDGE satuan di luar area yang dipakai.
-  function compute(o) {
+  function* computeGen(o) {
     o = o || { x: 0, y: 0, w: W, h: H, k: K };
     const k = o.k, ox = o.x, oy = o.y;
     const w = Math.ceil(o.w * k), h = Math.ceil(o.h * k), N = w * h;
@@ -3435,14 +3668,27 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     let ctx = play.getContext('2d'); ctx.fillStyle = '#fff';
     Object.keys(G.polygons).forEach(function (id) { if (id !== 'neighbor') fillRings(ctx, shape(id), o); });
     ctx = nbc.getContext('2d'); ctx.fillStyle = '#fff'; fillRings(ctx, shape('neighbor'), o);
-    const aP = alphaOf(play), aN = alphaOf(nbc), land = new Uint8Array(N);
-    for (let i = 0; i < N; i++) land[i] = Math.max(aP[i], aN[i]);
+    const aP = yield* alphaGen(play), aN = yield* alphaGen(nbc), land = new Uint8Array(N);
+    for (let i = 0; i < N; i++) { land[i] = Math.max(aP[i], aN[i]); if (!(i & 0x3FFFF)) yield; }
 
-    function seedFrom(c, stroke) { return alphaOf(c); }
     const shelfC = canvas(w, h); ctx = shelfC.getContext('2d'); ctx.fillStyle = '#fff';
     fillRings(ctx, SHELVES.map(function (r) { return chaikin(chaikin(toPxRing(r))); }), o);
-    const aS = seedFrom(shelfC);
-    function ridgeSeed(list) {
+    const aS = yield* alphaGen(shelfC);
+    // Wilayah "segera hadir" dan sekitarnya (tepi 12 satuan): bayangan dan buihnya dibuat lebih pudar, sama seperti pulaunya.
+    const soonC = canvas(w, h); ctx = soonC.getContext('2d'); ctx.fillStyle = '#fff'; ctx.strokeStyle = '#fff'; ctx.lineJoin = 'round'; ctx.lineWidth = 24 * k;
+    let anySoon = false;
+    Object.keys(G.polygons).forEach(function (id) {
+      const rg = NT.data.regions && NT.data.regions[id];
+      if (!rg || !rg.comingSoon) return;
+      anySoon = true; fillRings(ctx, shape(id), o);
+      shape(id).forEach(function (ring) {
+        ctx.beginPath();
+        ring.forEach(function (p, i) { const px = (p.x - ox) * k, py = (p.y - oy) * k; if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
+        ctx.closePath(); ctx.stroke();
+      });
+    });
+    const aSoon = anySoon ? yield* alphaGen(soonC) : null;
+    function* ridgeSeed(list) {
       const c = canvas(w, h), x = c.getContext('2d');
       x.strokeStyle = '#fff'; x.lineWidth = 3 * k; x.lineCap = 'round'; x.lineJoin = 'round';
       list.forEach(function (l) {
@@ -3450,19 +3696,21 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
         l.forEach(function (q, i) { const p = NT.raster.toPx(q[0], q[1]), px = (p.x - ox) * k, py = (p.y - oy) * k; if (i) x.lineTo(px, py); else x.moveTo(px, py); });
         x.stroke();
       });
-      return alphaOf(c);
+      return yield* alphaGen(c);
     }
 
     const sLand = new Uint8Array(N), sSea = new Uint8Array(N), sOut = new Uint8Array(N);
-    for (let i = 0; i < N; i++) { sLand[i] = land[i] > 127 ? 1 : 0; sSea[i] = sLand[i] ? 0 : 1; sOut[i] = aS[i] < 128 ? 1 : 0; }
-    const dSea = dt(sLand, w, h), dIn = dt(sSea, w, h), dShelf = dt(sOut, w, h);
-    const rh = ridgeSeed(RIDGE_HIGH), rm = ridgeSeed(RIDGE_MID);
-    for (let i = 0; i < N; i++) { sLand[i] = rh[i] > 40 ? 1 : 0; sSea[i] = rm[i] > 40 ? 1 : 0; }
-    const dH = dt(sLand, w, h), dM = dt(sSea, w, h);
+    for (let i = 0; i < N; i++) { sLand[i] = land[i] > 127 ? 1 : 0; sSea[i] = sLand[i] ? 0 : 1; sOut[i] = aS[i] < 128 ? 1 : 0; if (!(i & 0x3FFFF)) yield; }
+    const dSea = yield* dtGen(sLand, w, h), dIn = yield* dtGen(sSea, w, h), dShelf = yield* dtGen(sOut, w, h);
+    const rh = yield* ridgeSeed(RIDGE_HIGH), rm = yield* ridgeSeed(RIDGE_MID);
+    for (let i = 0; i < N; i++) { sLand[i] = rh[i] > 40 ? 1 : 0; sSea[i] = rm[i] > 40 ? 1 : 0; if (!(i & 0x3FFFF)) yield; }
+    const dH = yield* dtGen(sLand, w, h), dM = yield* dtGen(sSea, w, h);
 
     // Ketinggian 0..1 (hanya daratan).
     const hgt = new Float32Array(N);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      if (!(y & 3)) yield;
+      for (let x = 0; x < w; x++) {
       const i = y * w + x;
       if (land[i] < 128) continue;
       const vx = ox + x / k, vy = oy + y / k;
@@ -3471,6 +3719,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       const n1 = fbm(vx, vy, 14, 4, 11), n2 = fbm(vx, vy, 5, 3, 21), n3 = fbm(vx, vy, 2.2, 2, 31);
       const v = (0.07 + 0.30 * n1) * (0.3 + 0.7 * inl) + rH * (0.55 + 0.45 * n2) + rM * (0.30 + 0.32 * n2) + 0.05 * (n3 - 0.5);
       hgt[i] = Math.max(0, Math.min(1, v));
+      }
     }
     // Kerucut gunung api: kenaikan mulus dengan kawah kecil di puncak.
     VOLCANOES.forEach(function (vc) {
@@ -3489,7 +3738,14 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 
     const seaImg = new ImageData(w, h), landImg = new ImageData(w, h), sd = seaImg.data, ld = landImg.data;
     const sh = Math.max(1, Math.round(1.5 * k)), hw = W / 2, hh2 = H / 2;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    // Bayangan jatuh dan buih pantai pulau (dulu dua lapisan vektor ber-filter blur yang digambar ulang tiap bingkai geser):
+    // dipanggang ke tekstur laut. Siluet bayangan digeser (2,5; 6) satuan lalu dikaburkan sigma 2,4; buih = garis tebal 4 satuan
+    // di pantai, juga dikaburkan. Jarak bertanda d (satuan; positif di laut) dari transformasi jarak yang sudah ada.
+    const SDX = Math.round(2.5 * k), SDY = Math.round(6 * k), SIG = 2 * 2.4;
+    function inside(d) { return 1 - smooth(-SIG, SIG, d); }
+    for (let y = 0; y < h; y++) {
+      if (!(y & 3)) yield;
+      for (let x = 0; x < w; x++) {
       const i = y * w + x, oo = i * 4, vx = ox + x / k, vy = oy + y / k;
       if (land[i] >= 128 || (aP[i] > 0 || aN[i] > 0)) {
         // ----- Darat -----
@@ -3544,8 +3800,21 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       if (ds < 0.8) { const f = 0.5 * (1 - ds / 0.8); r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
       const j = (y - sh) * w + (x - sh);
       if (y >= sh && x >= sh && land[j] > 127 && land[i] < 128) { r *= 0.72; g *= 0.74; b *= 0.78; }
+      if (y >= SDY && x >= SDX && ds < 22) {
+        const js = (y - SDY) * w + (x - SDX);
+        const dsh = land[js] >= 128 ? -dIn[js] / k : dSea[js] / k;
+        const fade = aSoon && aSoon[i] > 127 ? 0.6 : 1;
+        if (dsh < SIG) {                                   // bayangan: warna #021822, kepekatan 0,42
+          const a = 0.42 * inside(dsh) * fade;
+          r += (2 - r) * a; g += (24 - g) * a; b += (34 - b) * a;
+        }
+        const d0 = land[i] >= 128 ? -dIn[i] / k : ds;
+        const fm = (inside(d0 - 2) - inside(d0 + 2)) * 0.3 * fade;   // buih: warna #eafcff, kepekatan 0,3
+        if (fm > 0.002) { r += (234 - r) * fm; g += (252 - g) * fm; b += (255 - b) * fm; }
+      }
       const dx = (vx - hw) / hw, dy = (vy - hh2) / hh2, vg = 1 - 0.2 * smooth(0.55, 1.15, Math.sqrt(dx * dx + dy * dy));
       sd[oo] = r * vg; sd[oo + 1] = g * vg; sd[oo + 2] = b * vg; sd[oo + 3] = 255;
+      }
     }
     const sea = canvas(w, h), lnd = canvas(w, h);
     sea.getContext('2d').putImageData(seaImg, 0, 0);
@@ -3554,6 +3823,9 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     drawRivers(lc, o);
     return { sea: sea, land: lnd };
   }
+
+  // Versi sinkron (dipakai tes dan pemanggil lama): hasil identik dengan versi beririsan.
+  function compute(o) { return drain(computeGen(o)); }
 
   // Sungai: garis berliku (derau tegak lurus arah aliran), melebar ke muara; hanya tampil di atas daratan.
   function drawRivers(ctx, o) {
@@ -3589,21 +3861,25 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
   }
 
   // Hitung tekstur setelah peta tampil, lalu pasang ke elemen <image data-tex>.
-  function attach(host) {
+  function attach(host, done) {
     setTimeout(function () {
-      const r = compute();
-      host.querySelectorAll('image[data-tex]').forEach(function (img) {
-        const id = img.getAttribute('data-tex');
-        let src = r.sea, type = 'image/jpeg';
-        if (id !== 'sea') {
-          const b = boxOf(id), c = canvas(b.w * K, b.h * K);
-          c.getContext('2d').drawImage(r.land, b.x * K, b.y * K, b.w * K, b.h * K, 0, 0, b.w * K, b.h * K);
-          src = c; type = 'image/png';
-        }
-        toURL(src, type, function (url) {
-          img.setAttribute('href', url);
-          const ph = img.parentNode && img.parentNode.querySelector('.ph');
-          if (ph) ph.remove();
+      runSliced(computeGen(), SLICE_MS, function () { return false; }, function (r) {
+        const imgs = host.querySelectorAll('image[data-tex]');
+        let left = imgs.length;
+        imgs.forEach(function (img) {
+          const id = img.getAttribute('data-tex');
+          let src = r.sea, type = 'image/jpeg';
+          if (id !== 'sea') {
+            const b = boxOf(id), c = canvas(b.w * K, b.h * K);
+            c.getContext('2d').drawImage(r.land, b.x * K, b.y * K, b.w * K, b.h * K, 0, 0, b.w * K, b.h * K);
+            src = c; type = 'image/png';
+          }
+          toURL(src, type, function (url) {
+            img.setAttribute('href', url);
+            const ph = img.parentNode && img.parentNode.querySelector('.ph');
+            if (ph) ph.remove();
+            if (!--left && done) done();
+          });
         });
       });
     }, 30);
@@ -3656,8 +3932,6 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     // Sudah cukup: area terlihat tercakup dan ketajamannya tidak kalah dari yang dibutuhkan.
     if (hi && covers(hi, rect) && hi.k >= pl.k) return false;
     const my = ++gen;
-    const r = compute(pl.ext);
-    const seaC = crop(r.sea, pl.ext, pl.inner, pl.k), landC = crop(r.land, pl.ext, pl.inner, pl.k);
     const urls = [];
     let left = 2, seaUrl = null, landUrl = null;
     function finish() {
@@ -3678,14 +3952,21 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       hi = { x: pl.inner.x, y: pl.inner.y, w: pl.inner.w, h: pl.inner.h, k: pl.k, urls: urls };
       if (done) done(hi);
     }
-    toURL(seaC, 'image/jpeg', function (u) { seaUrl = u; urls.push(u); if (!--left) finish(); });
-    toURL(landC, 'image/png', function (u) { landUrl = u; urls.push(u); if (!--left) finish(); });
+    // Hitung beririsan (UI tetap lancar); bila pemain mulai menyentuh peta lagi, cancel() menaikkan gen dan hitungan dibuang.
+    runSliced(computeGen(pl.ext), SLICE_MS, function () { return my !== gen; }, function (r) {
+      const seaC = crop(r.sea, pl.ext, pl.inner, pl.k), landC = crop(r.land, pl.ext, pl.inner, pl.k);
+      toURL(seaC, 'image/jpeg', function (u) { seaUrl = u; urls.push(u); if (!--left) finish(); });
+      toURL(landC, 'image/png', function (u) { landUrl = u; urls.push(u); if (!--left) finish(); });
+    });
     return true;
   }
 
+  // Batalkan render tajam yang sedang berjalan (gambar tajam yang sudah terpasang tetap dipakai).
+  function cancel() { gen++; }
+
   NT.ui.terrain = {
     W: W, H: H, K: K, EDGE: EDGE, defs: defs, landMarkup: landMarkup, pathOf: pathOf, boxOf: boxOf, attach: attach, shape: shape,
-    render: compute, plan: plan, refine: refine, clearRefine: clearRefine,
+    render: compute, renderGen: computeGen, drain: drain, plan: plan, refine: refine, clearRefine: clearRefine, cancel: cancel,
     state: function () { return hi ? { x: hi.x, y: hi.y, w: hi.w, h: hi.h, k: hi.k } : null; }
   };
 })((window.NT = window.NT || {}));
@@ -3763,12 +4044,12 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 
   function pt(lonlat) { return NT.raster.toPx(lonlat[0], lonlat[1]); }
 
-  // Kedalaman pulau: bayangan jatuh di laut, buih pantai, dan sisi tebing (pulau tampak terangkat dari laut).
+  // Kedalaman pulau: sisi tebing (pulau tampak terangkat dari laut). Bayangan jatuh dan buih pantai dulu juga lapisan vektor
+  // ber-filter blur di sini, tetapi digambar ulang tiap bingkai geser (peta desktop hanya ~30 fps); sekarang dipanggang
+  // ke tekstur laut (terrain.js, compute). Sisi tebing tetap vektor karena warnanya berubah menurut status pulau.
   function depthMarkup(id) {
     const d = NT.ui.terrain.pathOf(id);
     return '<g class="island-depth">' +
-      '<path class="id-shadow" d="' + d + '" transform="translate(2.5,6)"/>' +
-      '<path class="id-foam" d="' + d + '"/>' +
       '<path class="id-side2" d="' + d + '" transform="translate(0,3.6)"/>' +
       '<path class="id-side" d="' + d + '" transform="translate(0,1.8)"/>' +
     '</g>';
@@ -3849,7 +4130,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 
     return '' +
     '<svg class="map-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Peta Nusantara">' +
-      T.defs() + '<defs><filter id="soft" x="-4%" y="-4%" width="108%" height="108%"><feGaussianBlur stdDeviation="2.4"/></filter></defs>' +
+      T.defs() +
       '<rect class="px-deep" width="' + W + '" height="' + H + '"/>' + seaImg +
       graticule(W, H) + neighbor + seaLabels(grid) + '<g class="ships">' + shipsMarkup() + '</g>' + islands + compass(cp.x, cp.y) +
     '</svg>';
@@ -3919,7 +4200,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       put(tierName(bid, lvl >= 6 ? 3 : (lvl >= 3 ? 2 : 1)), p, lvl >= 3 ? 46 : 40, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
       if (lvl) {
         top.push('<g class=\"bubble\" data-id=\"' + bid + '\" transform=\"translate(' + p.x + ',' + (p.y - 38) + ')\"><g class=\"ui-b\"><g class=\"bob\">' +
-          '<circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g></g>');
+          '<circle r=\"30\" class=\"bubble-hit\"/><circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g></g>');
       }
       if (job) top.push(jobBadge(p.x, p.y + 12, job.key));
     });
@@ -3998,8 +4279,12 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   }
 
+  // Kotak peta di-cache: getBoundingClientRect setelah viewBox berubah memaksa layout ulang sinkron di tiap gerakan jari.
+  // Dibuang saat pointerdown, gulir, atau ukuran berubah.
+  function stageRect() { return view.rect || (view.rect = view.stage.getBoundingClientRect()); }
+
   function relPoint(e) {
-    const r = view.stage.getBoundingClientRect();
+    const r = stageRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
 
@@ -4017,10 +4302,15 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     view.raf = 0;
     if (!view.cur) return;
     view.svg.setAttribute('viewBox', VP.viewBoxOf(view.cur, view.ctx));
-    updateScaleUi();
+    // Variabel CSS, penggaris, dan tombol hanya bergantung pada skala: lewati saat hanya menggeser (menulis variabel CSS
+    // pada <svg> membuat gaya seluruh isi peta dihitung ulang).
+    if (view.cur.scale !== view.lastScale) {
+      view.lastScale = view.cur.scale;
+      updateScaleUi();
+      const lim = VP.limits(view.ctx);
+      if (view.btn.in) { view.btn.in.disabled = view.cur.scale >= lim.max * 0.999; view.btn.out.disabled = view.cur.scale <= lim.min * 1.001; }
+    }
     queueRefine();
-    const lim = VP.limits(view.ctx);
-    if (view.btn.in) { view.btn.in.disabled = view.cur.scale >= lim.max * 0.999; view.btn.out.disabled = view.cur.scale <= lim.min * 1.001; }
   }
 
   /* ---------- Z2: ukuran elemen UI mengikuti zoom, penggaris km, tekstur tajam ---------- */
@@ -4076,9 +4366,18 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 
   function cancelAnim() { if (view.anim) { cancelAnimationFrame(view.anim); view.anim = 0; } }
 
+  // Pemain mulai menyentuh atau menggerakkan peta: hentikan render tekstur tajam yang sedang berjalan (jatah CPU-nya
+  // dipakai untuk gerakan); queueRefine() dipanggil lagi setelah jari lepas.
+  function interrupt() {
+    clearTimeout(view.refT); view.refT = 0;
+    const T = NT.ui.terrain;
+    if (T && T.cancel) T.cancel();
+  }
+
   // Pindah halus ke view target (pusat dan skala diinterpolasi); tanpa animasi bila "Hemat animasi" menyala.
   function animateTo(target) {
     cancelAnim();
+    interrupt();
     if (!view.cur) return;
     if (reducedMotion()) { setView(target, true); return; }
     const c = view.ctx, from = view.cur;
@@ -4099,7 +4398,8 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
   }
 
   function measure() {
-    const r = view.stage.getBoundingClientRect();
+    view.rect = null;
+    const r = stageRect();
     return { w: r.width, h: r.height };
   }
 
@@ -4108,6 +4408,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     const box = measure();
     if (box.w < 1 || box.h < 1) return;        // tab peta sedang tersembunyi
     const old = view.ctx;
+    view.lastScale = 0;                        // batas zoom bergantung pada ukuran kotak: perbarui tombol
     view.ctx = { world: old.world, box: box, maxZoom: old.maxZoom, maxPx: old.maxPx };
     if (!view.cur) {
       let saved = null;
@@ -4131,6 +4432,8 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     stage.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
       cancelAnim();
+      interrupt();
+      if (!pts.size) view.rect = null;
       pts.set(e.pointerId, relPoint(e));
       if (pts.size === 1) { down = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId }; suppressClick = false; }
       else { if (down) down.moved = true; suppressClick = true; }   // jari kedua = pinch, bukan ketukan
@@ -4152,7 +4455,8 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
         try { stage.setPointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
         stage.classList.add('dragging');
         // Selisih dihitung dari titik sentuh awal supaya tidak ada lompatan sebesar ambang.
-        prev.x = down.x - stage.getBoundingClientRect().left; prev.y = down.y - stage.getBoundingClientRect().top;
+        const sr = stageRect();
+        prev.x = down.x - sr.left; prev.y = down.y - sr.top;
       }
       pts.set(e.pointerId, cur);
       if (down && down.moved) setView(VP.panBy(view.cur, cur.x - prev.x, cur.y - prev.y, view.ctx), true);
@@ -4164,6 +4468,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       if (pts.size >= 1) { if (down) down.moved = true; return; }   // satu jari lepas: sisa jari lanjut menggeser
       try { stage.releasePointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
       stage.classList.remove('dragging');
+      queueRefine();                       // render tajam yang tadi dibatalkan dilanjutkan setelah jari lepas
       const wasTap = down && !down.moved && e.type === 'pointerup';
       down = null;
       if (!wasTap) { lastTap = null; return; }
@@ -4193,6 +4498,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       if (e.deltaY > 0 && !e.ctrlKey && view.cur.scale <= lim.min * 1.001) return;
       e.preventDefault();
       cancelAnim();
+      interrupt();
       const dy = e.deltaY * (e.deltaMode === 1 ? 16 : (e.deltaMode === 2 ? 300 : 1));
       const p = relPoint(e);
       setView(VP.zoomAt(view.cur, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0016)), p.x, p.y, view.ctx), true);
@@ -4244,6 +4550,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     bindGestures();
     if (window.ResizeObserver) new ResizeObserver(onResize).observe(view.stage);
     else window.addEventListener('resize', onResize);
+    window.addEventListener('scroll', function () { view.rect = null; }, { passive: true });
     onResize();
     window.addEventListener('pagehide', function () { if (view.saveTimer) saveNow(); });
   }
@@ -4527,9 +4834,9 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
       '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
-      '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
+      '<details class="how"><summary>Cara kerja harga dan ongkir</summary><p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
-      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></div>' + goods + exportHtml(state, now);
+      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goods + exportHtml(state, now);
   }
 
   // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
@@ -4823,6 +5130,9 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     NT.ui.fx.setCash($('stat-cash'), state.cash);
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
+    const inc0 = E.incomePerMin(state, now);
+    $('stat-income').textContent = inc0 > 0 ? '≈ +' + F.money(inc0) + '/mnt' : '\u00a0';
+    $('stat-rankpct').textContent = rk.next ? Math.round(Math.max(0, Math.min(1, (sc - rk.current.min) / (rk.next.min - rk.current.min))) * 100) + '% ke ' + rk.next.name : 'Gelar tertinggi';
 
     const wh = worldHtml(now);
     if (wh !== bannerCache) {
@@ -4891,7 +5201,10 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 
     // Tombol berbiaya: nonaktif bila kas kurang
     each('[data-cost]', function (el) {
-      el.disabled = state.cash < Number(el.getAttribute('data-cost'));
+      const cost = Number(el.getAttribute('data-cost'));
+      el.disabled = state.cash < cost;
+      // Tombol yang belum terjangkau terisi sebanyak kas yang sudah ada: kelihatan seberapa dekat.
+      el.style.setProperty('--fill', (cost > 0 ? Math.min(100, state.cash / cost * 100) : 100).toFixed(0) + '%');
     });
 
     each('[data-live="pending"]', function (el) {

@@ -253,9 +253,9 @@
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
       '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
-      '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
+      '<details class="how"><summary>Cara kerja harga dan ongkir</summary><p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
-      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></div>' + goods + exportHtml(state, now);
+      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goods + exportHtml(state, now);
   }
 
   // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
@@ -549,6 +549,9 @@
     NT.ui.fx.setCash($('stat-cash'), state.cash);
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
+    const inc0 = E.incomePerMin(state, now);
+    $('stat-income').textContent = inc0 > 0 ? '≈ +' + F.money(inc0) + '/mnt' : '\u00a0';
+    $('stat-rankpct').textContent = rk.next ? Math.round(Math.max(0, Math.min(1, (sc - rk.current.min) / (rk.next.min - rk.current.min))) * 100) + '% ke ' + rk.next.name : 'Gelar tertinggi';
 
     const wh = worldHtml(now);
     if (wh !== bannerCache) {
@@ -617,7 +620,10 @@
 
     // Tombol berbiaya: nonaktif bila kas kurang
     each('[data-cost]', function (el) {
-      el.disabled = state.cash < Number(el.getAttribute('data-cost'));
+      const cost = Number(el.getAttribute('data-cost'));
+      el.disabled = state.cash < cost;
+      // Tombol yang belum terjangkau terisi sebanyak kas yang sudah ada: kelihatan seberapa dekat.
+      el.style.setProperty('--fill', (cost > 0 ? Math.min(100, state.cash / cost * 100) : 100).toFixed(0) + '%');
     });
 
     each('[data-live="pending"]', function (el) {

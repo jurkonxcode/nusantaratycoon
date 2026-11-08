@@ -782,3 +782,27 @@ Pemilik mengunggah repo (commit `a4954861`) dan meminta game diperiksa lalu dise
 | Sesi | File yang berubah |
 |---|---|
 | 21 | `js/ui/map.js`, `css/style.css`, `tests/browser_paket_b.py`, `tools/simulate.js`, `dist/nusantara-tycoon.html`, `HANDOFF.md` |
+
+## 36. Sesi 22: perombakan tata letak, navigasi, dan audit sentuhan (8 November 2026)
+
+Permintaan pemilik: struktur tata letak, navigasi, panel, dan header lebih modern dan profesional, lebih mudah dipakai, audit jangkauan sentuhan, informasi lebih mudah dipahami.
+Pendekatan: CSS-first. Semua `id`, `data-action`, dan kelas yang dipakai JS dan tes dipertahankan; blok CSS baru ada di akhir `css/style.css` ("Sesi 22").
+
+**Audit awal (HP 390 px):** 97 kontrol di bawah 44 px (chip wilayah 32, segmen pasar 32, tombol Jual 34, tombol geser 30, zoom 38, gelembung 📦 18, istilah inline 17). Header + tab memakai sekitar 140 px dan kartu panduan + target + musim sekitar 250 px sebelum peta.
+
+**Yang diubah.**
+1. **Header satu baris** (sticky): logo, nama, gelar, pil Kas (desktop: + perkiraan pemasukan per menit) dan Peradaban (desktop: + persen menuju gelar berikut). Desktop: merek, menu, dan angka dalam satu baris (`.topbar { display: contents }` + grid).
+2. **Navigasi bawah di HP/tablet (< 980 px)**: `nav.tabs` tetap satu elemen, di-`position: fixed` di dasar layar (zona jempol, 52 px + area aman iPhone), ikon di atas label, penanda emas pada tab aktif. Tab Pengaturan berlabel "Atur". Desktop: tab berbentuk pil di header.
+3. **Lembar wilayah dan toast** menempel tepat di atas navigasi bawah (`--nav-h`); toast saat lembar terbuka turun di bawah header (`--head-h`).
+4. **Kartu status** (target, musim) bergaya terang dan ringkas; peta memakai tinggi `clamp(260px, 38vh, 440px)` di HP sehingga peta, chip, dan tombol aksi masuk layar pertama.
+5. **Area sentuh >= 44 px** untuk semua kontrol utama: tombol, chip, segmen, zoom peta (44), tombol geser (tinggi 44, jalur 30), gelembung 📦 (lingkaran sentuh transparan `r=30`, `.bubble-hit`), ringkasan lipat. Istilah inline (ongkir, panen raya/paceklik) 32-33 px karena berada di dalam teks (WCAG 2.2, 2.5.8).
+6. **Informasi lebih jelas:** tombol berbiaya yang belum terjangkau terisi sebanyak kas yang ada (`--fill`, ditulis di `tick`), baris pemasukan per menit di header, persen menuju gelar, penjelasan pasar dilipat (`details.how`). Teks tidak kurang dari 12 px (kecuali sumbu grafik 11 px).
+7. Lebar tombol di baris panel seragam (158 px), judul kartu memakai font sans.
+
+**Tes.** Baru `tests/browser_touch.py` (34 pengecekan: HP 360/390, tablet 768, desktop 1280): ukuran sentuh, header <= 90 px, navigasi menempel di dasar, isi akhir tidak tertutup, 5 tab muat, gelembung >= 36 px, tanpa luapan dan galat. `browser_paket_b.py` disesuaikan: lembar kini menempel di atas navigasi, bukan di dasar layar. Hijau: Node 25/10/10/10/12/11/14/20; browser paket B 22, paket C 33, layout 30, zoom 39, Z2 18, touch 34.
+
+**Belum diuji / risiko.** HP dan Safari/iOS sungguhan (area aman, `dvh`, `:has`), pembaca layar, huruf "Sangat besar" di navigasi bawah (label 12 px tidak ikut skala, cek di Pengaturan > Ukuran teks), tombol zoom yang menutupi pin di tepi kanan peta HP (ukuran 44 px menggantikan 38 px).
+
+| Sesi | File yang berubah |
+|---|---|
+| 22 | `index.html`, `css/style.css`, `js/ui/panels.js`, `js/ui/map.js`, `tests/browser_paket_b.py`, `tests/browser_touch.py` (baru), `dist/nusantara-tycoon.html`, `HANDOFF.md` |

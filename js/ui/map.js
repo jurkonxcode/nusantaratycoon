@@ -225,7 +225,7 @@
       put(tierName(bid, lvl >= 6 ? 3 : (lvl >= 3 ? 2 : 1)), p, lvl >= 3 ? 46 : 40, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
       if (lvl) {
         top.push('<g class=\"bubble\" data-id=\"' + bid + '\" transform=\"translate(' + p.x + ',' + (p.y - 38) + ')\"><g class=\"ui-b\"><g class=\"bob\">' +
-          '<circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g></g>');
+          '<circle r=\"30\" class=\"bubble-hit\"/><circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g></g>');
       }
       if (job) top.push(jobBadge(p.x, p.y + 12, job.key));
     });

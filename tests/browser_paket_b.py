@@ -55,7 +55,8 @@ with sync_playwright() as p:
     check('HP: panel wilayah terlihat', pg.locator('#region-panel').is_visible())
     check('HP: judul lembar = Sumatra', 'Sumatra' in pg.locator('#sheet-title').inner_text())
     box = pg.locator('#sheet-box').bounding_box()
-    check('HP: lembar menempel di bawah dan tidak lebih dari 60% layar', box['y'] + box['height'] >= 843 and box['height'] <= 844 * 0.6)
+    nav = pg.locator('nav.tabs').bounding_box()   # sesi 22: navigasi ada di bawah layar, lembar menempel tepat di atasnya
+    check('HP: lembar menempel di atas navigasi bawah dan tidak lebih dari 60% layar', abs(box['y'] + box['height'] - nav['y']) <= 2 and box['height'] <= 844 * 0.6)
     mapbox = pg.locator('.map-card').bounding_box()
     check('HP: peta tetap terlihat di atas lembar', mapbox['y'] >= -2 and mapbox['y'] < box['y'] - 100)
     pg.locator('#sheet-grab').click(); pg.wait_for_timeout(450)

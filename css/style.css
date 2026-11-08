@@ -612,3 +612,202 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 .island.locked .id-side2, .island.soon .id-side2 { fill: #5d6158; stroke: #5d6158; }
 .island.soon .island-depth { opacity: .6; }
 .row-icon .art-ico { width: 36px; height: 36px; }
+
+/* =====================================================================================================
+   Sesi 22: perombakan tata letak, navigasi, dan area sentuh
+   - Header ringkas (satu baris), navigasi di BAWAH layar pada HP (zona jempol), di atas pada desktop.
+   - Semua kontrol utama minimal 44x44 px; teks tidak kurang dari 12 px.
+   - Kartu status (target, musim) bergaya terang dan ringkas; tombol yang belum terjangkau terisi sesuai kas.
+   ===================================================================================================== */
+:root { --nav-h: 64px; --head-h: 66px; --radius: 14px; --gap: 14px; }
+
+html { -webkit-text-size-adjust: 100%; }
+button, [role="button"] { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+body { padding-bottom: 0; }
+.wrap { padding: 0 12px; }
+@media (min-width: 640px) { .wrap { padding: 0 20px; } }
+#app { padding-bottom: calc(var(--nav-h) + 28px + env(safe-area-inset-bottom)); }
+@media (min-width: 980px) { #app { padding-bottom: 48px; } }
+
+/* ---------- Header ---------- */
+.batik-strip { height: 4px; }
+.masthead {
+  position: sticky; top: 0; z-index: 30; margin-bottom: var(--gap);
+  background: linear-gradient(180deg, var(--sea-950), var(--sea-900));
+  border-bottom: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 2px 12px rgba(5, 31, 42, .28);
+}
+.topbar { padding: 8px 0; gap: 10px; }
+.brand { gap: 10px; }
+img.brand-logo { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+.brand h1 { font-size: 18px; letter-spacing: .2px; }
+.brand p { font-size: 12px; margin: 1px 0 0; }
+.stats { gap: 8px; flex: none; }
+.stat {
+  min-width: 0; padding: 5px 12px; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-end;
+  justify-content: center; line-height: 1.2; min-height: 48px;
+}
+.stat span { font-size: 12px; opacity: .78; }
+.stat b { font-size: 16px; }
+.stat-sub { display: none; font-size: 12px; font-weight: 600; color: var(--gold); white-space: nowrap; max-width: 170px; overflow: hidden; text-overflow: ellipsis; }
+.term-stat { cursor: pointer; }
+@media (min-width: 760px) { .stat { min-height: 56px; } .stat-sub { display: block; min-height: 15px; } }
+@media (max-width: 440px) {
+  .brand h1 { font-size: 14px; line-height: 1.15; max-width: 92px; }
+  .brand p { font-size: 12px; max-width: 92px; line-height: 1.15; }
+  img.brand-logo { width: 34px; height: 34px; }
+  .stat { padding: 4px 10px; }
+  .stat b { font-size: 15px; }
+}
+
+/* ---------- Navigasi ---------- */
+.tabs { gap: 4px; }
+.tab {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px;
+  padding: 0 16px; border: 0; border-radius: 999px; font-size: 14px; font-weight: 700; color: #b9d6de; background: transparent;
+  transition: color .15s, background .15s;
+}
+.tab .ti { font-size: 18px; line-height: 1; }
+.tab:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+.tab.on { color: #fff; background: rgba(217, 164, 65, .2); box-shadow: inset 0 0 0 1px rgba(217, 164, 65, .6); }
+.tab.mini { margin-left: 0; width: auto; padding: 0 16px; }
+.tab:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+@media (min-width: 980px) {
+  .masthead .wrap { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 24px; }
+  .topbar { display: contents; }
+  .brand { order: 1; }
+  .tabs { order: 2; justify-self: center; padding: 8px 0; }
+  .stats { order: 3; }
+  .map-col { top: 84px; }
+}
+
+@media (max-width: 979px) {
+  .tabs {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom)); background: rgba(5, 31, 42, .98);
+    border-top: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 -6px 20px rgba(3, 20, 28, .3);
+  }
+  .tab { flex-direction: column; gap: 2px; min-height: 52px; padding: 4px 2px; border-radius: 12px; font-size: 12px; }
+  .tab .ti { font-size: 22px; }
+  .tab.on { background: rgba(217, 164, 65, .16); box-shadow: none; }
+  .tab.on::before {
+    content: ""; position: absolute; top: -6px; left: 24%; right: 24%; height: 3px; border-radius: 0 0 3px 3px; background: var(--gold);
+  }
+  #toasts { bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); z-index: 50; }
+  body.sheet-open #toasts { bottom: auto; top: calc(var(--head-h) + 8px); }
+  .sheet { bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+  .sheet-box { padding-bottom: 0; max-height: min(56vh, 560px); max-height: min(56dvh, 560px); }
+  .sheet-grab { min-height: 56px; }
+  .sheet-x { width: 44px; height: 44px; font-size: 16px; }
+}
+
+/* ---------- Kartu status: target dan musim ---------- */
+.info-row { gap: 10px; margin-bottom: 10px; }
+@media (min-width: 640px) and (max-width: 979px) { .info-row { grid-template-columns: 1.3fr 1fr; } }
+.goal {
+  background: var(--card); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+  padding: 12px 14px; margin: 0; border-radius: var(--radius);
+}
+.goal-top { gap: 12px; }
+.goal-text small { color: var(--muted); opacity: 1; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+.goal-text b { font-size: 15px; line-height: 1.3; }
+.goalbar { background: var(--sand-dark); height: 8px; margin: 10px 0 6px; }
+.goal small#goal-eta { color: var(--muted); opacity: 1; font-size: 13px; }
+.builders {
+  display: inline-flex; align-items: center; min-height: 32px; padding: 0 12px; font-size: 13px; font-weight: 800;
+  background: var(--sand); color: var(--sea-800); border: 1px solid var(--sand-dark);
+}
+.builders.busy { background: var(--gold); color: #3a2605; border-color: var(--gold-dark); }
+.world-banner {
+  background: var(--card); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow-sm);
+  padding: 10px 14px; font-size: 14px; gap: 2px 12px; align-items: center;
+}
+.world-banner .evt { color: #8a5a00; }
+.world-banner .evt.good { color: #1f6b34; }
+.guide-head { min-height: 52px; }
+.guide-text small { font-size: 12px; }
+
+/* ---------- Peta dan kontrolnya ---------- */
+.map-card { border-radius: 18px; }
+@media (max-width: 759px) {
+  .map-scroll { height: clamp(280px, 42vh, 460px); }
+  .map-zoom { top: 8px; right: 8px; gap: 6px; }
+  .map-zoom .mz-btn { width: 44px; height: 44px; font-size: 22px; border-radius: 12px; opacity: .95; }
+}
+.region-chips { gap: 8px; padding: 8px 12px 10px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; font-size: 14px; }
+.bubble-hit { fill: transparent; }
+
+/* Tombol aksi cepat di bawah peta */
+.side-col { display: flex; flex-direction: column; gap: 10px; }
+.side-col .card:first-child, .side-col .btn.collect-all, .side-col .btn.cheapest { margin-top: 0; }
+.btn.wide { min-height: 52px; font-size: 15px; margin-top: 0; border-radius: 14px; }
+.btn.cheapest { min-height: 48px; font-size: 14px; white-space: normal; line-height: 1.25; text-align: center; }
+
+/* ---------- Tombol, chip, segmen: minimal 44 px ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 10px 16px;
+  font-size: 14px; border-radius: 12px;
+}
+/* Tombol berbiaya yang belum terjangkau: terisi sebanyak kas yang sudah terkumpul (--fill ditulis js/ui/panels.js) */
+.btn.primary:disabled {
+  opacity: 1; filter: none; color: #6b5420; border-color: var(--sand-dark);
+  background: linear-gradient(90deg, #ecc977 var(--fill, 0%), #f1e9d2 var(--fill, 0%));
+}
+.btn:disabled:not(.primary) { opacity: .55; }
+.seg { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; font-size: 14px; }
+.segs { gap: 8px; }
+.segs.mini .seg { padding: 0 14px; font-size: 14px; }
+.row { gap: 12px; padding: 14px 0; }
+.row-actions { gap: 8px; }
+.lvl { font-size: 12px; padding: 2px 8px; }
+.goods { padding: 16px; border-radius: 16px; }
+.goods-actions .btn { min-height: 48px; }
+.tag { font-size: 12px; padding: 2px 8px; }
+.goods-stock small, .tile small, .badge small, .log small { font-size: 12px; }
+.spark-axis { font-size: 11px; }
+
+/* Istilah yang bisa diketuk: luas sentuh diperbesar tanpa menggeser teks di sekitarnya */
+button.term { padding: 8px 3px; margin: -8px -3px; }
+button.term-tag { display: inline-flex; align-items: center; min-height: 32px; padding: 0 10px; vertical-align: middle; }
+
+/* Tombol geser: tinggi sentuh 44 px, jalur visual tetap 30 px */
+.switch, .switch.on { width: 60px; height: 44px; background: transparent; border-radius: 0; }
+.switch::before { content: ""; position: absolute; left: 4px; top: 7px; width: 52px; height: 30px; border-radius: 999px; background: #c9c2ad; transition: background .15s; }
+.switch.on::before { background: var(--green); }
+.switch i { top: 10px; left: 7px; z-index: 1; }
+.switch.on i { transform: translateX(22px); }
+
+/* ---------- Kartu dan judul ---------- */
+.card { border-radius: 16px; padding: 16px; }
+.card h2 { font-family: inherit; font-weight: 800; font-size: 20px; letter-spacing: -.2px; }
+.set-text small { font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) { .tab, .switch::before { transition: none; } }
+
+/* Penyetelan lanjutan sesi 22 */
+.row-actions { flex: none; width: 158px; }
+.row-actions .btn { width: 100%; padding-left: 10px; padding-right: 10px; }
+@media (max-width: 520px) { .row-actions { width: 100%; flex-direction: row; } .row-actions .btn { flex: 1; } }
+@media (max-width: 759px) {
+  .map-scroll { height: clamp(260px, 38vh, 440px); }
+  .goal { padding: 10px 12px; }
+  .goalbar { margin: 8px 0 4px; }
+  .goal-ico, .goal-ico .art-ico { width: 32px; height: 32px; }
+  .guide-head { padding-top: 8px; }
+  .info-row { margin-bottom: 8px; }
+  .masthead { margin-bottom: 10px; }
+  .stat { min-height: 44px; }
+}
+
+/* Penjelasan pasar dilipat: informasi tetap ada, layar pertama tidak penuh teks */
+details.how { margin-top: 4px; }
+details.how > summary {
+  display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; font-weight: 700; font-size: 14px; color: var(--sea-700);
+  list-style: none; -webkit-tap-highlight-color: transparent;
+}
+details.how > summary::-webkit-details-marker { display: none; }
+details.how > summary::before { content: "\25B8"; font-size: 14px; transition: transform .15s; }
+details.how[open] > summary::before { transform: rotate(90deg); }
+details.how > summary:focus-visible { outline: 3px solid var(--sea-500); outline-offset: 2px; border-radius: 8px; }
+details.how > p { margin: 0 0 6px; }
