@@ -112,6 +112,7 @@
       return { ok: true, message: 'Cadangan disimpan ke file.', sfx: 'coin' };
     },
 
+    'banner-toggle': function (el) { el.classList.toggle('open'); return { silent: true, skipRender: true }; },
     'reset-ask': function () { P.view.resetArmed = true; return { silent: true }; },
     'reset-cancel': function () { P.view.resetArmed = false; return { silent: true }; },
 

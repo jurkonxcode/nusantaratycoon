@@ -977,3 +977,71 @@ details.how > summary { min-height: 38px; font-size: 13px; }
   img.brand-logo { display: none; }
   .brand p { white-space: normal; }
 }
+
+
+/* ================= Tata letak ringkas: layar Peta (sesi 23) ================= */
+.actbar { display: flex; flex-direction: column; gap: 10px; }
+.btn .cap::after { content: ": "; }
+.btn .val { font-weight: 800; }
+.collect-all .cnt { display: inline-block; min-width: 22px; padding: 1px 7px; margin-left: 4px; border-radius: 999px; background: rgba(0, 0, 0, .2); font-size: .85em; text-align: center; }
+.collect-all:disabled { box-shadow: none; }
+
+@media (max-width: 979px) {
+  :root { --act-h: 64px; }
+  /* Bar aksi tetap, tepat di atas menu bawah */
+  .actbar {
+    position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); z-index: 36;
+    flex-direction: row; gap: 8px; padding: 8px 10px; background: rgba(243, 238, 226, .96);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    border-top: 1px solid var(--line); box-shadow: 0 -4px 14px rgba(6, 44, 59, .14);
+  }
+  .actbar .btn { margin: 0; min-height: 48px; padding: 4px 10px; }
+  .actbar .collect-all { flex: 1 1 42%; }
+  .actbar .cheapest { flex: 1 1 58%; font-size: 13px; line-height: 1.15; }
+  .actbar .cheapest [data-live="cheapest-label"] { display: flex; flex-direction: column; align-items: center; min-width: 0; max-width: 100%; }
+  .btn .cap { display: block; font-size: 11px; font-weight: 700; opacity: .8; }
+  .btn .cap::after { content: none; }
+  .btn .val { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .collect-all .lg { display: none; }
+  body.sheet-open .actbar { display: none; }
+  #tab-map .map-layout { padding-bottom: calc(var(--act-h) + 4px); }
+  /* Notifikasi di atas, tidak menutupi tombol */
+  #toasts { bottom: auto; top: calc(var(--head-h) + 6px + env(safe-area-inset-top)); }
+  body.sheet-open #toasts { top: calc(var(--head-h) + 6px + env(safe-area-inset-top)); }
+}
+
+@media (max-width: 639px) {
+  /* Panduan, target, dan kabar dunia dipadatkan jadi tiga baris kecil */
+  .info-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .guide { margin-bottom: 6px; }
+  .guide-head { min-height: 40px; padding: 4px 12px; }
+  .guide-ico { font-size: 18px; }
+  .guide-text { flex-direction: row; align-items: baseline; gap: 8px; overflow: hidden; }
+  .guide-text small { white-space: nowrap; }
+  .guide-text b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .guidebar { margin: 0 12px 6px; height: 4px; }
+
+  .goal { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; column-gap: 10px; padding: 8px 12px; }
+  .goal-top { grid-column: 1 / -1; gap: 10px; }
+  .goal-text small { display: none; }
+  .goal-text b { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .goal-ico, .goal-ico .art-ico { width: 28px; height: 28px; }
+  .goalbar { margin: 6px 0 0; height: 6px; }
+  .goal small#goal-eta { margin-top: 6px; font-size: 11px; white-space: nowrap; }
+
+  .world-banner { display: block; position: relative; padding: 6px 30px 6px 12px; border-radius: 12px; font-size: 12.5px; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .world-banner::after { content: "▾"; position: absolute; right: 12px; top: 6px; color: var(--muted); }
+  .world-banner.open::after { content: "▴"; }
+  .world-banner .evt { display: inline; order: 0; margin-right: 8px; }
+  .world-banner.open { white-space: normal; }
+  .world-banner.open > span { display: block; }
+  .world-banner:not(.open) > span:not(.evt):not(:only-child) { display: none; }
+
+  /* Peta mengisi sisa layar */
+  .map-scroll { height: max(300px, calc(100vh - var(--head-h) - var(--nav-h) - var(--act-h) - 226px - env(safe-area-inset-bottom))); }
+  @supports (height: 100dvh) {
+    .map-scroll { height: max(300px, calc(100dvh - var(--head-h) - var(--nav-h) - var(--act-h) - 226px - env(safe-area-inset-bottom))); }
+  }
+  .region-chips { padding: 6px 10px 8px; gap: 6px; }
+  .chip { min-height: 38px; padding: 0 12px; font-size: 13px; }
+}

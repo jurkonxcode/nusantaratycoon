@@ -676,11 +676,22 @@
       el.classList.toggle('ready', ready);
       anyReady = anyReady || ready;
     });
+    let nReady = 0;   // jumlah bangunan yang punya hasil siap diambil (untuk lencana di tombol)
     Object.keys(state.buildings).forEach(function (id) {
-      if (E.pending(state, id, now) >= Math.max(1, E.capacity(state, id, now) * 0.5)) anyReady = true;
+      const pend = E.pending(state, id, now);
+      if (pend >= Math.max(1, E.capacity(state, id, now) * 0.5)) anyReady = true;
+      if (state.buildings[id].level > 0 && pend >= 1) nReady++;
     });
     const all = document.querySelector('.collect-all');
-    if (all) all.classList.toggle('ready', anyReady);
+    if (all) {
+      all.classList.toggle('ready', anyReady);
+      all.disabled = nReady === 0;   // tidak ada hasil: tombol redup, tanpa toast "belum ada hasil"
+      const cl = all.querySelector('[data-live="collect-label"]');
+      if (cl && cl.getAttribute('data-n') !== String(nReady)) {
+        cl.setAttribute('data-n', String(nReady));
+        cl.innerHTML = nReady ? '📦 Kumpulkan<span class="lg"> semua hasil</span> <b class="cnt">' + nReady + '</b>' : '📦 Belum ada hasil';
+      }
+    }
     NT.ui.map.tickJobs(state, now);
 
     // Tombol berbiaya: nonaktif bila kas kurang
@@ -786,8 +797,17 @@
       cbtn.setAttribute('data-cost', cu ? cu.cost : 0);
       cbtn.setAttribute('data-none', cu ? '0' : '1');
       const lab = cbtn.querySelector('[data-live="cheapest-label"]');
-      const txt = cu ? '⬆ Upgrade termurah: ' + cu.label + ' · ' + F.money(cu.cost) : 'Semua upgrade sudah maksimal';
-      if (lab && lab.textContent !== txt) lab.textContent = txt;
+      const txt = cu ? cu.label + ' · ' + F.money(cu.cost) : '';
+      if (lab && lab.getAttribute('data-t') !== txt) {
+        lab.setAttribute('data-t', txt);
+        lab.textContent = '';
+        if (cu) {
+          const cap = document.createElement('span'), val = document.createElement('span');
+          cap.className = 'cap'; cap.textContent = '⬆ Upgrade termurah';
+          val.className = 'val'; val.textContent = txt;
+          lab.appendChild(cap); lab.appendChild(val);
+        } else lab.textContent = 'Semua upgrade sudah maksimal';
+      }
       if (!cu) cbtn.disabled = true;
     }
 

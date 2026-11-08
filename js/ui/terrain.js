@@ -421,7 +421,9 @@
         if (fm > 0.002) { r += (234 - r) * fm; g += (252 - g) * fm; b += (255 - b) * fm; }
       }
       const dx = (vx - hw) / hw, dy = (vy - hh2) / hh2, vg = 1 - 0.2 * smooth(0.55, 1.15, Math.sqrt(dx * dx + dy * dy));
-      sd[oo] = r * vg; sd[oo + 1] = g * vg; sd[oo + 2] = b * vg; sd[oo + 3] = 255;
+      // Tepi laut memudar ke warna latar kotak peta (#062c3b): tanpa garis tegas saat peta lebih pendek dari kotaknya.
+      const ef = 1 - smooth(0, 1, Math.min(vx, 2 * hw - vx, vy, 2 * hh2 - vy) / 18);
+      sd[oo] = r * vg + (6 - r * vg) * ef; sd[oo + 1] = g * vg + (44 - g * vg) * ef; sd[oo + 2] = b * vg + (59 - b * vg) * ef; sd[oo + 3] = 255;
       }
     }
     const sea = canvas(w, h), lnd = canvas(w, h);

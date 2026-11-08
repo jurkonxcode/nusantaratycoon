@@ -64,7 +64,7 @@
             <div class="bar goalbar"><i id="goal-bar"></i></div>
             <small id="goal-eta"></small>
           </div>
-          <div id="world-banner" class="world-banner"></div>
+          <div id="world-banner" class="world-banner" data-action="banner-toggle" role="button" tabindex="0" aria-label="Kabar dunia, ketuk untuk membuka"></div>
         </div>
             <div class="map-card">
               <div class="map-scroll"><div id="map"></div></div>
@@ -72,8 +72,10 @@
             </div>
           </div>
           <div class="side-col">
-            <button class="btn primary wide collect-all" data-action="collect-all">📦 Kumpulkan semua hasil</button>
-            <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label">⬆ Upgrade termurah</span></button>
+            <div class="actbar" id="actbar">
+              <button class="btn primary wide collect-all" data-action="collect-all"><span data-live="collect-label">📦 Kumpulkan<span class="lg"> semua hasil</span></span></button>
+              <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label">⬆ Upgrade termurah</span></button>
+            </div>
             <div id="sheet" class="sheet">
               <div class="sheet-box" id="sheet-box">
                 <div class="sheet-grab" id="sheet-grab" data-action="sheet-close" role="button" tabindex="0" aria-label="Tutup panel wilayah">
