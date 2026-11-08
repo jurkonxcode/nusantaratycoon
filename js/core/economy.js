@@ -640,7 +640,7 @@
 
   // Jual SEMUA isi gudang
   // ke satu pasar sekaligus. Komoditas yang akan rugi dilewati (dicatat di skipped).
-  function sellAll(state, marketId, now) {
+  function sellAll(state, marketId, now, skipLow) {
     const ms = state.regions[marketId];
     if (!ms) return fail('Pasar tidak dikenal.');
     if (!ms.unlocked) return fail('Buka wilayah ini dulu untuk berdagang di sana.');
@@ -649,24 +649,27 @@
     Object.keys(D.commodities).forEach(function (cid) {
       const have = Math.floor(state.inventory[cid] || 0);
       if (have < 1) return;
+      // skipLow: tahan dulu barang yang harganya sedang rendah (>= 8% di bawah normal)
+      if (skipLow && priceSignal(state, marketId, cid, now).id === 'rendah') { skipped.push(cid); return; }
       const r = sell(state, cid, marketId, have, now);
       if (r.ok) { items.push({ commodity: cid, qty: r.qty, net: r.net, queued: !!r.queued, durationMs: r.durationMs }); net += r.net; qty += r.qty; }
       else { skipped.push(cid); if (r.slots) slotFull = r.reason; }
     });
     if (!items.length && slotFull) return fail(slotFull);
     if (!items.length) {
-      return fail(skipped.length ? 'Harga di pasar ini terlalu rendah, semua penjualan akan rugi. Coba pasar lain.'
+      return fail(skipped.length ? (skipLow ? 'Semua barangmu sedang berharga rendah. Tahan dulu, atau coba pasar lain.' : 'Harga di pasar ini terlalu rendah, semua penjualan akan rugi. Coba pasar lain.')
         : 'Gudang kosong, tidak ada yang bisa dijual.');
     }
     return { ok: true, items: items, skipped: skipped, net: net, qty: qty, queued: items.some(function (i) { return i.queued; }), durationMs: items.reduce(function (m, i) { return Math.max(m, i.durationMs || 0); }, 0) };
   }
 
   // Perkiraan hasil bersih bila seluruh gudang dijual ke satu pasar (tanpa mengubah state).
-  function quoteSellAll(state, marketId, now) {
+  function quoteSellAll(state, marketId, now, skipLow) {
     let net = 0, qty = 0;
     Object.keys(D.commodities).forEach(function (cid) {
       const have = Math.floor(state.inventory[cid] || 0);
       if (have < 1) return;
+      if (skipLow && priceSignal(state, marketId, cid, now).id === 'rendah') return;
       const q = quoteSale(state, cid, marketId, have, now);
       if (q.net > 0) { net += q.net; qty += have; }
     });

@@ -40,7 +40,13 @@
     error: function () { tone(180, 0, 0.16, 'sawtooth', 0.04); }
   };
 
-  function sfx(name) { try { if (SFX[name]) SFX[name](); } catch (e) { /* suara tidak boleh merusak game */ } }
+  // Getaran ringan di HP (bila didukung dan mode hemat animasi mati)
+  const HAPTIC = { coin: 12, click: 6, start: 10, done: [18, 40, 18], error: 30 };
+  function haptic(name) {
+    try { if (navigator.vibrate && HAPTIC[name] && !document.body.classList.contains('calm')) navigator.vibrate(HAPTIC[name]); } catch (e) { /* abaikan */ }
+  }
+
+  function sfx(name) { haptic(name); try { if (SFX[name]) SFX[name](); } catch (e) { /* suara tidak boleh merusak game */ } }
 
   function toggleMute() {
     muted = !muted;

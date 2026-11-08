@@ -90,7 +90,29 @@
       logEvent('✅', msg);
     });
     NT.ui.fx.sfx('done');
+    if (!offline && !document.body.classList.contains('calm')) {
+      document.body.classList.remove('flash-gold'); void document.body.offsetWidth; document.body.classList.add('flash-gold');
+      setTimeout(function () { document.body.classList.remove('flash-gold'); }, 900);
+    }
     if (!offline) NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
+  }
+
+  // Jual banyak barang sekaligus. skipLow = tahan dulu barang yang harganya sedang rendah.
+  function sellBatch(skipLow) {
+    const market = P.view.market;
+    const res = E.sellAll(state, market, now(), skipLow);
+    if (res.ok) {
+      const tail = res.skipped.length ? (skipLow ? ' (' + res.skipped.length + ' jenis ditahan: harga rendah atau kapal penuh)' : ' (' + res.skipped.length + ' jenis dilewati: rugi atau kapal penuh)') : '';
+      if (res.queued) {
+        res.message = '🚚 ' + F.num(res.qty) + ' barang dikirim ke ' + NT.data.regions[market].name + ' · tiba dalam ' + F.short(res.durationMs) +
+          ' (+' + F.money(res.net) + ')' + tail;
+        res.sfx = 'click';
+      } else {
+        res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) + tail;
+        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+      }
+    }
+    return res;
   }
 
   const actions = {
@@ -220,22 +242,8 @@
       return { silent: true, skipRender: true };
     },
 
-    'sell-everything': function () {
-      const market = P.view.market;
-      const res = E.sellAll(state, market, now());
-      if (res.ok) {
-        const tail = res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati: rugi atau kapal penuh)' : '';
-        if (res.queued) {
-          res.message = '🚚 ' + F.num(res.qty) + ' barang dikirim ke ' + NT.data.regions[market].name + ' · tiba dalam ' + F.short(res.durationMs) +
-            ' (+' + F.money(res.net) + ')' + tail;
-          res.sfx = 'click';
-        } else {
-          res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) + tail;
-          res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
-        }
-      }
-      return res;
-    },
+    'sell-everything': function () { return sellBatch(false); },
+    'sell-good': function () { return sellBatch(true); },
 
     cheapest: function () {
       const c = E.cheapestUpgrade(state);
@@ -272,6 +280,7 @@
       P.view.goodsOpen[cid] = !P.view.goodsOpen[cid];
       return { silent: true };
     },
+    'empty-toggle': function () { P.view.emptyOpen = !P.view.emptyOpen; return { silent: true }; },
     'export-toggle': function () { P.view.exportOpen = !P.view.exportOpen; return { silent: true }; },
 
     'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
@@ -436,6 +445,18 @@
 
   /* ---------- Mulai ---------- */
 
+  // Layar muat: tampil sampai game siap, lalu memudar
+  function hideSplash() {
+    const sp = document.getElementById('splash');
+    if (!sp) return;
+    // tampil minimal ~0,9 detik agar tidak berkedip
+    const wait = Math.max(0, 900 - (window.performance && performance.now ? performance.now() : 900));
+    setTimeout(function () {
+      sp.classList.add('done');
+      setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 600);
+    }, wait);
+  }
+
   async function start() {
     const lastSeen = readSeen();   // dibaca sebelum apa pun menimpanya
     storage = NT.getStorage();
@@ -468,6 +489,7 @@
     if (!welcomed && finishedAway.length) celebrate(finishedAway, true);
     if (checkProgress(true)) { persistSoon(); P.renderAll(state, t); }
     touchSeen();
+    hideSplash();
 
     setInterval(function () {
       const t2 = now();

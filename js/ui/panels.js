@@ -8,7 +8,7 @@
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', sub: 'stats', bannerSeen: '', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
+  const view = { tab: 'map', emptyOpen: false, sub: 'stats', bannerSeen: '', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -281,8 +281,8 @@
             : '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>') +
           toggle +
         '</div>';
-      if (slim) return '<div class="goods slim">' + head + '</div>';
-      return '' +
+      if (slim) return { slim: true, html: '<div class="goods slim">' + head + '</div>' };
+      return { slim: false, html: '' +
       '<div class="goods">' + head +
         '<div class="goods-price">' +
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
@@ -299,16 +299,30 @@
           '<button class="btn primary" data-action="sell" data-c="' + cid + '" data-qty="all">Jual semua</button>' +
         '</div>' +
         '<small class="goods-quote muted" data-live="quote" data-c="' + cid + '"></small>' +
-      '</div>';
-    }).join('');
+      '</div>' };
+    });
+
+    // Dua kelompok: yang ada di gudang (kartu penuh) dan yang kosong (dilipat jadi satu baris)
+    const haveHtml = goods.filter(function (g) { return !g.slim; }).map(function (g) { return g.html; }).join('');
+    const emptyItems = goods.filter(function (g) { return g.slim; });
+    const eOpen = !!view.emptyOpen;
+    const emptyHtml = emptyItems.length
+      ? '<button class="fold-head empty-head" data-action="empty-toggle" aria-expanded="' + eOpen + '"><b>Stok kosong</b><span class="cnt">' + emptyItems.length + '</span><span class="caret" aria-hidden="true">' + (eOpen ? '▴' : '▾') + '</span></button>' +
+        (eOpen ? '<div class="empty-list">' + emptyItems.map(function (g) { return g.html; }).join('') + '</div>' : '')
+      : '';
+    const goodsHtml = (haveHtml
+      ? '<div class="grp-title">Di gudang</div>' + haveHtml
+      : '<div class="card empty-note"><b>Gudangmu kosong</b><p class="muted">Kumpulkan hasil panen di tab Peta, lalu kembali ke sini untuk menjualnya.</p>' +
+        '<button class="btn primary" data-action="tab" data-id="map">' + NT.ui.ic('map') + ' Ke Peta</button></div>') + emptyHtml;
 
     $('tab-market').innerHTML = shipmentsHtml(state) +
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
-      '<button class="btn primary wide sell-everything" data-action="sell-everything">' + NT.ui.ic('coin') + ' Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
+      '<button class="btn primary wide sell-good" data-action="sell-good">' + NT.ui.ic('coin') + ' Jual yang menguntungkan <span data-live="sellgood-est"></span></button>' +
+      '<button class="btn ghost wide sell-everything" data-action="sell-everything">Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<details class="how"><summary>Cara kerja harga dan ongkir</summary><p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
-      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goods + exportHtml(state, now);
+      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goodsHtml + exportHtml(state, now);
   }
 
   // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
@@ -766,8 +780,10 @@
     }
     each('[data-live="signal"]', function (el) {
       const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
-      el.innerHTML = sg.id === 'bagus' ? '<span class="sig good">🔥 Harga bagus</span>'
-        : (sg.id === 'rendah' ? '<span class="sig low">🕳️ Harga rendah</span>' : '');
+      el.innerHTML = sg.id === 'bagus' ? '<span class="sig good">Jual sekarang</span>'
+        : (sg.id === 'rendah' ? '<span class="sig low">Tahan dulu</span>' : '');
+      const card = el.closest('.goods');
+      if (card) card.setAttribute('data-sig', sg.id);
     });
     each('[data-live="hint"]', function (el) {
       const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
@@ -780,6 +796,11 @@
       if (have < 1) { el.textContent = ''; return; }
       const q = E.quoteSale(state, cid, view.market, have, now);
       el.textContent = 'Jual semua ' + F.num(have) + ' ≈ ' + F.money(Math.max(0, q.net)) + ' bersih';
+    });
+    each('[data-live="sellgood-est"]', function (el) {
+      const q = E.quoteSellAll(state, view.market, now, true);
+      el.textContent = q.qty > 0 ? '· ≈ ' + F.money(q.net) : '';
+      el.parentNode.disabled = q.qty < 1;
     });
     each('[data-live="sellall-est"]', function (el) {
       const q = E.quoteSellAll(state, view.market, now);

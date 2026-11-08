@@ -1194,9 +1194,64 @@ button.term-tag { min-height: 28px; }
 .goods-actions .btn { min-height: var(--touch); }
 .fold-head { min-height: var(--touch); }
 
+/* =====================================================================================================
+   Sesi 25 (Sprint 3): pasar yang mudah dibaca, transisi halus, kilau emas, layar muat
+   ===================================================================================================== */
+
+/* Pasar: kelompok "Di gudang" dan "Stok kosong" */
+.grp-title { margin: var(--sp-3) 2px var(--sp-2); font-size: var(--fs-s); font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--sea-700); }
+.empty-head { width: 100%; display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); padding: 0 var(--sp-3); border: 1px dashed var(--sand-dark); border-radius: 12px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+.empty-head b { font-size: var(--fs-m); }
+.empty-head .cnt { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--sand-dark); color: var(--sea-800); font-size: var(--fs-s); font-weight: 800; text-align: center; }
+.empty-head .caret { margin-left: auto; }
+.empty-list { margin-top: var(--sp-2); }
+.empty-note { text-align: center; padding: var(--sp-4) var(--sp-3); }
+.empty-note p { margin: var(--sp-1) 0 var(--sp-3); }
+.sell-good + .sell-everything { margin-top: var(--sp-1); min-height: var(--touch); color: var(--muted); font-weight: 700; }
+
+/* Kartu barang: penanda warna di tepi kiri mengikuti isyarat harga */
+.goods { border-left: 4px solid transparent; transition: border-color .3s; }
+.goods[data-sig="bagus"] { border-left-color: var(--green); }
+.goods[data-sig="rendah"] { border-left-color: var(--red); }
+.sig { display: inline-flex; align-items: center; gap: 5px; }
+.sig::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* Transisi halus antar tab */
+.tab-panel.on { animation: panelIn .22s ease-out; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.kingdom-seg .seg, .btn, .chip, .tab { transition: background-color .15s, border-color .15s, color .15s, transform .08s; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+
+/* Kilau emas di tepi layar saat pembangunan selesai */
+body.flash-gold::after {
+  content: ""; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  box-shadow: inset 0 0 90px 10px rgba(240, 194, 95, .6); animation: goldFlash .9s ease-out forwards;
+}
+@keyframes goldFlash { from { opacity: 1; } to { opacity: 0; } }
+
+/* Layar muat: logo + garis kemajuan; aman walau JS gagal (hilang sendiri setelah 4 detik) */
+.splash {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+  background: radial-gradient(circle at 50% 40%, var(--sea-800), var(--sea-950) 70%); pointer-events: none;
+  animation: splashOut .5s ease 4s forwards; transition: opacity .45s;
+}
+.splash img { max-width: 62vw; height: auto; }
+.splash.done { opacity: 0; }
+.splash-bar { width: 140px; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.splash-bar b { display: block; width: 40%; height: 100%; border-radius: 999px; background: var(--gold); animation: splashBar 1.1s ease-in-out infinite; }
+@keyframes splashBar { from { transform: translateX(-100%); } to { transform: translateX(350%); } }
+@keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+
+/* Hormati pengaturan hemat animasi dan preferensi sistem */
+.calm .tab-panel.on, .calm body.flash-gold::after, .calm .splash-bar b { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel.on, body.flash-gold::after, .splash-bar b { animation: none; }
+}
+
 </style>
 </head>
 <body>
+  <div id="splash" class="splash" aria-hidden="true"><img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3MjAgNzMwIiB3aWR0aD0iNzIwIiBoZWlnaHQ9IjczMCI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJzZyIgeDE9IjAiIHkxPSIwIiB4Mj0iMSIgeTI9IjAiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iI2U5Yjg0ZiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2I5ODAxZiIvPjwvbGluZWFyR3JhZGllbnQ+PC9kZWZzPjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDExMCAxMCkgc2NhbGUoLjk4KSI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJzc2t5IiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMDgzOTRiIi8+PHN0b3Agb2Zmc2V0PSIuNSIgc3RvcC1jb2xvcj0iIzEzNmY4NCIvPjxzdG9wIG9mZnNldD0iLjc4IiBzdG9wLWNvbG9yPSIjZTlhOTVhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZjZkNThhIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9InNzZWEiIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxYThhOWMiLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwNjJjM2IiLz48L2xpbmVhckdyYWRpZW50PjxyYWRpYWxHcmFkaWVudCBpZD0ic3N1biIgY3g9Ii40IiBjeT0iLjM1IiByPSIuOCI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmRlYWE2Ii8+PHN0b3Agb2Zmc2V0PSIuNiIgc3RvcC1jb2xvcj0iI2YwYmY1NSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2M1OGEyMiIvPjwvcmFkaWFsR3JhZGllbnQ+PGxpbmVhckdyYWRpZW50IGlkPSJzaXNsIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNDZhZDYyIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMWQ2YTQzIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9InNnb2xkIiB4MT0iMCIgeTE9IjAiIHgyPSIxIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjZmJlMjlhIi8+PHN0b3Agb2Zmc2V0PSIuNSIgc3RvcC1jb2xvcj0iI2Q5YTQ0MSIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzlhNmExOCIvPjwvbGluZWFyR3JhZGllbnQ+PGNsaXBQYXRoIGlkPSJzYyI+PGNpcmNsZSBjeD0iMjU2IiBjeT0iMjU2IiByPSIyMTIiLz48L2NsaXBQYXRoPjwvZGVmcz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjI0MCIgZmlsbD0idXJsKCNzZ29sZCkiLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyNTYiIHI9IjIxOCIgZmlsbD0iIzA2MmMzYiIvPjxwYXRoIGQ9Ik0wLTZMNCAwIDAgNi00IDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0ODUuMCAyNTYuMCkgcm90YXRlKDkwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ4MS41IDI5NS44KSByb3RhdGUoMTAwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ3MS4yIDMzNC4zKSByb3RhdGUoMTEwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ1NC4zIDM3MC41KSByb3RhdGUoMTIwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQzMS40IDQwMy4yKSByb3RhdGUoMTMwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQwMy4yIDQzMS40KSByb3RhdGUoMTQwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDM3MC41IDQ1NC4zKSByb3RhdGUoMTUwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMzNC4zIDQ3MS4yKSByb3RhdGUoMTYwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI5NS44IDQ4MS41KSByb3RhdGUoMTcwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI1Ni4wIDQ4NS4wKSByb3RhdGUoMTgwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIxNi4yIDQ4MS41KSByb3RhdGUoMTkwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE3Ny43IDQ3MS4yKSByb3RhdGUoMjAwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDE0MS41IDQ1NC4zKSByb3RhdGUoMjEwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEwOC44IDQzMS40KSByb3RhdGUoMjIwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDgwLjYgNDAzLjIpIHJvdGF0ZSgyMzApIiBmaWxsPSIjNmIzYjE3IiBvcGFjaXR5PSIuODUiLz48cGF0aCBkPSJNMC02TDQgMCAwIDYtNCAwWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTcuNyAzNzAuNSkgcm90YXRlKDI0MCkiIGZpbGw9IiM2YjNiMTciIG9wYWNpdHk9Ii44NSIvPjxwYXRoIGQ9Ik0wLTZMNCAwIDAgNi00IDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0MC44IDMzNC4zKSByb3RhdGUoMjUwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMwLjUgMjk1LjgpIHJvdGF0ZSgyNjApIiBmaWxsPSIjNmIzYjE3IiBvcGFjaXR5PSIuODUiLz48cGF0aCBkPSJNMC02TDQgMCAwIDYtNCAwWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjcuMCAyNTYuMCkgcm90YXRlKDI3MCkiIGZpbGw9IiM2YjNiMTciIG9wYWNpdHk9Ii44NSIvPjxwYXRoIGQ9Ik0wLTZMNCAwIDAgNi00IDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgzMC41IDIxNi4yKSByb3RhdGUoMjgwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQwLjggMTc3LjcpIHJvdGF0ZSgyOTApIiBmaWxsPSIjNmIzYjE3IiBvcGFjaXR5PSIuODUiLz48cGF0aCBkPSJNMC02TDQgMCAwIDYtNCAwWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNTcuNyAxNDEuNSkgcm90YXRlKDMwMCkiIGZpbGw9IiM2YjNiMTciIG9wYWNpdHk9Ii44NSIvPjxwYXRoIGQ9Ik0wLTZMNCAwIDAgNi00IDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4MC42IDEwOC44KSByb3RhdGUoMzEwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDEwOC44IDgwLjYpIHJvdGF0ZSgzMjApIiBmaWxsPSIjNmIzYjE3IiBvcGFjaXR5PSIuODUiLz48cGF0aCBkPSJNMC02TDQgMCAwIDYtNCAwWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMTQxLjUgNTcuNykgcm90YXRlKDMzMCkiIGZpbGw9IiM2YjNiMTciIG9wYWNpdHk9Ii44NSIvPjxwYXRoIGQ9Ik0wLTZMNCAwIDAgNi00IDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxNzcuNyA0MC44KSByb3RhdGUoMzQwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDIxNi4yIDMwLjUpIHJvdGF0ZSgzNTApIiBmaWxsPSIjNmIzYjE3IiBvcGFjaXR5PSIuODUiLz48cGF0aCBkPSJNMC02TDQgMCAwIDYtNCAwWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMjU2LjAgMjcuMCkgcm90YXRlKDM2MCkiIGZpbGw9IiM2YjNiMTciIG9wYWNpdHk9Ii44NSIvPjxwYXRoIGQ9Ik0wLTZMNCAwIDAgNi00IDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyOTUuOCAzMC41KSByb3RhdGUoMzcwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDMzNC4zIDQwLjgpIHJvdGF0ZSgzODApIiBmaWxsPSIjNmIzYjE3IiBvcGFjaXR5PSIuODUiLz48cGF0aCBkPSJNMC02TDQgMCAwIDYtNCAwWiIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMzcwLjUgNTcuNykgcm90YXRlKDM5MCkiIGZpbGw9IiM2YjNiMTciIG9wYWNpdHk9Ii44NSIvPjxwYXRoIGQ9Ik0wLTZMNCAwIDAgNi00IDBaIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0MDMuMiA4MC42KSByb3RhdGUoNDAwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQzMS40IDEwOC44KSByb3RhdGUoNDEwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ1NC4zIDE0MS41KSByb3RhdGUoNDIwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ3MS4yIDE3Ny43KSByb3RhdGUoNDMwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PHBhdGggZD0iTTAtNkw0IDAgMCA2LTQgMFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKDQ4MS41IDIxNi4yKSByb3RhdGUoNDQwKSIgZmlsbD0iIzZiM2IxNyIgb3BhY2l0eT0iLjg1Ii8+PGcgY2xpcC1wYXRoPSJ1cmwoI3NjKSI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSIyOTYiIGZpbGw9InVybCgjc3NreSkiLz48ZyBmaWxsPSIjZmZlOWE4IiBvcGFjaXR5PSIuMiI+PHBhdGggZD0iTTI1NiAyMzZMNTI1LjggMjI1LjJMNTI1LjggMjQ2LjhaIi8+PHBhdGggZD0iTTI1NiAyMzZMNTE5LjQgMjk1LjRMNTEzLjggMzE2LjNaIi8+PHBhdGggZD0iTTI1NiAyMzZMNDk1LjAgMzYxLjVMNDg0LjIgMzgwLjJaIi8+PHBhdGggZD0iTTI1NiAyMzZMNDU0LjQgNDE5LjFMNDM5LjEgNDM0LjRaIi8+PHBhdGggZD0iTTI1NiAyMzZMNDAwLjIgNDY0LjJMMzgxLjUgNDc1LjBaIi8+PHBhdGggZD0iTTI1NiAyMzZMMzM2LjMgNDkzLjhMMzE1LjQgNDk5LjRaIi8+PHBhdGggZD0iTTI1NiAyMzZMMjY2LjggNTA1LjhMMjQ1LjIgNTA1LjhaIi8+PHBhdGggZD0iTTI1NiAyMzZMMTk2LjYgNDk5LjRMMTc1LjcgNDkzLjhaIi8+PHBhdGggZD0iTTI1NiAyMzZMMTMwLjUgNDc1LjBMMTExLjggNDY0LjJaIi8+PHBhdGggZD0iTTI1NiAyMzZMNzIuOSA0MzQuNEw1Ny42IDQxOS4xWiIvPjxwYXRoIGQ9Ik0yNTYgMjM2TDI3LjggMzgwLjJMMTcuMCAzNjEuNVoiLz48cGF0aCBkPSJNMjU2IDIzNkwtMS44IDMxNi4zTC03LjQgMjk1LjRaIi8+PHBhdGggZD0iTTI1NiAyMzZMLTEzLjggMjQ2LjhMLTEzLjggMjI1LjJaIi8+PHBhdGggZD0iTTI1NiAyMzZMLTcuNCAxNzYuNkwtMS44IDE1NS43WiIvPjxwYXRoIGQ9Ik0yNTYgMjM2TDE3LjAgMTEwLjVMMjcuOCA5MS44WiIvPjxwYXRoIGQ9Ik0yNTYgMjM2TDU3LjYgNTIuOUw3Mi45IDM3LjZaIi8+PHBhdGggZD0iTTI1NiAyMzZMMTExLjggNy44TDEzMC41IC0zLjBaIi8+PHBhdGggZD0iTTI1NiAyMzZMMTc1LjcgLTIxLjhMMTk2LjYgLTI3LjRaIi8+PHBhdGggZD0iTTI1NiAyMzZMMjQ1LjIgLTMzLjhMMjY2LjggLTMzLjhaIi8+PHBhdGggZD0iTTI1NiAyMzZMMzE1LjQgLTI3LjRMMzM2LjMgLTIxLjhaIi8+PHBhdGggZD0iTTI1NiAyMzZMMzgxLjUgLTMuMEw0MDAuMiA3LjhaIi8+PHBhdGggZD0iTTI1NiAyMzZMNDM5LjEgMzcuNkw0NTQuNCA1Mi45WiIvPjxwYXRoIGQ9Ik0yNTYgMjM2TDQ4NC4yIDkxLjhMNDk1LjAgMTEwLjVaIi8+PHBhdGggZD0iTTI1NiAyMzZMNTEzLjggMTU1LjdMNTE5LjQgMTc2LjZaIi8+PC9nPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjIzNiIgcj0iNzQiIGZpbGw9InVybCgjc3N1bikiLz48Y2lyY2xlIGN4PSIyNTYiIGN5PSIyMzYiIHI9IjYyIiBmaWxsPSJub25lIiBzdHJva2U9IiNhODc1MWMiIHN0cm9rZS13aWR0aD0iMyIgb3BhY2l0eT0iLjciLz48ZyBmaWxsPSIjZjZjZjZjIiBzdHJva2U9IiNhODc1MWMiIHN0cm9rZS13aWR0aD0iMi41Ij48ZWxsaXBzZSBjeD0iMjM3IiBjeT0iMjM2IiByeD0iMTciIHJ5PSI5Ii8+PGVsbGlwc2UgY3g9IjI3NSIgY3k9IjIzNiIgcng9IjE3IiByeT0iOSIvPjxlbGxpcHNlIGN4PSIyNTYiIGN5PSIyMTciIHJ4PSI5IiByeT0iMTciLz48ZWxsaXBzZSBjeD0iMjU2IiBjeT0iMjU1IiByeD0iOSIgcnk9IjE3Ii8+PC9nPjxjaXJjbGUgY3g9IjI1NiIgY3k9IjIzNiIgcj0iNSIgZmlsbD0iI2E4NzUxYyIvPjxwYXRoIGQ9Ik0yMCAyOThDNjAgMjkwIDkyIDI3MiAxMTggMjQwTDEzMiAyMTQgMTQ2IDI0MEMxNzAgMjY0IDE5OCAyODIgMjMyIDI5MkwyMzIgMjk4WiIgZmlsbD0iIzEyNGY0MCIvPjxwYXRoIGQ9Ik0xMTggMjQwTDEzMiAyMTQgMTQ2IDI0MEMxNDAgMjM2IDEzNCAyMzggMTMyIDIzMiAxMzAgMjM4IDEyNCAyMzYgMTE4IDI0MFoiIGZpbGw9IiM4ZmJmOWEiIG9wYWNpdHk9Ii41NSIvPjxwYXRoIGQ9Ik0yOTYgMjk4QzMzMCAyODYgMzUyIDI2NCAzODAgMjUyTDM5OCAyMzIgNDE2IDI1NEM0NDAgMjcwIDQ2NCAyODQgNTAyIDI5NEw1MDIgMjk4WiIgZmlsbD0iIzE3NjE0YSIvPjxyZWN0IHk9IjI5MiIgd2lkdGg9IjUxMiIgaGVpZ2h0PSIyMzAiIGZpbGw9InVybCgjc3NlYSkiLz48ZyBmaWxsPSIjZjdkNTdhIj48cmVjdCB4PSIxODEuMCIgeT0iMjk4IiB3aWR0aD0iMTUwIiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIG9wYWNpdHk9IjAuOCIvPjxyZWN0IHg9IjE5Ny4wIiB5PSIzMDkiIHdpZHRoPSIxMTgiIGhlaWdodD0iNSIgcng9IjIuNSIgb3BhY2l0eT0iMC42Ii8+PHJlY3QgeD0iMjEyLjAiIHk9IjMyMCIgd2lkdGg9Ijg4IiBoZWlnaHQ9IjUiIHJ4PSIyLjUiIG9wYWNpdHk9IjAuNDUiLz48cmVjdCB4PSIyMjcuMCIgeT0iMzMyIiB3aWR0aD0iNTgiIGhlaWdodD0iNSIgcng9IjIuNSIgb3BhY2l0eT0iMC4zMiIvPjwvZz48cGF0aCBkPSJNNTQgMzI2Qzk2IDMwNiAxNTAgMzAwIDIwNCAzMDggMjM2IDI5OCAyOTIgMzAwIDMzMiAzMTAgMzg0IDMwMCA0MzAgMzA4IDQ2MiAzMjYgNDAwIDMzNCAxMTAgMzM0IDU0IDMyNloiIGZpbGw9InVybCgjc2lzbCkiLz48cGF0aCBkPSJNMTE4IDMxMlExMjEuNiAyOTEuMCAxMjQgMjcwIiBzdHJva2U9IiMzZDJhMTQiIHN0cm9rZS13aWR0aD0iMy4yIiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48ZyBzdHJva2U9IiMyYTdhNGEiIHN0cm9rZS13aWR0aD0iMy42IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiPjxwYXRoIGQ9Ik0xMjQgMjcwUTExMi4wIDI2MC44IDEwMCAyNzciLz48cGF0aCBkPSJNMTI0IDI3MFExMTYuNSAyNTQuNCAxMDkgMjYxIi8+PHBhdGggZD0iTTEyNCAyNzBRMTMxLjUgMjU0LjQgMTM5IDI2MSIvPjxwYXRoIGQ9Ik0xMjQgMjcwUTEzNi4wIDI2MC44IDE0OCAyNzciLz48cGF0aCBkPSJNMTI0IDI3MFExMjQuMCAyNTIuNCAxMjQgMjU2Ii8+PC9nPjxwYXRoIGQ9Ik0xNDYgMzEwUTE0My42IDI5NS4wIDE0MiAyODAiIHN0cm9rZT0iIzNkMmExNCIgc3Ryb2tlLXdpZHRoPSIzLjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjxnIHN0cm9rZT0iIzJhN2E0YSIgc3Ryb2tlLXdpZHRoPSIzLjYiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCI+PHBhdGggZD0iTTE0MiAyODBRMTMwLjAgMjcwLjggMTE4IDI4NyIvPjxwYXRoIGQ9Ik0xNDIgMjgwUTEzNC41IDI2NC40IDEyNyAyNzEiLz48cGF0aCBkPSJNMTQyIDI4MFExNDkuNSAyNjQuNCAxNTcgMjcxIi8+PHBhdGggZD0iTTE0MiAyODBRMTU0LjAgMjcwLjggMTY2IDI4NyIvPjxwYXRoIGQ9Ik0xNDIgMjgwUTE0Mi4wIDI2Mi40IDE0MiAyNjYiLz48L2c+PHBhdGggZD0iTTM4NCAzMTJRMzgwLjQgMjkzLjAgMzc4IDI3NCIgc3Ryb2tlPSIjM2QyYTE0IiBzdHJva2Utd2lkdGg9IjMuMiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PGcgc3Ryb2tlPSIjMmE3YTRhIiBzdHJva2Utd2lkdGg9IjMuNiIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIj48cGF0aCBkPSJNMzc4IDI3NFEzNjYuMCAyNjQuOCAzNTQgMjgxIi8+PHBhdGggZD0iTTM3OCAyNzRRMzcwLjUgMjU4LjQgMzYzIDI2NSIvPjxwYXRoIGQ9Ik0zNzggMjc0UTM4NS41IDI1OC40IDM5MyAyNjUiLz48cGF0aCBkPSJNMzc4IDI3NFEzOTAuMCAyNjQuOCA0MDIgMjgxIi8+PHBhdGggZD0iTTM3OCAyNzRRMzc4LjAgMjU2LjQgMzc4IDI2MCIvPjwvZz48cGF0aCBkPSJNNDEwIDMxNFE0MTMuMCAzMDAuMCA0MTUgMjg2IiBzdHJva2U9IiMzZDJhMTQiIHN0cm9rZS13aWR0aD0iMy4yIiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz48ZyBzdHJva2U9IiMyYTdhNGEiIHN0cm9rZS13aWR0aD0iMy42IiBmaWxsPSJub25lIiBzdHJva2UtbGluZWNhcD0icm91bmQiPjxwYXRoIGQ9Ik00MTUgMjg2UTQwMy4wIDI3Ni44IDM5MSAyOTMiLz48cGF0aCBkPSJNNDE1IDI4NlE0MDcuNSAyNzAuNCA0MDAgMjc3Ii8+PHBhdGggZD0iTTQxNSAyODZRNDIyLjUgMjcwLjQgNDMwIDI3NyIvPjxwYXRoIGQ9Ik00MTUgMjg2UTQyNy4wIDI3Ni44IDQzOSAyOTMiLz48cGF0aCBkPSJNNDE1IDI4NlE0MTUuMCAyNjguNCA0MTUgMjcyIi8+PC9nPjxwYXRoIGQ9Ik0wIDM3NFE2NCAzNTggMTI4IDM3NFQyNTYgMzc0IDM4NCAzNzQgNTEyIDM3NFY1MTJIMFoiIGZpbGw9IiMwZjU2NmIiIG9wYWNpdHk9Ii45Ii8+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoMCAwKSBzY2FsZSgxKSI+PHBvbHlnb24gcG9pbnRzPSIzMjYsMzI2IDMyNiwzNzYgMzg2LDM3MCIgZmlsbD0iI2MwNDUzYSIvPjxwb2x5Z29uIHBvaW50cz0iMjU0LDMwMCAyNTQsMzgyIDMwOCwzODIiIGZpbGw9IiNmNmVjZDciLz48cG9seWdvbiBwb2ludHM9IjI1NiwzMjQgMjU2LDM4MCAyOTgsMzgwIiBmaWxsPSIjZThkOWI4Ii8+PHBvbHlnb24gcG9pbnRzPSIzMjAsMzI0IDMyMCwzODIgMzY0LDM4MiIgZmlsbD0iI2Y2ZWNkNyIvPjxwb2x5Z29uIHBvaW50cz0iMzIyLDM0MiAzMjIsMzgwIDM1MiwzODAiIGZpbGw9IiNlOGQ5YjgiLz48cGF0aCBkPSJNMjUyIDM4NFYyOTRNMzE4IDM4NFYzMThNMzIyIDMyMkwzOTIgMzY2IiBzdHJva2U9IiMzZDJhMTQiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+PHBvbHlnb24gcG9pbnRzPSIyNTIsMjk2IDI1MiwyODQgMjcyLDI5MCIgZmlsbD0iI2MwNDUzYSIvPjxwYXRoIGQ9Ik0yMDggMzg2TDM3MiAzODJMMzkwIDM2NFEzODYgNDA0IDM0NiA0MTRMMjQ0IDQxNFEyMTYgNDA4IDIwOCAzODZaIiBmaWxsPSIjNWEyZjE0Ii8+PHBhdGggZD0iTTIxMSAzOTNMMzc4IDM4OSIgc3Ryb2tlPSIjZDlhNDQxIiBzdHJva2Utd2lkdGg9IjMuNSIgZmlsbD0ibm9uZSIvPjxwYXRoIGQ9Ik0yMTYgNDAwTDM3MCAzOTciIHN0cm9rZT0iI2MwNDUzYSIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJub25lIi8+PC9nPjxwYXRoIGQ9Ik0wIDQwNFE2NCAzOTAgMTI4IDQwNFQyNTYgNDA0IDM4NCA0MDQgNTEyIDQwNFY1MTJIMFoiIGZpbGw9IiMwYjNkNGYiLz48cGF0aCBkPSJNMCA0NDZRNjQgNDMyIDEyOCA0NDZUMjU2IDQ0NiAzODQgNDQ2IDUxMiA0NDZWNTEySDBaIiBmaWxsPSIjMDYyYzNiIi8+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDZmM2YxIiBzdHJva2Utd2lkdGg9IjMiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgb3BhY2l0eT0iLjU1Ij48cGF0aCBkPSJNNDAgMzk2cTE0IC05IDI4IDAiIC8+PHBhdGggZD0iTTE1MCAzODhxMTQgLTkgMjggMCIgLz48cGF0aCBkPSJNNDIwIDM5MnExNCAtOSAyOCAwIiAvPjxwYXRoIGQ9Ik03MCA0MzBxMTQgLTkgMjggMCIgLz48cGF0aCBkPSJNMzQwIDQ0MHExNCAtOSAyOCAwIiAvPjxwYXRoIGQ9Ik0yMTAgNDUycTE0IC05IDI4IDAiIC8+PHBhdGggZD0iTTQ1MCA0NTBxMTQgLTkgMjggMCIgLz48L2c+PC9nPjwvZz48cGF0aCBkPSJNMTYzLjggNTkwLjBMMTQ3LjQgNTkwLjBMMTE5LjkgNTQ4LjRMMTE5LjkgNTkwLjBMMTAzLjUgNTkwLjBMMTAzLjUgNTIyLjZMMTE5LjkgNTIyLjZMMTQ3LjQgNTY0LjRMMTQ3LjQgNTIyLjZMMTYzLjggNTIyLjZMMTYzLjggNTkwLjBaTTIyOC42IDUzNi40TDIyOC42IDU5MC4wTDIxMi4yIDU5MC4wTDIxMi4yIDU4Mi43UTIwOS43IDU4Ni4yIDIwNS40IDU4OC40UTIwMS4yIDU5MC42IDE5Ni4wIDU5MC42UTE4OS44IDU5MC42IDE4NS4xIDU4Ny44UTE4MC40IDU4NS4xIDE3Ny44IDU3OS45UTE3NS4yIDU3NC43IDE3NS4yIDU2Ny43TDE3NS4yIDUzNi40TDE5MS42IDUzNi40TDE5MS42IDU2NS41UTE5MS42IDU3MC45IDE5NC4zIDU3My45UTE5Ny4xIDU3Ni44IDIwMS44IDU3Ni44UTIwNi42IDU3Ni44IDIwOS40IDU3My45UTIxMi4yIDU3MC45IDIxMi4yIDU2NS41TDIxMi4yIDUzNi40TDIyOC42IDUzNi40Wk0yNjIuMiA1OTAuOFEyNTUuMiA1OTAuOCAyNDkuNyA1ODguNFEyNDQuMyA1ODYuMCAyNDEuMSA1ODEuOFEyMzcuOSA1NzcuNiAyMzcuNiA1NzIuNEwyNTMuOCA1NzIuNFEyNTQuMSA1NzUuMiAyNTYuNCA1NzcuMFEyNTguNyA1NzguNyAyNjIuMCA1NzguN1EyNjUuMSA1NzguNyAyNjYuOCA1NzcuNVEyNjguNSA1NzYuMyAyNjguNSA1NzQuNFEyNjguNSA1NzIuMCAyNjYuMSA1NzEuMFEyNjMuNyA1NjkuOCAyNTguMyA1NjguNVEyNTIuNSA1NjcuMiAyNDguNyA1NjUuN1EyNDQuOCA1NjQuMiAyNDIuMSA1NjEuMFEyMzkuMyA1NTcuOCAyMzkuMyA1NTIuM1EyMzkuMyA1NDcuNyAyNDEuOCA1NDMuOVEyNDQuNCA1NDAuMSAyNDkuMyA1MzcuOVEyNTQuMiA1MzUuNyAyNjEuMSA1MzUuN1EyNzEuMiA1MzUuNyAyNzcuMCA1NDAuN1EyODIuOCA1NDUuNiAyODMuNiA1NTMuOUwyNjguNSA1NTMuOVEyNjguMSA1NTEuMSAyNjYuMCA1NDkuNVEyNjQuMCA1NDcuOSAyNjAuNiA1NDcuOVEyNTcuNyA1NDcuOSAyNTYuMiA1NDkuMFEyNTQuNiA1NTAuMSAyNTQuNiA1NTIuMFEyNTQuNiA1NTQuMyAyNTcuMSA1NTUuNFEyNTkuNSA1NTYuNiAyNjQuNyA1NTcuOFEyNzAuNyA1NTkuMyAyNzQuNCA1NjAuOFEyNzguMiA1NjIuMiAyODEuMCA1NjUuNlEyODMuOCA1NjguOSAyODMuOSA1NzQuNFEyODMuOSA1NzkuMiAyODEuMyA1ODIuOVEyNzguNiA1ODYuNSAyNzMuNyA1ODguN1EyNjguOCA1OTAuOCAyNjIuMiA1OTAuOFpNMjkwLjcgNTYzLjFRMjkwLjcgNTU0LjkgMjkzLjkgNTQ4LjZRMjk3LjAgNTQyLjQgMzAyLjMgNTM5LjBRMzA3LjcgNTM1LjcgMzE0LjQgNTM1LjdRMzIwLjAgNTM1LjcgMzI0LjMgNTM4LjBRMzI4LjYgNTQwLjMgMzMwLjkgNTQ0LjBMMzMwLjkgNTM2LjRMMzQ3LjMgNTM2LjRMMzQ3LjMgNTkwLjBMMzMwLjkgNTkwLjBMMzMwLjkgNTgyLjRRMzI4LjUgNTg2LjIgMzI0LjIgNTg4LjVRMzE5LjkgNTkwLjggMzE0LjIgNTkwLjhRMzA3LjcgNTkwLjggMzAyLjMgNTg3LjRRMjk3LjAgNTg0LjAgMjkzLjkgNTc3LjdRMjkwLjcgNTcxLjQgMjkwLjcgNTYzLjFaTTMzMC45IDU2My4yUTMzMC45IDU1Ny4xIDMyNy40IDU1My41UTMyNC4wIDU1MC4wIDMxOS4yIDU1MC4wUTMxNC4yIDU1MC4wIDMxMC44IDU1My41UTMwNy40IDU1Ny4wIDMwNy40IDU2My4xUTMwNy40IDU2OS4zIDMxMC44IDU3Mi45UTMxNC4yIDU3Ni41IDMxOS4yIDU3Ni41UTMyNC4wIDU3Ni41IDMyNy40IDU3Mi45UTMzMC45IDU2OS40IDMzMC45IDU2My4yWk0zOTEuOCA1MzUuOVE0MDEuMiA1MzUuOSA0MDYuOCA1NDIuMFE0MTIuNSA1NDguMCA0MTIuNSA1NTguN0w0MTIuNSA1OTAuMEwzOTYuMSA1OTAuMEwzOTYuMSA1NjAuOVEzOTYuMSA1NTUuNSAzOTMuNCA1NTIuNlEzOTAuNiA1NDkuNiAzODUuOSA1NDkuNlEzODEuMiA1NDkuNiAzNzguNCA1NTIuNlEzNzUuNiA1NTUuNSAzNzUuNiA1NjAuOUwzNzUuNiA1OTAuMEwzNTkuMiA1OTAuMEwzNTkuMiA1MzYuNEwzNzUuNiA1MzYuNEwzNzUuNiA1NDMuNVEzNzguMSA1NDAuMCAzODIuMyA1MzcuOVEzODYuNSA1MzUuOSAzOTEuOCA1MzUuOVpNNDUzLjggNTc2LjFMNDUzLjggNTkwLjBMNDQ1LjQgNTkwLjBRNDM2LjUgNTkwLjAgNDMxLjUgNTg1LjZRNDI2LjUgNTgxLjMgNDI2LjUgNTcxLjRMNDI2LjUgNTUwLjFMNDIwLjAgNTUwLjFMNDIwLjAgNTM2LjRMNDI2LjUgNTM2LjRMNDI2LjUgNTIzLjRMNDQyLjkgNTIzLjRMNDQyLjkgNTM2LjRMNDUzLjcgNTM2LjRMNDUzLjcgNTUwLjFMNDQyLjkgNTUwLjFMNDQyLjkgNTcxLjZRNDQyLjkgNTc0LjAgNDQ0LjEgNTc1LjBRNDQ1LjIgNTc2LjEgNDQ3LjkgNTc2LjFMNDUzLjggNTc2LjFaTTQ1OS42IDU2My4xUTQ1OS42IDU1NC45IDQ2Mi43IDU0OC42UTQ2NS44IDU0Mi40IDQ3MS4yIDUzOS4wUTQ3Ni42IDUzNS43IDQ4My4yIDUzNS43UTQ4OC45IDUzNS43IDQ5My4yIDUzOC4wUTQ5Ny40IDU0MC4zIDQ5OS43IDU0NC4wTDQ5OS43IDUzNi40TDUxNi4xIDUzNi40TDUxNi4xIDU5MC4wTDQ5OS43IDU5MC4wTDQ5OS43IDU4Mi40UTQ5Ny4zIDU4Ni4yIDQ5My4wIDU4OC41UTQ4OC44IDU5MC44IDQ4My4xIDU5MC44UTQ3Ni42IDU5MC44IDQ3MS4yIDU4Ny40UTQ2NS44IDU4NC4wIDQ2Mi43IDU3Ny43UTQ1OS42IDU3MS40IDQ1OS42IDU2My4xWk00OTkuNyA1NjMuMlE0OTkuNyA1NTcuMSA0OTYuMyA1NTMuNVE0OTIuOSA1NTAuMCA0ODguMCA1NTAuMFE0ODMuMSA1NTAuMCA0NzkuNyA1NTMuNVE0NzYuMyA1NTcuMCA0NzYuMyA1NjMuMVE0NzYuMyA1NjkuMyA0NzkuNyA1NzIuOVE0ODMuMSA1NzYuNSA0ODguMCA1NzYuNVE0OTIuOSA1NzYuNSA0OTYuMyA1NzIuOVE0OTkuNyA1NjkuNCA0OTkuNyA1NjMuMlpNNTQ0LjUgNTQ1LjRRNTQ3LjMgNTQxLjAgNTUxLjcgNTM4LjRRNTU2LjAgNTM1LjkgNTYxLjMgNTM1LjlMNTYxLjMgNTUzLjJMNTU2LjggNTUzLjJRNTUwLjYgNTUzLjIgNTQ3LjUgNTU1LjlRNTQ0LjUgNTU4LjUgNTQ0LjUgNTY1LjFMNTQ0LjUgNTkwLjBMNTI4LjEgNTkwLjBMNTI4LjEgNTM2LjRMNTQ0LjUgNTM2LjRMNTQ0LjUgNTQ1LjRaTTU2NS45IDU2My4xUTU2NS45IDU1NC45IDU2OS4wIDU0OC42UTU3Mi4xIDU0Mi40IDU3Ny41IDUzOS4wUTU4Mi45IDUzNS43IDU4OS41IDUzNS43UTU5NS4yIDUzNS43IDU5OS40IDUzOC4wUTYwMy43IDU0MC4zIDYwNi4wIDU0NC4wTDYwNi4wIDUzNi40TDYyMi40IDUzNi40TDYyMi40IDU5MC4wTDYwNi4wIDU5MC4wTDYwNi4wIDU4Mi40UTYwMy42IDU4Ni4yIDU5OS4zIDU4OC41UTU5NS4xIDU5MC44IDU4OS40IDU5MC44UTU4Mi45IDU5MC44IDU3Ny41IDU4Ny40UTU3Mi4xIDU4NC4wIDU2OS4wIDU3Ny43UTU2NS45IDU3MS40IDU2NS45IDU2My4xWk02MDYuMCA1NjMuMlE2MDYuMCA1NTcuMSA2MDIuNiA1NTMuNVE1OTkuMiA1NTAuMCA1OTQuMyA1NTAuMFE1ODkuNCA1NTAuMCA1ODYuMCA1NTMuNVE1ODIuNiA1NTcuMCA1ODIuNiA1NjMuMVE1ODIuNiA1NjkuMyA1ODYuMCA1NzIuOVE1ODkuNCA1NzYuNSA1OTQuMyA1NzYuNVE1OTkuMiA1NzYuNSA2MDIuNiA1NzIuOVE2MDYuMCA1NjkuNCA2MDYuMCA1NjMuMloiIGZpbGw9IiNmNmVjZDciLz48cGF0aCBkPSJNMjM1LjkgNjIyLjZMMjM1LjkgNjM1LjhMMjE4LjEgNjM1LjhMMjE4LjEgNjkwLjBMMjAxLjYgNjkwLjBMMjAxLjYgNjM1LjhMMTgzLjggNjM1LjhMMTgzLjggNjIyLjZMMjM1LjkgNjIyLjZaTTI5OC45IDYzNi40TDI2NS4zIDcxNS40TDI0Ny42IDcxNS40TDI1OS45IDY4OC4yTDIzOC4xIDYzNi40TDI1Ni41IDYzNi40TDI2OC44IDY2OS45TDI4MS4xIDYzNi40TDI5OC45IDYzNi40Wk0zMDEuNiA2NjMuMlEzMDEuNiA2NTQuOSAzMDUuMCA2NDguNlEzMDguNCA2NDIuNCAzMTQuNSA2MzkuMFEzMjAuNiA2MzUuNyAzMjguNSA2MzUuN1EzMzguNSA2MzUuNyAzNDUuMyA2NDEuMFEzNTIuMSA2NDYuMiAzNTQuMiA2NTUuOEwzMzYuNyA2NTUuOFEzMzQuNSA2NDkuNyAzMjguMiA2NDkuN1EzMjMuNyA2NDkuNyAzMjEuMCA2NTMuMlEzMTguMyA2NTYuNyAzMTguMyA2NjMuMlEzMTguMyA2NjkuOCAzMjEuMCA2NzMuM1EzMjMuNyA2NzYuOCAzMjguMiA2NzYuOFEzMzQuNSA2NzYuOCAzMzYuNyA2NzAuNkwzNTQuMiA2NzAuNlEzNTIuMSA2ODAuMCAzNDUuMyA2ODUuNFEzMzguNCA2OTAuOCAzMjguNSA2OTAuOFEzMjAuNiA2OTAuOCAzMTQuNSA2ODcuNFEzMDguNCA2ODQuMCAzMDUuMCA2NzcuOFEzMDEuNiA2NzEuNiAzMDEuNiA2NjMuMlpNMzg3LjMgNjkwLjhRMzc5LjQgNjkwLjggMzczLjEgNjg3LjRRMzY2LjkgNjg0LjAgMzYzLjMgNjc3LjhRMzU5LjcgNjcxLjYgMzU5LjcgNjYzLjJRMzU5LjcgNjU1LjAgMzYzLjMgNjQ4LjdRMzY3LjAgNjQyLjQgMzczLjMgNjM5LjBRMzc5LjYgNjM1LjcgMzg3LjUgNjM1LjdRMzk1LjQgNjM1LjcgNDAxLjcgNjM5LjBRNDA4LjAgNjQyLjQgNDExLjcgNjQ4LjdRNDE1LjMgNjU1LjAgNDE1LjMgNjYzLjJRNDE1LjMgNjcxLjUgNDExLjYgNjc3LjhRNDA3LjkgNjg0LjAgNDAxLjYgNjg3LjRRMzk1LjIgNjkwLjggMzg3LjMgNjkwLjhaTTM4Ny4zIDY3Ni42UTM5Mi4wIDY3Ni42IDM5NS4zIDY3My4xUTM5OC42IDY2OS42IDM5OC42IDY2My4yUTM5OC42IDY1Ni44IDM5NS40IDY1My4zUTM5Mi4yIDY0OS45IDM4Ny41IDY0OS45UTM4Mi43IDY0OS45IDM3OS41IDY1My4zUTM3Ni40IDY1Ni43IDM3Ni40IDY2My4yUTM3Ni40IDY2OS42IDM3OS41IDY3My4xUTM4Mi42IDY3Ni42IDM4Ny4zIDY3Ni42Wk00NDguNSA2OTAuOFE0NDAuNiA2OTAuOCA0MzQuMyA2ODcuNFE0MjguMCA2ODQuMCA0MjQuNCA2NzcuOFE0MjAuOCA2NzEuNiA0MjAuOCA2NjMuMlE0MjAuOCA2NTUuMCA0MjQuNSA2NDguN1E0MjguMSA2NDIuNCA0MzQuNCA2MzkuMFE0NDAuOCA2MzUuNyA0NDguNiA2MzUuN1E0NTYuNSA2MzUuNyA0NjIuOSA2MzkuMFE0NjkuMiA2NDIuNCA0NzIuOCA2NDguN1E0NzYuNSA2NTUuMCA0NzYuNSA2NjMuMlE0NzYuNSA2NzEuNSA0NzIuOCA2NzcuOFE0NjkuMSA2ODQuMCA0NjIuNyA2ODcuNFE0NTYuMyA2OTAuOCA0NDguNSA2OTAuOFpNNDQ4LjUgNjc2LjZRNDUzLjIgNjc2LjYgNDU2LjUgNjczLjFRNDU5LjggNjY5LjYgNDU5LjggNjYzLjJRNDU5LjggNjU2LjggNDU2LjYgNjUzLjNRNDUzLjQgNjQ5LjkgNDQ4LjYgNjQ5LjlRNDQzLjkgNjQ5LjkgNDQwLjcgNjUzLjNRNDM3LjUgNjU2LjcgNDM3LjUgNjYzLjJRNDM3LjUgNjY5LjYgNDQwLjYgNjczLjFRNDQzLjggNjc2LjYgNDQ4LjUgNjc2LjZaTTUxNy45IDYzNS45UTUyNy4zIDYzNS45IDUzMi45IDY0Mi4wUTUzOC41IDY0OC4wIDUzOC41IDY1OC43TDUzOC41IDY5MC4wTDUyMi4yIDY5MC4wTDUyMi4yIDY2MC45UTUyMi4yIDY1NS41IDUxOS40IDY1Mi42UTUxNi42IDY0OS42IDUxMS45IDY0OS42UTUwNy4yIDY0OS42IDUwNC40IDY1Mi42UTUwMS42IDY1NS41IDUwMS42IDY2MC45TDUwMS42IDY5MC4wTDQ4NS4yIDY5MC4wTDQ4NS4yIDYzNi40TDUwMS42IDYzNi40TDUwMS42IDY0My41UTUwNC4xIDY0MC4wIDUwOC40IDYzNy45UTUxMi42IDYzNS45IDUxNy45IDYzNS45WiIgZmlsbD0idXJsKCNzZykiLz48L3N2Zz4K" alt="" width="220"><i class="splash-bar"><b></b></i></div>
   <div class="batik-strip" aria-hidden="true"></div>
 
   <header class="masthead">
@@ -3085,7 +3140,7 @@ button.term-tag { min-height: 28px; }
 
   // Jual SEMUA isi gudang
   // ke satu pasar sekaligus. Komoditas yang akan rugi dilewati (dicatat di skipped).
-  function sellAll(state, marketId, now) {
+  function sellAll(state, marketId, now, skipLow) {
     const ms = state.regions[marketId];
     if (!ms) return fail('Pasar tidak dikenal.');
     if (!ms.unlocked) return fail('Buka wilayah ini dulu untuk berdagang di sana.');
@@ -3094,24 +3149,27 @@ button.term-tag { min-height: 28px; }
     Object.keys(D.commodities).forEach(function (cid) {
       const have = Math.floor(state.inventory[cid] || 0);
       if (have < 1) return;
+      // skipLow: tahan dulu barang yang harganya sedang rendah (>= 8% di bawah normal)
+      if (skipLow && priceSignal(state, marketId, cid, now).id === 'rendah') { skipped.push(cid); return; }
       const r = sell(state, cid, marketId, have, now);
       if (r.ok) { items.push({ commodity: cid, qty: r.qty, net: r.net, queued: !!r.queued, durationMs: r.durationMs }); net += r.net; qty += r.qty; }
       else { skipped.push(cid); if (r.slots) slotFull = r.reason; }
     });
     if (!items.length && slotFull) return fail(slotFull);
     if (!items.length) {
-      return fail(skipped.length ? 'Harga di pasar ini terlalu rendah, semua penjualan akan rugi. Coba pasar lain.'
+      return fail(skipped.length ? (skipLow ? 'Semua barangmu sedang berharga rendah. Tahan dulu, atau coba pasar lain.' : 'Harga di pasar ini terlalu rendah, semua penjualan akan rugi. Coba pasar lain.')
         : 'Gudang kosong, tidak ada yang bisa dijual.');
     }
     return { ok: true, items: items, skipped: skipped, net: net, qty: qty, queued: items.some(function (i) { return i.queued; }), durationMs: items.reduce(function (m, i) { return Math.max(m, i.durationMs || 0); }, 0) };
   }
 
   // Perkiraan hasil bersih bila seluruh gudang dijual ke satu pasar (tanpa mengubah state).
-  function quoteSellAll(state, marketId, now) {
+  function quoteSellAll(state, marketId, now, skipLow) {
     let net = 0, qty = 0;
     Object.keys(D.commodities).forEach(function (cid) {
       const have = Math.floor(state.inventory[cid] || 0);
       if (have < 1) return;
+      if (skipLow && priceSignal(state, marketId, cid, now).id === 'rendah') return;
       const q = quoteSale(state, cid, marketId, have, now);
       if (q.net > 0) { net += q.net; qty += have; }
     });
@@ -3821,7 +3879,13 @@ button.term-tag { min-height: 28px; }
     error: function () { tone(180, 0, 0.16, 'sawtooth', 0.04); }
   };
 
-  function sfx(name) { try { if (SFX[name]) SFX[name](); } catch (e) { /* suara tidak boleh merusak game */ } }
+  // Getaran ringan di HP (bila didukung dan mode hemat animasi mati)
+  const HAPTIC = { coin: 12, click: 6, start: 10, done: [18, 40, 18], error: 30 };
+  function haptic(name) {
+    try { if (navigator.vibrate && HAPTIC[name] && !document.body.classList.contains('calm')) navigator.vibrate(HAPTIC[name]); } catch (e) { /* abaikan */ }
+  }
+
+  function sfx(name) { haptic(name); try { if (SFX[name]) SFX[name](); } catch (e) { /* suara tidak boleh merusak game */ } }
 
   function toggleMute() {
     muted = !muted;
@@ -5344,7 +5408,7 @@ button.term-tag { min-height: 28px; }
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', sub: 'stats', bannerSeen: '', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
+  const view = { tab: 'map', emptyOpen: false, sub: 'stats', bannerSeen: '', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -5617,8 +5681,8 @@ button.term-tag { min-height: 28px; }
             : '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>') +
           toggle +
         '</div>';
-      if (slim) return '<div class="goods slim">' + head + '</div>';
-      return '' +
+      if (slim) return { slim: true, html: '<div class="goods slim">' + head + '</div>' };
+      return { slim: false, html: '' +
       '<div class="goods">' + head +
         '<div class="goods-price">' +
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
@@ -5635,16 +5699,30 @@ button.term-tag { min-height: 28px; }
           '<button class="btn primary" data-action="sell" data-c="' + cid + '" data-qty="all">Jual semua</button>' +
         '</div>' +
         '<small class="goods-quote muted" data-live="quote" data-c="' + cid + '"></small>' +
-      '</div>';
-    }).join('');
+      '</div>' };
+    });
+
+    // Dua kelompok: yang ada di gudang (kartu penuh) dan yang kosong (dilipat jadi satu baris)
+    const haveHtml = goods.filter(function (g) { return !g.slim; }).map(function (g) { return g.html; }).join('');
+    const emptyItems = goods.filter(function (g) { return g.slim; });
+    const eOpen = !!view.emptyOpen;
+    const emptyHtml = emptyItems.length
+      ? '<button class="fold-head empty-head" data-action="empty-toggle" aria-expanded="' + eOpen + '"><b>Stok kosong</b><span class="cnt">' + emptyItems.length + '</span><span class="caret" aria-hidden="true">' + (eOpen ? '▴' : '▾') + '</span></button>' +
+        (eOpen ? '<div class="empty-list">' + emptyItems.map(function (g) { return g.html; }).join('') + '</div>' : '')
+      : '';
+    const goodsHtml = (haveHtml
+      ? '<div class="grp-title">Di gudang</div>' + haveHtml
+      : '<div class="card empty-note"><b>Gudangmu kosong</b><p class="muted">Kumpulkan hasil panen di tab Peta, lalu kembali ke sini untuk menjualnya.</p>' +
+        '<button class="btn primary" data-action="tab" data-id="map">' + NT.ui.ic('map') + ' Ke Peta</button></div>') + emptyHtml;
 
     $('tab-market').innerHTML = shipmentsHtml(state) +
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
-      '<button class="btn primary wide sell-everything" data-action="sell-everything">' + NT.ui.ic('coin') + ' Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
+      '<button class="btn primary wide sell-good" data-action="sell-good">' + NT.ui.ic('coin') + ' Jual yang menguntungkan <span data-live="sellgood-est"></span></button>' +
+      '<button class="btn ghost wide sell-everything" data-action="sell-everything">Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<details class="how"><summary>Cara kerja harga dan ongkir</summary><p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
-      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goods + exportHtml(state, now);
+      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goodsHtml + exportHtml(state, now);
   }
 
   // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
@@ -6102,8 +6180,10 @@ button.term-tag { min-height: 28px; }
     }
     each('[data-live="signal"]', function (el) {
       const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
-      el.innerHTML = sg.id === 'bagus' ? '<span class="sig good">🔥 Harga bagus</span>'
-        : (sg.id === 'rendah' ? '<span class="sig low">🕳️ Harga rendah</span>' : '');
+      el.innerHTML = sg.id === 'bagus' ? '<span class="sig good">Jual sekarang</span>'
+        : (sg.id === 'rendah' ? '<span class="sig low">Tahan dulu</span>' : '');
+      const card = el.closest('.goods');
+      if (card) card.setAttribute('data-sig', sg.id);
     });
     each('[data-live="hint"]', function (el) {
       const sg = E.priceSignal(state, view.market, el.getAttribute('data-c'), now);
@@ -6116,6 +6196,11 @@ button.term-tag { min-height: 28px; }
       if (have < 1) { el.textContent = ''; return; }
       const q = E.quoteSale(state, cid, view.market, have, now);
       el.textContent = 'Jual semua ' + F.num(have) + ' ≈ ' + F.money(Math.max(0, q.net)) + ' bersih';
+    });
+    each('[data-live="sellgood-est"]', function (el) {
+      const q = E.quoteSellAll(state, view.market, now, true);
+      el.textContent = q.qty > 0 ? '· ≈ ' + F.money(q.net) : '';
+      el.parentNode.disabled = q.qty < 1;
     });
     each('[data-live="sellall-est"]', function (el) {
       const q = E.quoteSellAll(state, view.market, now);
@@ -6613,7 +6698,29 @@ button.term-tag { min-height: 28px; }
       logEvent('✅', msg);
     });
     NT.ui.fx.sfx('done');
+    if (!offline && !document.body.classList.contains('calm')) {
+      document.body.classList.remove('flash-gold'); void document.body.offsetWidth; document.body.classList.add('flash-gold');
+      setTimeout(function () { document.body.classList.remove('flash-gold'); }, 900);
+    }
     if (!offline) NT.ui.fx.confetti(window.innerWidth / 2, window.innerHeight * 0.35);
+  }
+
+  // Jual banyak barang sekaligus. skipLow = tahan dulu barang yang harganya sedang rendah.
+  function sellBatch(skipLow) {
+    const market = P.view.market;
+    const res = E.sellAll(state, market, now(), skipLow);
+    if (res.ok) {
+      const tail = res.skipped.length ? (skipLow ? ' (' + res.skipped.length + ' jenis ditahan: harga rendah atau kapal penuh)' : ' (' + res.skipped.length + ' jenis dilewati: rugi atau kapal penuh)') : '';
+      if (res.queued) {
+        res.message = '🚚 ' + F.num(res.qty) + ' barang dikirim ke ' + NT.data.regions[market].name + ' · tiba dalam ' + F.short(res.durationMs) +
+          ' (+' + F.money(res.net) + ')' + tail;
+        res.sfx = 'click';
+      } else {
+        res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) + tail;
+        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+      }
+    }
+    return res;
   }
 
   const actions = {
@@ -6743,22 +6850,8 @@ button.term-tag { min-height: 28px; }
       return { silent: true, skipRender: true };
     },
 
-    'sell-everything': function () {
-      const market = P.view.market;
-      const res = E.sellAll(state, market, now());
-      if (res.ok) {
-        const tail = res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati: rugi atau kapal penuh)' : '';
-        if (res.queued) {
-          res.message = '🚚 ' + F.num(res.qty) + ' barang dikirim ke ' + NT.data.regions[market].name + ' · tiba dalam ' + F.short(res.durationMs) +
-            ' (+' + F.money(res.net) + ')' + tail;
-          res.sfx = 'click';
-        } else {
-          res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) + tail;
-          res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
-        }
-      }
-      return res;
-    },
+    'sell-everything': function () { return sellBatch(false); },
+    'sell-good': function () { return sellBatch(true); },
 
     cheapest: function () {
       const c = E.cheapestUpgrade(state);
@@ -6795,6 +6888,7 @@ button.term-tag { min-height: 28px; }
       P.view.goodsOpen[cid] = !P.view.goodsOpen[cid];
       return { silent: true };
     },
+    'empty-toggle': function () { P.view.emptyOpen = !P.view.emptyOpen; return { silent: true }; },
     'export-toggle': function () { P.view.exportOpen = !P.view.exportOpen; return { silent: true }; },
 
     'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
@@ -6959,6 +7053,18 @@ button.term-tag { min-height: 28px; }
 
   /* ---------- Mulai ---------- */
 
+  // Layar muat: tampil sampai game siap, lalu memudar
+  function hideSplash() {
+    const sp = document.getElementById('splash');
+    if (!sp) return;
+    // tampil minimal ~0,9 detik agar tidak berkedip
+    const wait = Math.max(0, 900 - (window.performance && performance.now ? performance.now() : 900));
+    setTimeout(function () {
+      sp.classList.add('done');
+      setTimeout(function () { if (sp.parentNode) sp.parentNode.removeChild(sp); }, 600);
+    }, wait);
+  }
+
   async function start() {
     const lastSeen = readSeen();   // dibaca sebelum apa pun menimpanya
     storage = NT.getStorage();
@@ -6991,6 +7097,7 @@ button.term-tag { min-height: 28px; }
     if (!welcomed && finishedAway.length) celebrate(finishedAway, true);
     if (checkProgress(true)) { persistSoon(); P.renderAll(state, t); }
     touchSeen();
+    hideSplash();
 
     setInterval(function () {
       const t2 = now();

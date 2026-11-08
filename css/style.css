@@ -1174,3 +1174,57 @@ button.term-tag { min-height: 28px; }
 .goods-toggle { width: var(--touch); height: var(--touch); border-radius: 12px; }
 .goods-actions .btn { min-height: var(--touch); }
 .fold-head { min-height: var(--touch); }
+
+/* =====================================================================================================
+   Sesi 25 (Sprint 3): pasar yang mudah dibaca, transisi halus, kilau emas, layar muat
+   ===================================================================================================== */
+
+/* Pasar: kelompok "Di gudang" dan "Stok kosong" */
+.grp-title { margin: var(--sp-3) 2px var(--sp-2); font-size: var(--fs-s); font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--sea-700); }
+.empty-head { width: 100%; display: flex; align-items: center; gap: var(--sp-2); margin-top: var(--sp-3); padding: 0 var(--sp-3); border: 1px dashed var(--sand-dark); border-radius: 12px; background: transparent; color: var(--muted); font: inherit; cursor: pointer; }
+.empty-head b { font-size: var(--fs-m); }
+.empty-head .cnt { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--sand-dark); color: var(--sea-800); font-size: var(--fs-s); font-weight: 800; text-align: center; }
+.empty-head .caret { margin-left: auto; }
+.empty-list { margin-top: var(--sp-2); }
+.empty-note { text-align: center; padding: var(--sp-4) var(--sp-3); }
+.empty-note p { margin: var(--sp-1) 0 var(--sp-3); }
+.sell-good + .sell-everything { margin-top: var(--sp-1); min-height: var(--touch); color: var(--muted); font-weight: 700; }
+
+/* Kartu barang: penanda warna di tepi kiri mengikuti isyarat harga */
+.goods { border-left: 4px solid transparent; transition: border-color .3s; }
+.goods[data-sig="bagus"] { border-left-color: var(--green); }
+.goods[data-sig="rendah"] { border-left-color: var(--red); }
+.sig { display: inline-flex; align-items: center; gap: 5px; }
+.sig::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+/* Transisi halus antar tab */
+.tab-panel.on { animation: panelIn .22s ease-out; }
+@keyframes panelIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.kingdom-seg .seg, .btn, .chip, .tab { transition: background-color .15s, border-color .15s, color .15s, transform .08s; }
+.btn:active:not(:disabled) { transform: scale(.98); }
+
+/* Kilau emas di tepi layar saat pembangunan selesai */
+body.flash-gold::after {
+  content: ""; position: fixed; inset: 0; z-index: 60; pointer-events: none;
+  box-shadow: inset 0 0 90px 10px rgba(240, 194, 95, .6); animation: goldFlash .9s ease-out forwards;
+}
+@keyframes goldFlash { from { opacity: 1; } to { opacity: 0; } }
+
+/* Layar muat: logo + garis kemajuan; aman walau JS gagal (hilang sendiri setelah 4 detik) */
+.splash {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+  background: radial-gradient(circle at 50% 40%, var(--sea-800), var(--sea-950) 70%); pointer-events: none;
+  animation: splashOut .5s ease 4s forwards; transition: opacity .45s;
+}
+.splash img { max-width: 62vw; height: auto; }
+.splash.done { opacity: 0; }
+.splash-bar { width: 140px; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.splash-bar b { display: block; width: 40%; height: 100%; border-radius: 999px; background: var(--gold); animation: splashBar 1.1s ease-in-out infinite; }
+@keyframes splashBar { from { transform: translateX(-100%); } to { transform: translateX(350%); } }
+@keyframes splashOut { to { opacity: 0; visibility: hidden; } }
+
+/* Hormati pengaturan hemat animasi dan preferensi sistem */
+.calm .tab-panel.on, .calm body.flash-gold::after, .calm .splash-bar b { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .tab-panel.on, body.flash-gold::after, .splash-bar b { animation: none; }
+}
