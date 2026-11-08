@@ -1,7 +1,7 @@
 # HANDOFF: Nusantara Tycoon
 
 Dokumen serah-terima untuk melanjutkan proyek di sesi baru (dengan Claude atau siapa pun).
-Terakhir diperbarui: 8 November 2026 (sesi 13: peta lebih realistis).
+Terakhir diperbarui: 8 November 2026 (sesi 17: Tahap Z1, zoom dan geser peta).
 
 > **Sumber kebenaran adalah repo GitHub**, bukan salinan di chat. Repo: `github.com/jurkonxcode/nusantaratycoon`.
 > Kalau kode di repo berbeda dengan yang dijelaskan di sini, percayai repo, lalu perbarui dokumen ini.
@@ -651,3 +651,26 @@ Slot peta (jatuh di daratan, jarak antar slot >= 22 px): garam [107.5,-6.2], teh
 | Sesi | File yang berubah |
 |---|---|
 | 16 | `js/data/{commodities,buildings,regions,exports}.js`, `js/ui/assets.js`, `tools/{art_jawa,make_assets,art_tiers}.py`, `assets/sprites/{kebun_teh,kebun_tebu,kebun_tembakau,tambak_garam}{,_t2,_t3}.svg`, `assets/commodities/{teh,gula,tembakau,garam}.svg`, `tests/jawa.test.js` (baru), `tests/economy.test.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+---
+
+## 31. Sesi 17: Tahap Z1, zoom dan geser peta (8 November 2026)
+
+Rencana ada di `HANDOFF-LANJUTAN-2.md` (bagian 4). Hanya Z1 yang dikerjakan; Z2 (tekstur tajam, label, penggaris km) dan Z3 (geometri akurat) belum.
+
+**Cara kerja.** Zoom mengubah atribut `viewBox` SVG (bukan CSS scale), jadi sprite dan garis tetap tajam. Logika hitungan murni di `js/core/viewport.js` (`fitScale`, `limits`, `clampView`, `toWorld`, `zoomAt`, `panBy`, `centerOn`, `fitView`, `viewBoxOf`, `serialize`, `restore`, `pinch`); kode DOM di `js/ui/map.js` (bagian "Zoom dan geser"). State `view = { x, y, scale }`, `scale` = piksel layar per satuan peta. Batas: minimum = seluruh peta muat di kotak; maksimum = yang lebih besar dari 4x minimum atau 2,4 px/satuan (agar HP cukup besar). Semua angka ada di `NT.config.map` (`maxZoom`, `maxPx`, `fitMinPx`, `startPx`, `tapSlop`, `storeKey`).
+**Input** (Pointer Events): satu jari/mouse menggeser; dua jari pinch (titik tengah ikut menggeser); roda mouse zoom ke kursor (bila sudah paling jauh dan menggulung ke bawah, halaman yang menggulung); ketuk dua kali di laut zoom 2x (di atas pulau atau gelembung tidak, supaya tidak bentrok dengan memilih pulau); tombol + / - / reset (44 px, `aria-label`, mati di batas). Gerakan di bawah 6 px dianggap ketukan. Pointer capture baru dipasang setelah melewati ambang (supaya ketukan tetap sampai ke pulau). `focus(regionId)` kini animasi 300 ms (instan bila "Hemat animasi" menyala atau `prefers-reduced-motion`); di desktop tidak mengubah zoom, di HP minimal 0,81 px/satuan.
+**Tata letak.** `.map-scroll` bukan lagi kotak gulir: `overflow: hidden`, `touch-action: none`. Desktop: rasio peta (`--map-ar`). HP (<760 px): tinggi `clamp(280px, 44vh, 440px)`; aturan lama `min-width: 760px` dihapus. Tampilan awal: seluruh peta bila "pas layar" >= 0,5 px/satuan (desktop, tablet); kalau tidak (HP), zoom 0,81 di sekitar Jawa. Patokannya skala, bukan lebar layar (kolom peta desktop 1280 px hanya sekitar 708 px).
+**Penyimpanan.** Posisi disimpan di `localStorage['nusantara-tycoon-mapview-v1']` sebagai `{cx, cy, z}` (pusat dan zoom relatif "pas layar", jadi tahan layar diputar). Terpisah dari save game dan tidak ke Supabase. Data rusak diabaikan.
+**Tes:** `tests/viewport.test.js` (12 baru, Node). `tests/browser_zoom.py` (39 pengecekan: desktop 1280 dengan mouse dan HP 390 dengan sentuhan sungguhan lewat CDP, termasuk pinch). Dijalankan di Chromium; Safari/iOS dan perangkat asli BELUM. Total Node: 25 + 10 + 10 + 10 + 11 + 12 + 20 lolos. Paket C: 33 lolos. Paket B: 21 lolos, 1 gagal ("Pasar: kas bertambah") yang SUDAH gagal sebelum sesi ini (identik pada kode asli): penjualan sejak sesi 14 berwaktu, kas masuk setelah barang tiba; tes perlu menunggu atau disesuaikan.
+**Diketahui.**
+- Tekstur relief masih K=2, jadi buram di atas sekitar 2x (jadwal Z2). Label pulau dan sprite ikut membesar tanpa aturan tingkat detail (Z2).
+- Penelan klik pasca-geser (`click` fase capture) adalah lapisan cadangan: di Chromium pointer capture sudah mencegah klik pulau, jadi tes tidak bisa membuktikan lapisan ini (mutasi lolos). Dibuat untuk browser yang berbeda (Safari iOS); uji di iPhone.
+- Tombol zoom (pojok kanan atas) menutupi kompas dekoratif di SVG pada tampilan penuh.
+- Roda mouse di atas peta memperbesar peta, bukan menggulung halaman (kecuali sudah paling jauh dan menggulung ke bawah).
+- Performa pan di HP lama belum diukur: viewBox berubah tiap bingkai pada SVG dengan banyak filter CSS (`drop-shadow`). Bila tersendat, kurangi filter saat `.dragging`.
+**Berikutnya:** Z2, atau 2b Sumatra (timah, lada, minyak bumi); lihat `HANDOFF-LANJUTAN-2.md` bagian 6 untuk pertanyaan terbuka.
+
+| Sesi | File yang berubah |
+|---|---|
+| 17 | baru: `js/core/viewport.js`, `tests/viewport.test.js`, `tests/browser_zoom.py`; diubah: `js/ui/map.js`, `js/config.js`, `index.html`, `css/style.css`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |

@@ -289,21 +289,242 @@
     });
   }
 
-  // Geser peta (di layar sempit) supaya wilayah terpilih berada di tengah.
+  /* ---------- Zoom dan geser ----------
+   * Logika hitungan ada di core/viewport.js (murni, dites). Di sini hanya urusan DOM: mengubah viewBox SVG
+   * (bukan CSS scale, supaya garis dan sprite tetap tajam), membaca Pointer Events, dan menyimpan posisi.
+   * Mengubah viewBox tidak menyentuh isi peta, jadi update() yang mengganti lapisan .dyn tidak mereset zoom. */
+  const VP = NT.viewport;
+  const view = { stage: null, svg: null, ctx: null, cur: null, raf: 0, anim: 0, saveTimer: 0, btn: {} };
+
+  function mapCfg() { return NT.config.map || {}; }
+
+  function reducedMotion() {
+    return document.body.classList.contains('calm') ||
+      (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  function relPoint(e) {
+    const r = view.stage.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+
+  // Tampilan awal: seluruh peta bila kotak cukup lebar; bila "pas layar" membuat peta terlalu kecil (HP),
+  // zoom nyaman di sekitar wilayah awal. Patokannya skala, bukan lebar layar: kolom peta desktop bisa hanya ~700 px.
+  function defaultView() {
+    const c = view.ctx, fit = VP.fitView(c);
+    if (VP.fitScale(c) >= (mapCfg().fitMinPx || 0.5)) return fit;
+    const start = Object.keys(D.regions).map(function (id) { return D.regions[id]; }).filter(function (r) { return r.start; })[0];
+    const p = start ? pt(start.map.pin) : { x: c.world.w / 2, y: c.world.h / 2 };
+    return VP.centerOn(fit, p.x, p.y, c, mapCfg().startPx || 0.81);
+  }
+
+  function paint() {
+    view.raf = 0;
+    if (!view.cur) return;
+    view.svg.setAttribute('viewBox', VP.viewBoxOf(view.cur, view.ctx));
+    const lim = VP.limits(view.ctx);
+    if (view.btn.in) { view.btn.in.disabled = view.cur.scale >= lim.max * 0.999; view.btn.out.disabled = view.cur.scale <= lim.min * 1.001; }
+  }
+
+  // Satu rAF per bingkai: gerakan jari boleh datang berkali-kali, viewBox hanya ditulis sekali.
+  function schedule() { if (!view.raf) view.raf = requestAnimationFrame(paint); }
+
+  function saveNow() {
+    clearTimeout(view.saveTimer); view.saveTimer = 0;
+    if (!view.cur) return;
+    try { localStorage.setItem(mapCfg().storeKey || 'nusantara-tycoon-mapview-v1', JSON.stringify(VP.serialize(view.cur, view.ctx))); } catch (e) { /* mode privat: abaikan */ }
+  }
+
+  function setView(v, persist) {
+    view.cur = v;
+    schedule();
+    if (persist) { clearTimeout(view.saveTimer); view.saveTimer = setTimeout(saveNow, 400); }
+  }
+
+  function cancelAnim() { if (view.anim) { cancelAnimationFrame(view.anim); view.anim = 0; } }
+
+  // Pindah halus ke view target (pusat dan skala diinterpolasi); tanpa animasi bila "Hemat animasi" menyala.
+  function animateTo(target) {
+    cancelAnim();
+    if (!view.cur) return;
+    if (reducedMotion()) { setView(target, true); return; }
+    const c = view.ctx, from = view.cur;
+    const c0 = VP.toWorld(from, c.box.w / 2, c.box.h / 2), c1 = VP.toWorld(target, c.box.w / 2, c.box.h / 2);
+    const t0 = performance.now(), dur = 300;
+    function step(now) {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      const scale = from.scale * Math.pow(target.scale / from.scale, e);
+      setView(VP.centerOn(from, c0.x + (c1.x - c0.x) * e, c0.y + (c1.y - c0.y) * e, c, scale), false);
+      if (k < 1) view.anim = requestAnimationFrame(step); else { view.anim = 0; setView(target, true); }
+    }
+    view.anim = requestAnimationFrame(step);
+  }
+
+  function zoomButton(factor) {
+    if (!view.cur) return;
+    animateTo(VP.zoomAt(view.cur, factor, view.ctx.box.w / 2, view.ctx.box.h / 2, view.ctx));
+  }
+
+  function measure() {
+    const r = view.stage.getBoundingClientRect();
+    return { w: r.width, h: r.height };
+  }
+
+  // Ukuran kotak berubah (layar diputar, jendela diubah, tab peta baru terlihat): jaga pusat dan zoom relatif.
+  function onResize() {
+    const box = measure();
+    if (box.w < 1 || box.h < 1) return;        // tab peta sedang tersembunyi
+    const old = view.ctx;
+    view.ctx = { world: old.world, box: box, maxZoom: old.maxZoom, maxPx: old.maxPx };
+    if (!view.cur) {
+      let saved = null;
+      try { saved = JSON.parse(localStorage.getItem(mapCfg().storeKey || 'nusantara-tycoon-mapview-v1')); } catch (e) { saved = null; }
+      setView(VP.restore(saved, view.ctx) || defaultView(), false);
+    } else if (old.box.w >= 1 && old.box.h >= 1) {
+      // Pusat dan zoom relatif disimpan lewat serialize terhadap ukuran lama, lalu dipulihkan terhadap yang baru.
+      const keep = VP.serialize(view.cur, old);
+      setView(VP.restore(keep, view.ctx) || defaultView(), false);
+    } else {
+      setView(defaultView(), false);
+    }
+  }
+
+  function bindGestures() {
+    const stage = view.stage, slop = mapCfg().tapSlop || 6;
+    const pts = new Map();          // pointerId -> posisi terakhir (relatif terhadap kotak peta)
+    let down = null;                // ketukan yang sedang dipantau: { x, y, moved }
+    let lastTap = null, suppressClick = false;
+
+    stage.addEventListener('pointerdown', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      cancelAnim();
+      pts.set(e.pointerId, relPoint(e));
+      if (pts.size === 1) { down = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId }; suppressClick = false; }
+      else { if (down) down.moved = true; suppressClick = true; }   // jari kedua = pinch, bukan ketukan
+    });
+
+    stage.addEventListener('pointermove', function (e) {
+      if (!pts.has(e.pointerId)) return;
+      const prev = pts.get(e.pointerId), cur = relPoint(e);
+      if (pts.size >= 2) {
+        const before = Array.from(pts.values());
+        pts.set(e.pointerId, cur);
+        const after = Array.from(pts.values());
+        setView(VP.pinch(view.cur, before[0], before[1], after[0], after[1], view.ctx), true);
+        return;
+      }
+      if (down && !down.moved) {
+        if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < slop) return;   // masih ketukan
+        down.moved = true; suppressClick = true;
+        try { stage.setPointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
+        stage.classList.add('dragging');
+        // Selisih dihitung dari titik sentuh awal supaya tidak ada lompatan sebesar ambang.
+        prev.x = down.x - stage.getBoundingClientRect().left; prev.y = down.y - stage.getBoundingClientRect().top;
+      }
+      pts.set(e.pointerId, cur);
+      if (down && down.moved) setView(VP.panBy(view.cur, cur.x - prev.x, cur.y - prev.y, view.ctx), true);
+    });
+
+    function release(e) {
+      if (!pts.has(e.pointerId)) return;
+      pts.delete(e.pointerId);
+      if (pts.size >= 1) { if (down) down.moved = true; return; }   // satu jari lepas: sisa jari lanjut menggeser
+      try { stage.releasePointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
+      stage.classList.remove('dragging');
+      const wasTap = down && !down.moved && e.type === 'pointerup';
+      down = null;
+      if (!wasTap) { lastTap = null; return; }
+      // Ketuk dua kali di laut atau daratan kosong: zoom 2x (atau kembali ke tampilan awal bila sudah mentok).
+      if (e.target.closest && e.target.closest('.island, .bubble')) { lastTap = null; return; }
+      const now = performance.now(), p = relPoint(e);
+      if (lastTap && now - lastTap.t < 320 && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < 30) {
+        lastTap = null;
+        const lim = VP.limits(view.ctx);
+        animateTo(view.cur.scale >= lim.max * 0.95 ? defaultView() : VP.zoomAt(view.cur, 2, p.x, p.y, view.ctx));
+      } else lastTap = { t: now, x: p.x, y: p.y };
+    }
+    stage.addEventListener('pointerup', release);
+    stage.addEventListener('pointercancel', release);
+    stage.addEventListener('lostpointercapture', function (e) { if (pts.has(e.pointerId)) release({ pointerId: e.pointerId, type: 'pointercancel', target: stage }); });
+
+    // Klik yang datang setelah geseran atau pinch ditelan di fase capture, sebelum sampai ke penangan klik pulau di main.js.
+    stage.addEventListener('click', function (e) {
+      if (suppressClick) { suppressClick = false; e.stopPropagation(); e.preventDefault(); }
+    }, true);
+
+    // Roda mouse atau trackpad: zoom ke arah kursor. Bila sudah paling jauh dan pemain menggulung ke bawah,
+    // biarkan halaman yang menggulung (jangan menjebak roda mouse).
+    stage.addEventListener('wheel', function (e) {
+      if (!view.cur) return;
+      const lim = VP.limits(view.ctx);
+      if (e.deltaY > 0 && !e.ctrlKey && view.cur.scale <= lim.min * 1.001) return;
+      e.preventDefault();
+      cancelAnim();
+      const dy = e.deltaY * (e.deltaMode === 1 ? 16 : (e.deltaMode === 2 ? 300 : 1));
+      const p = relPoint(e);
+      setView(VP.zoomAt(view.cur, Math.exp(-dy * (e.ctrlKey ? 0.01 : 0.0016)), p.x, p.y, view.ctx), true);
+    }, { passive: false });
+
+    // Pemain keyboard: pulau yang menerima fokus lewat Tab digeser ke tengah. Fokus karena klik mouse diabaikan
+    // (peta tidak boleh bergerak di bawah jari sebelum klik selesai).
+    stage.addEventListener('focusin', function (e) {
+      const isl = e.target.closest && e.target.closest('.island');
+      if (isl && e.target.matches && e.target.matches(':focus-visible')) focus(isl.getAttribute('data-region'));
+    });
+    // Browser kadang menggulung kotak overflow saat elemen di dalamnya difokus; peta tidak boleh bergeser dengan cara itu.
+    stage.addEventListener('scroll', function () { stage.scrollLeft = 0; stage.scrollTop = 0; });
+  }
+
+  function buildControls(card) {
+    const box = document.createElement('div');
+    box.className = 'map-zoom';
+    box.innerHTML =
+      '<button type="button" class="mz-btn" data-mz="in" aria-label="Perbesar peta">+</button>' +
+      '<button type="button" class="mz-btn" data-mz="out" aria-label="Perkecil peta">\u2212</button>' +
+      '<button type="button" class="mz-btn" data-mz="reset" aria-label="Kembalikan tampilan peta">\u2316</button>';
+    card.appendChild(box);
+    view.btn.in = box.querySelector('[data-mz="in"]');
+    view.btn.out = box.querySelector('[data-mz="out"]');
+    box.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-mz]');
+      if (!b || b.disabled) return;
+      const k = b.getAttribute('data-mz');
+      if (k === 'in') zoomButton(1.6); else if (k === 'out') zoomButton(1 / 1.6); else animateTo(defaultView());
+    });
+  }
+
+  function mountView(host) {
+    view.stage = host.closest('.map-scroll');
+    view.svg = host.querySelector('.map-svg');
+    if (!view.stage || !view.svg || !VP) return;
+    const grid = NT.raster.grid();
+    const world = { w: grid.W * S, h: grid.H * S };
+    view.stage.style.setProperty('--map-ar', world.w + ' / ' + world.h);
+    const c = mapCfg();
+    view.ctx = { world: world, box: { w: 0, h: 0 }, maxZoom: c.maxZoom || 4, maxPx: c.maxPx || 0 };
+    buildControls(view.stage.parentNode);
+    bindGestures();
+    if (window.ResizeObserver) new ResizeObserver(onResize).observe(view.stage);
+    else window.addEventListener('resize', onResize);
+    onResize();
+    window.addEventListener('pagehide', function () { if (view.saveTimer) saveNow(); });
+  }
+
+  // Geser (dan bila perlu perbesar sedikit) peta supaya wilayah terpilih berada di tengah kotak.
   function focus(regionId) {
-    const scroller = document.querySelector('.map-scroll');
     const r = D.regions[regionId];
-    if (!scroller || !r) return;
-    const svg = scroller.querySelector('.map-svg');
-    const scale = svg.getBoundingClientRect().width / svg.viewBox.baseVal.width;
-    const x = pt(r.map.pin).x * scale;
-    scroller.scrollTo({ left: Math.max(0, x - scroller.clientWidth / 2), behavior: 'smooth' });
+    if (!r || !view.cur) return;
+    const p = pt(r.map.pin), lim = VP.limits(view.ctx);
+    // Di HP (peta "pas layar" terlalu kecil) jangan biarkan pulau terpilih terlihat sekecil itu; di desktop zoom tidak diubah.
+    const phone = VP.fitScale(view.ctx) < (mapCfg().fitMinPx || 0.5);
+    const comfy = phone ? Math.min(lim.max, mapCfg().startPx || 0.81) : 0;
+    animateTo(VP.centerOn(view.cur, p.x, p.y, view.ctx, Math.max(view.cur.scale, comfy)));
   }
 
   NT.ui.map = {
     mount: function () {
       const host = document.getElementById('map');
-      if (host) { host.innerHTML = build(); NT.ui.terrain.attach(host); }
+      if (host) { host.innerHTML = build(); NT.ui.terrain.attach(host); mountView(host); }
     },
     update: update,
     tickJobs: tickJobs,

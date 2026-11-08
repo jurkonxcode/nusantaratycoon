@@ -104,10 +104,30 @@ body {
   content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
   box-shadow: inset 0 0 0 2px rgba(217, 164, 65, .7), inset 0 0 40px rgba(3, 25, 35, .35);
 }
-.map-scroll { overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.map-svg { display: block; width: 100%; height: auto; }
+/* Kotak tampilan peta: zoom dan geser dikendalikan js/ui/map.js lewat viewBox SVG. touch-action: none supaya
+   pinch dan geser di dalam peta tidak men-zoom atau menggulung halaman; di luar peta halaman tetap bisa digulung. */
+.map-scroll {
+  position: relative; overflow: hidden; overflow: clip; aspect-ratio: var(--map-ar, 936 / 378);
+  touch-action: none; overscroll-behavior: contain; cursor: grab;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.map-scroll.dragging { cursor: grabbing; }
+.map-scroll #map { position: absolute; inset: 0; }
+.map-svg { display: block; width: 100%; height: 100%; -webkit-user-drag: none; }
 .sprite, .road { shape-rendering: crispEdges; }
-@media (max-width: 759px) { .map-svg { min-width: 760px; } }
+@media (max-width: 759px) { .map-scroll { aspect-ratio: auto; height: clamp(280px, 44vh, 440px); } }
+
+/* Tombol zoom peta */
+.map-zoom { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; flex-direction: column; gap: 6px; }
+.mz-btn {
+  width: 44px; height: 44px; display: grid; place-items: center; padding: 0; border-radius: 12px;
+  font: 700 22px/1 "Segoe UI", system-ui, sans-serif; color: var(--sea-800); background: rgba(255, 250, 240, .94);
+  border: 2px solid var(--gold-dark); box-shadow: var(--shadow-sm); cursor: pointer; touch-action: manipulation;
+}
+.mz-btn:hover:not(:disabled) { background: #fff; }
+.mz-btn:active:not(:disabled) { transform: scale(.94); }
+.mz-btn:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.mz-btn:disabled { opacity: .45; cursor: default; }
 .collect-all { box-shadow: var(--shadow-sm); }
 
 /* Laut: bidang datar bertingkat, makin dangkal makin terang */

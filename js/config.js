@@ -60,6 +60,16 @@
     maxShippingDiscount: 0.75,
     marketDecayPerMin: 0.08,  // tekanan pasokan turun 8% per menit
     maxMarketDrop: 0.55,      // harga paling banyak turun 55% karena banjir pasokan
-    priceWaveAmplitude: 0.10  // fluktuasi harga +-10%
+    priceWaveAmplitude: 0.10, // fluktuasi harga +-10%
+
+    // Zoom peta (js/core/viewport.js)
+    map: {
+      maxZoom: 4,             // zoom maksimum = 4x dari tampilan "pas layar"
+      maxPx: 2.4,             // ...atau 2,4 piksel layar per satuan peta, mana yang lebih besar (agar HP cukup besar)
+      fitMinPx: 0.5,          // bila "pas layar" membuat peta lebih kecil dari 0,5 piksel per satuan, tampilan awal di-zoom
+      startPx: 0.81,          // ...ke sekitar 0,81 piksel per satuan (setara peta lebar 760 px) di sekitar wilayah awal
+      tapSlop: 6,             // gerakan kurang dari 6 px dianggap ketukan, bukan geseran
+      storeKey: 'nusantara-tycoon-mapview-v1'   // posisi zoom disimpan terpisah dari save game
+    }
   };
 })((window.NT = window.NT || {}));
