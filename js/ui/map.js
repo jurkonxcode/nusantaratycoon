@@ -203,6 +203,11 @@
     // Sprite berdiri dengan titik tanahnya (sekitar 84% tinggi gambar) tepat di koordinat slot.
     // Sedikit perspektif: makin ke selatan sedikit lebih besar.
     const gy = NT.raster.grid().H * S;
+    // Varian tingkat sprite ('<id>_t2', '<id>_t3') bila ada; kalau tidak, sprite dasar.
+    function tierName(id, tier) {
+      const A = (NT.assets && NT.assets.sprite) || {};
+      return tier >= 2 && A[id + '_t' + tier] ? id + '_t' + tier : id;
+    }
     function put(name, p, size, opacity) {
       const k = 0.92 + 0.16 * Math.min(1, Math.max(0, p.y / gy));
       const sz = Math.round(size * k);
@@ -213,7 +218,7 @@
       const lvl = (state.buildings[bid] && state.buildings[bid].level) || 0;
       const p = pt(m.slots[bid]);
       const job = NT.economy.jobFor(state, 'b:' + bid);
-      put(bid, p, lvl >= 3 ? 46 : 40, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
+      put(tierName(bid, lvl >= 6 ? 3 : (lvl >= 3 ? 2 : 1)), p, lvl >= 3 ? 46 : 40, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
       if (lvl) {
         top.push('<g class=\"bubble\" data-id=\"' + bid + '\" transform=\"translate(' + p.x + ',' + (p.y - 38) + ')\"><g class=\"bob\">' +
           '<circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g>');
@@ -225,7 +230,7 @@
 
     if (m.port) {
       const p = pt(m.port);
-      put('pelabuhan', p, port >= 3 ? 50 : 44, port ? null : 0.28);
+      put(tierName('pelabuhan', port >= 5 ? 3 : (port >= 3 ? 2 : 1)), p, port >= 3 ? 50 : 44, port ? null : 0.28);
       if (port > 0) put('kapal', { x: p.x - 28 - port * 2, y: p.y + 12 }, 28);
       const portJob = NT.economy.jobFor(state, 'i:' + r.id + ':pelabuhan');
       if (portJob) top.push(jobBadge(p.x, p.y + 16, portJob.key));

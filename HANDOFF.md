@@ -1,7 +1,7 @@
 # HANDOFF: Nusantara Tycoon
 
 Dokumen serah-terima untuk melanjutkan proyek di sesi baru (dengan Claude atau siapa pun).
-Terakhir diperbarui: 7 November 2026 (sesi 2: dunia nyata + peta pixel art).
+Terakhir diperbarui: 8 November 2026 (sesi 9: sprite berubah per level).
 
 > **Sumber kebenaran adalah repo GitHub**, bukan salinan di chat. Repo: `github.com/jurkonxcode/nusantaratycoon`.
 > Kalau kode di repo berbeda dengan yang dijelaskan di sini, percayai repo, lalu perbarui dokumen ini.
@@ -38,6 +38,7 @@ ongkos kirim. Tujuan jangka panjang: "membangun peradaban baru", dengan proyek n
 | Game memakai Supabase (`storage: 'supabase'`, tag CDN aktif) | Berfungsi, ada 1 pengguna anonim di Auth |
 | Musim panen nyata, peristiwa acak, harga/ongkir realistis | Selesai, 18 tes lolos (`tests/world.test.js`) |
 | Peta pixel art dari poligon bujur/lintang nyata + sprite bangunan | Selesai, diuji di Chrome headless (HP dan desktop) |
+| Sprite berubah per level (tingkat 1/2/3) | Selesai (sesi 9), diuji di Chrome headless; belum dilihat di HP sungguhan |
 | Deploy GitHub Pages | Perlu dikonfirmasi (Settings > Pages > `main` / root) |
 | Login (email/Google), leaderboard, pasar bersama, proyek nasional | Belum ada |
 | Wilayah Kalimantan, Nusa Tenggara, Maluku, Papua | Hanya kerangka di peta (`comingSoon`) |
@@ -411,3 +412,50 @@ Log diisi `logEvent` di `main.js` untuk: jual, pembangunan/upgrade, buka wilayah
 | Sesi | File yang berubah |
 |---|---|
 | 7 (paket C) | `index.html`, `css/style.css`, `js/main.js`, `js/core/economy.js`, `js/core/state.js`, `js/ui/panels.js`, `js/ui/toast.js`, `tests/economy.test.js`, `dist/nusantara-tycoon.html`; baru: `js/core/achievements.js`, `tests/browser_paket_c.py`; `HANDOFF.md` |
+
+
+## 23. Sesi 9: sprite berubah per level (8 November 2026)
+
+### 23.1 Yang dikerjakan
+
+- Sprite bangunan kini punya **tiga tingkat**. Tingkat 1 = sprite dasar. Tingkat 2 dan 3 menambah hiasan di atas sprite dasar:
+  - Bangunan produksi: tingkat 2 pada **level 3-5** (tumpukan peti + bendera), tingkat 3 pada **level 6 ke atas** (peti lebih banyak,
+    gudang kecil, bendera di atap, kilau emas). Warna bendera/atap mengikuti komoditas (`ACCENT`).
+  - Pelabuhan: tingkat 2 pada **level 3-4**, tingkat 3 pada **level 5** (peti kemas di dermaga, peti kayu, bendera, kilau).
+  - Kapal dan tol tidak punya varian tingkat.
+- File baru `tools/art_tiers.py` (fungsi `decorate(nama, tingkat, svg)`); `tools/make_assets.py` memanggilnya dan menulis
+  `assets/sprites/<id>_t2.svg` dan `<id>_t3.svg` (14 file baru) ke `js/ui/assets.js`.
+- `js/ui/map.js`: fungsi `tierName(id, tingkat)` di `dynMarkup()` memilih `<id>_t2/_t3` bila ada di `NT.assets.sprite`, kalau tidak jatuh ke sprite dasar.
+- Tidak ada perubahan logika game; 24 + 10 + 18 tes tetap lolos.
+
+### 23.2 Catatan
+
+- `dist/nusantara-tycoon.html` naik dari sekitar 400 KB ke **727 KB** (sprite sawah paling besar; 14 SVG baru sekitar 268 KB). Bila terasa berat
+  di HP: kurangi jumlah rumpun di `s_sawah` (`art_v2.py`), atau buat varian tingkat sawah dari sprite yang lebih ringan.
+- Hiasan cukup halus di ukuran peta (40-50 px). Mau lebih mencolok: perbesar `gudang`/`crates` di `art_tiers.py`.
+- Mengubah ambang tingkat: angka `6` dan `3` (produksi) serta `5` dan `3` (pelabuhan) di `dynMarkup()`.
+- Fungsi `_unused_crane` di `art_tiers.py` sisa percobaan derek (boleh dihapus).
+
+### 23.3 Cara menerapkan di Codespaces
+
+```bash
+cd /workspaces/nusantaratycoon && git pull
+unzip -oq nusantaratycoon-update-tingkat.zip -d /tmp/upd
+S=/tmp/upd
+cp -r $S/assets/sprites assets/
+cp $S/js/ui/map.js $S/js/ui/assets.js js/ui/
+cp $S/tools/art_tiers.py $S/tools/make_assets.py tools/
+cp $S/dist/nusantara-tycoon.html dist/
+cp $S/HANDOFF.md .
+rm nusantaratycoon-update-tingkat.zip
+for t in tests/*.test.js; do node $t | tail -1; done
+git add -A && git commit -m "Sprite berubah per level (tingkat 1-3)" && git push
+```
+
+### 23.4 Langkah berikutnya
+
+Sama seperti 22.5: pastikan deploy tayang, uji main 15-20 menit, lalu pilih Kalimantan / misi harian / setel keseimbangan.
+
+| Sesi | File yang berubah |
+|---|---|
+| 9 | `tools/art_tiers.py` (baru), `tools/make_assets.py`, `js/ui/map.js`, `js/ui/assets.js`, `assets/sprites/*_t2.svg`, `assets/sprites/*_t3.svg`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
