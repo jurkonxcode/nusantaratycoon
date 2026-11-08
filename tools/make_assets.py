@@ -245,7 +245,7 @@ if __name__ == '__main__':
         out(f'sprites/{n}.svg', f())
         if n not in ('kapal', 'tol'):
             for t in (2, 3):
-                out(f'sprites/{n}_t{t}.svg', decorate(n, t, f()))
+                out(f'sprites/{n}_t{t}.svg', decorate(n, t))
     for n, f in [('padi', i_padi), ('batik', i_batik), ('kopi', i_kopi), ('karet', i_karet), ('kakao', i_kakao), ('cengkeh', i_cengkeh), ('koin', i_koin)]:
         out(f'commodities/{n}.svg', f())
     out('social/banner.svg', cover(1280, 320, 210, True)); out('social/og-image.svg', cover(1200, 630, 330, True))

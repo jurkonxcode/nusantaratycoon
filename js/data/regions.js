@@ -9,7 +9,7 @@
 
   NT.data.regions = {
     sumatra: {
-      id: 'sumatra', name: 'Sumatra', icon: '☕', tagline: 'Kebun kopi dan karet di tanah Andalas',
+      id: 'sumatra', name: 'Sumatra', icon: '☕', artIcon: 'kopi', tagline: 'Kebun kopi dan karet di tanah Andalas',
       unlockCost: 600, infraCostFactor: 1.5, buildings: ['kebun_kopi', 'kebun_karet'],
       demand: { padi: 1.3, batik: 1.4, kopi: 0.9, karet: 0.9, kakao: 1.1, cengkeh: 1.2 },
       hub: { name: 'Medan (Belawan)', lon: 98.7, lat: 3.78 },
@@ -19,7 +19,7 @@
       }
     },
     jawa: {
-      id: 'jawa', name: 'Jawa', icon: '🌾', tagline: 'Lumbung padi dan pusat batik', start: true,
+      id: 'jawa', name: 'Jawa', icon: '🌾', artIcon: 'padi', tagline: 'Lumbung padi dan pusat batik', start: true,
       unlockCost: 0, infraCostFactor: 1, buildings: ['sawah', 'sentra_batik'],
       demand: { padi: 0.9, batik: 1.1, kopi: 1.3, karet: 1.2, kakao: 1.1, cengkeh: 1.4 },
       hub: { name: 'Jakarta (Tanjung Priok)', lon: 106.85, lat: -6.1 },
@@ -29,7 +29,7 @@
       }
     },
     sulawesi: {
-      id: 'sulawesi', name: 'Sulawesi', icon: '🍫', tagline: 'Kakao dan cengkeh dari tanah Celebes',
+      id: 'sulawesi', name: 'Sulawesi', icon: '🍫', artIcon: 'kakao', tagline: 'Kakao dan cengkeh dari tanah Celebes',
       unlockCost: 2000, infraCostFactor: 2.5, buildings: ['kebun_kakao', 'kebun_cengkeh'],
       demand: { padi: 1.2, batik: 1.3, kopi: 1.2, karet: 1.1, kakao: 0.9, cengkeh: 0.9 },
       hub: { name: 'Makassar', lon: 119.4, lat: -5.13 },

@@ -1,7 +1,7 @@
 # HANDOFF: Nusantara Tycoon
 
 Dokumen serah-terima untuk melanjutkan proyek di sesi baru (dengan Claude atau siapa pun).
-Terakhir diperbarui: 8 November 2026 (sesi 9: sprite berubah per level).
+Terakhir diperbarui: 8 November 2026 (sesi 10: rapikan kecil).
 
 > **Sumber kebenaran adalah repo GitHub**, bukan salinan di chat. Repo: `github.com/jurkonxcode/nusantaratycoon`.
 > Kalau kode di repo berbeda dengan yang dijelaskan di sini, percayai repo, lalu perbarui dokumen ini.
@@ -459,3 +459,16 @@ Sama seperti 22.5: pastikan deploy tayang, uji main 15-20 menit, lalu pilih Kali
 | Sesi | File yang berubah |
 |---|---|
 | 9 | `tools/art_tiers.py` (baru), `tools/make_assets.py`, `js/ui/map.js`, `js/ui/assets.js`, `assets/sprites/*_t2.svg`, `assets/sprites/*_t3.svg`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+
+## 24. Sesi 10: rapikan kecil (8 November 2026)
+
+- **Ukuran dikecilkan.** Aset tingkat 2/3 (`<id>_t2.svg`, `<id>_t3.svg`) kini hanya **lapisan hiasan kecil** (sekitar 1-2 KB), bukan salinan penuh
+  sprite. `put()` di `js/ui/map.js` menggambar sprite dasar lalu lapisan hiasan di atasnya; `tierName()` mengembalikan `[id, tingkat]`.
+  `js/ui/assets.js` turun dari 531 KB ke 227 KB, `dist/nusantara-tycoon.html` dari 744 KB ke 430 KB.
+  `decorate(nama, tingkat)` di `tools/art_tiers.py` kini hanya mengembalikan lapisan itu.
+- **Ikon wilayah memakai ilustrasi.** Field baru `artIcon` di `js/data/regions.js` (Sumatra: kopi, Jawa: padi, Sulawesi: kakao) menunjuk ikon
+  komoditas di `NT.assets.comm`. Dipakai di pin peta (`<image class="pin-img">`), tombol wilayah, judul panel, dan kartu wilayah.
+  Wilayah terkunci tetap 🔒, wilayah "segera hadir" tetap '…' (judul panel memakai emoji aslinya). Wilayah baru: isi `artIcon`
+  (atau biarkan kosong untuk jatuh ke emoji `icon`).
+- Tes tetap 24 + 10 + 18 lolos. Belum dilihat di HP sungguhan.

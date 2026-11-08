@@ -118,7 +118,7 @@
     let html = '';
 
     if (r.comingSoon) {
-      html = '<div class="card"><h2>' + r.icon + ' ' + r.name + '</h2><p class="muted">' + r.tagline +
+      html = '<div class="card"><h2>' + regionArt(r) + ' ' + r.name + '</h2><p class="muted">' + r.tagline +
         '. Wilayah ini disiapkan sebagai kerangka untuk pengembangan berikutnya.</p></div>';
     } else if (!state.regions[r.id].unlocked) {
       const list = r.buildings.map(function (bid) {
@@ -130,7 +130,7 @@
         '<p class="muted small">Membuka wilayah juga membuka pasar baru untuk menjual hasil bumi.</p>' +
         '<button class="btn primary wide" data-action="unlock" data-id="' + r.id + '" data-cost="' + r.unlockCost + '">Buka wilayah · ' + F.money(r.unlockCost) + '</button></div>';
     } else {
-      html = '<div class="card"><h2>' + r.icon + ' ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
+      html = '<div class="card"><h2>' + regionArt(r) + ' ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
         '<h3>Produksi</h3>' + r.buildings.map(function (bid) { return buildingRow(state, bid, now); }).join('') +
         '<h3>Infrastruktur</h3>' + Object.keys(D.infra).map(function (iid) { return infraRow(state, r.id, iid, now); }).join('') +
         '</div>';
@@ -400,6 +400,14 @@
 
   /* ---------- Chip wilayah ---------- */
 
+  // Ikon wilayah: ilustrasi komoditas utama bila tersedia, kalau tidak emoji.
+  function regionArt(r) { return (r.artIcon && NT.ui.art.comm(r.artIcon, 'sm')) || r.icon; }
+  function regionIco(r, unlocked) {
+    if (r.comingSoon) return '…';
+    if (!unlocked) return '🔒';
+    return (r.artIcon && NT.ui.art.comm(r.artIcon, 'sm')) || r.icon;
+  }
+
   function renderChips(state) {
     const host = $('region-chips');
     if (!host) return;
@@ -407,7 +415,7 @@
       const r = D.regions[id];
       const unlocked = state.regions[id] && state.regions[id].unlocked;
       return '<button class="chip' + (id === view.region ? ' on' : '') + (r.comingSoon ? ' soon' : '') + '" data-action="pick-region" data-id="' + id + '">' +
-        (r.comingSoon ? '…' : (unlocked ? r.icon : '🔒')) + ' ' + (r.short || r.name) + '</button>';
+        regionIco(r, unlocked) + ' ' + (r.short || r.name) + '</button>';
     }).join('');
   }
 
@@ -447,7 +455,7 @@
     NT.ui.map.update(state, view.region);
     renderChips(state);
     renderRegion(state, now);
-    $('sheet-title').textContent = D.regions[view.region].icon + ' ' + D.regions[view.region].name;
+    $('sheet-title').innerHTML = regionArt(D.regions[view.region]) + ' ' + D.regions[view.region].name;
     $('sheet').classList.toggle('open', !!view.sheet);
     document.body.classList.toggle('sheet-open', !!view.sheet && view.tab === 'map');
     renderMarket(state, now);

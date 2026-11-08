@@ -1,6 +1,7 @@
-"""Varian tingkat sprite bangunan (128x128): tingkat 1 = sprite dasar (level 1-2), tingkat 2 (level 3-5) dan
-tingkat 3 (level 6+; pelabuhan: level 5) menambahkan gudang, peti, bendera, dan kilau emas di atas sprite dasar.
-Dipakai oleh tools/make_assets.py. Menghasilkan nama aset '<id>_t2' dan '<id>_t3'."""
+"""Hiasan tingkat sprite bangunan (128x128): tingkat 1 = sprite dasar (level 1-2), tingkat 2 (level 3-5) dan
+tingkat 3 (level 6+; pelabuhan: level 5) menambahkan gudang, peti, bendera, dan kilau emas.
+Hasilnya hanya LAPISAN hiasan (SVG kecil, transparan) yang digambar di atas sprite dasar oleh js/ui/map.js,
+jadi sprite dasar tidak digandakan. Dipakai oleh tools/make_assets.py; nama aset '<id>_t2' dan '<id>_t3'."""
 
 ACCENT = {'sawah': '#e6c864', 'sentra_batik': '#2a3f78', 'kebun_kopi': '#b5483a', 'kebun_karet': '#e9e4d0',
           'kebun_kakao': '#8a4a2a', 'kebun_cengkeh': '#7a2f3a', 'pelabuhan': '#2d8fd0'}
@@ -50,10 +51,8 @@ def _unused_crane(x, y, big):
     return s
 
 
-def decorate(name, tier, svg_text):
-    """Sisipkan hiasan tingkat 2/3 ke sprite dasar (svg_text) sebelum </svg>."""
-    if tier < 2:
-        return svg_text
+def decorate(name, tier):
+    """Kembalikan SVG lapisan hiasan untuk tingkat 2/3."""
     ac = ACCENT.get(name, '#c8472f')
     ex = ''
     if name == 'pelabuhan':
@@ -69,4 +68,4 @@ def decorate(name, tier, svg_text):
         else:
             ex += gudang(84, 92, 28, 18, ac if name != 'kebun_karet' else '#8a9a4a') + flag(98, 80, ac)
             ex += sparkle(22, 30, 5) + sparkle(110, 20, 4) + sparkle(64, 12, 3)
-    return svg_text.replace('</svg>', ex + '</svg>')
+    return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">' + ex + '</svg>\n')

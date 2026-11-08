@@ -95,6 +95,7 @@
           '<circle class="pin-pulse" r="17"/>' +
           '<circle class="pin-dot" r="17"/>' +
           '<text class="pin-icon" text-anchor="middle" dy="7">' + r.icon + '</text>' +
+          '<image class="pin-img" x="-14" y="-15" width="28" height="28" visibility="hidden"/>' +
         '</g>' +
       '</g>';
   }
@@ -204,14 +205,16 @@
     // Sedikit perspektif: makin ke selatan sedikit lebih besar.
     const gy = NT.raster.grid().H * S;
     // Varian tingkat sprite ('<id>_t2', '<id>_t3') bila ada; kalau tidak, sprite dasar.
-    function tierName(id, tier) {
-      const A = (NT.assets && NT.assets.sprite) || {};
-      return tier >= 2 && A[id + '_t' + tier] ? id + '_t' + tier : id;
-    }
+    function tierName(id, tier) { return tier >= 2 ? [id, tier] : id; }
     function put(name, p, size, opacity) {
       const k = 0.92 + 0.16 * Math.min(1, Math.max(0, p.y / gy));
       const sz = Math.round(size * k);
-      items.push({ y: p.y, svg: NT.ui.art.map(name, p.x, p.y + 4 - sz * 0.22, sz, opacity) });
+      const cy = p.y + 4 - sz * 0.22;
+      // name bisa 'id' atau [id, tingkat]: tingkat 2/3 digambar sebagai lapisan hiasan kecil di atas sprite dasar.
+      const id = Array.isArray(name) ? name[0] : name, tier = Array.isArray(name) ? name[1] : 1;
+      let svg = NT.ui.art.map(id, p.x, cy, sz, opacity);
+      if (tier >= 2 && NT.assets && NT.assets.sprite[id + '_t' + tier]) svg += NT.ui.art.map(id + '_t' + tier, p.x, cy, sz, opacity);
+      items.push({ y: p.y, svg: svg });
     }
 
     Object.keys(m.slots || {}).forEach(function (bid) {
@@ -255,7 +258,10 @@
       el.classList.toggle('soon', !!r.comingSoon);
       el.classList.toggle('locked', !r.comingSoon && !unlocked);
       el.classList.toggle('selected', id === selectedId);
-      el.querySelector('.pin-icon').textContent = r.comingSoon ? '…' : (unlocked ? r.icon : '🔒');
+      const pinArt = unlocked && !r.comingSoon && r.artIcon && NT.assets && NT.assets.comm[r.artIcon];
+      const pinImg = el.querySelector('.pin-img'), pinTxt = el.querySelector('.pin-icon');
+      if (pinArt) { pinImg.setAttribute('href', pinArt); pinImg.setAttribute('visibility', 'visible'); pinTxt.textContent = ''; }
+      else { pinImg.setAttribute('visibility', 'hidden'); pinTxt.textContent = r.comingSoon ? '…' : (unlocked ? r.icon : '🔒'); }
 
       const sig = !rs ? '' : JSON.stringify([unlocked, rs.infra, (r.buildings || []).map(function (b) {
         return state.buildings[b] ? state.buildings[b].level : 0;
