@@ -276,7 +276,7 @@
       const toggle = '<button class="goods-toggle" data-action="goods-toggle" data-c="' + cid + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Ringkas' : 'Rincian') + ' ' + c.name + '">' + (open ? '▴' : '▾') + '</button>';
       const head = '<div class="goods-head">' +
           '<div class="row-icon">' + (NT.ui.art.comm(c.id) || c.icon) + '</div>' +
-          '<div class="row-main"><b>' + c.name + exportBadge(cid) + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
+          '<div class="row-main"><b>' + c.name + exportBadge(cid) + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · ' + c.unitKg + ' kg/satuan</small></div>' +
           (slim
             ? '<div class="goods-mini"><b data-live="unit" data-c="' + cid + '"></b><span class="trend" data-live="trend" data-c="' + cid + '"></span></div>'
             : '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>') +

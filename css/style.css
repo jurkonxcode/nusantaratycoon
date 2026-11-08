@@ -879,3 +879,101 @@ details.how > p { margin: 0 0 6px; }
 .ib-region { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
 .ib-region .pop-need { margin-top: 6px; }
 .ib-region .pop-need { grid-template-columns: minmax(124px, 40%) 1fr 44px; }
+
+/* ===== Sesi 24: tipografi lebih kecil dan rapat, selaras dengan tema ===================================
+   Skala teks: isi 14 px (HP) / 15 px (layar lebar), keterangan 12 px, label kecil 11 px, judul kartu 17 px.
+   Area sentuh tetap >= 40 px; yang mengecil hanya huruf dan jarak. Pengaturan "Ukuran teks" (zoom) tetap berlaku di atasnya. */
+body { font-size: 14px; line-height: 1.4; -webkit-text-size-adjust: 100%; }
+@media (min-width: 760px) { body { font-size: 15px; } }
+
+.card { padding: 14px; border-radius: 14px; }
+.card h2 { font-size: 17px; letter-spacing: -.1px; }
+.card h3 { font-size: 12px; letter-spacing: .4px; }
+.row { padding: 10px 0; gap: 10px; }
+.row-main b { font-size: 14px; }
+.row-main small, .set-text small { font-size: 12px; }
+.row-icon .art-ico { width: 32px; height: 32px; }
+.lvl { font-size: 11px; padding: 1px 7px; }
+.tag { font-size: 11px; padding: 1px 7px; }
+button.term-tag { min-height: 24px; padding: 0 8px; }
+button.term { padding: 6px 2px; margin: -6px -2px; }
+
+.btn { min-height: 40px; padding: 8px 14px; font-size: 13px; border-radius: 11px; }
+.btn.wide { min-height: 46px; font-size: 14px; border-radius: 12px; }
+.btn.cheapest { min-height: 42px; font-size: 13px; }
+.seg { min-height: 38px; padding: 0 14px; font-size: 13px; }
+.segs { gap: 6px; }
+.segs.mini .seg { padding: 0 12px; font-size: 13px; }
+.chip { min-height: 38px; padding: 0 13px; font-size: 13px; }
+.region-chips { gap: 6px; padding: 6px 10px 8px; }
+.goods { padding: 11px 12px; border-radius: 14px; }
+.goods-actions .btn { min-height: 42px; }
+.goods-stock b { font-size: 17px; }
+.goods-stock small, .tile small, .badge small, .log small { font-size: 11px; }
+.goods-price { font-size: 13px; }
+.goods-mini b { font-size: 13px; }
+.goods-toggle { width: 32px; height: 32px; font-size: 12px; border-radius: 9px; }
+.trend { font-size: 11px; }
+.spark-axis { font-size: 10px; }
+.goods-hint, .goods-best, .goods-quote { font-size: 11px; }
+details.how > summary { min-height: 38px; font-size: 13px; }
+.fold-head { min-height: 38px; }
+.fold-head h2 { font-size: 16px; }
+.pop-need { font-size: 12px; gap: 6px; margin: 3px 0; }
+.pop-box { padding: 8px 10px; }
+.pop-warn { font-size: 12px; }
+.sheet-title { font-size: 15px; }
+.goal { padding: 9px 12px; }
+.world-banner, .goal-text small { font-size: 12px; }
+.goal-text b { font-size: 14px; }
+
+/* Modal Kas / Penduduk */
+.modal { padding: 18px; }
+.modal h2 { font-size: 19px; }
+.modal h3 { font-size: 12px; margin: 14px 0 4px; }
+.ib-hero b { font-size: 21px; }
+.ib-hero-sub { font-size: 12px; }
+.wb-list li { padding: 7px 0; gap: 8px; }
+.wb-ico { width: 26px; font-size: 17px; }
+.ib-sub { font-size: 11px; }
+
+/* Navigasi bawah (HP) dan tab desktop */
+.tab { font-size: 13px; min-height: 40px; padding: 0 14px; }
+.tab .ti { font-size: 17px; }
+@media (max-width: 979px) {
+  .tab { min-height: 46px; font-size: 11px; font-weight: 700; padding: 3px 2px; }
+  .tab .ti { font-size: 19px; }
+}
+
+/* Header: tiga angka tidak lagi menimpa nama game di layar sempit */
+@media (max-width: 979px) {
+  .topbar { padding: 6px 0; gap: 8px; }
+  .brand { flex: 1 1 auto; min-width: 0; gap: 8px; }
+  .brand > div { min-width: 0; }
+  .brand h1 { font-size: 13px; line-height: 1.12; max-width: none; }
+  .brand p { font-size: 11px; max-width: none; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  img.brand-logo { width: 30px; height: 30px; }
+  .stats { flex: none; gap: 5px; }
+  .stat { min-width: 0; min-height: 40px; padding: 3px 8px; border-radius: 10px; }
+  .stat span { font-size: 10px; }
+  .stat b { font-size: 13px; }
+}
+@media (max-width: 479px) {
+  .wrap { padding: 0 12px; }
+  .brand h1 { font-size: 12px; }
+}
+@media (min-width: 980px) {
+  .brand h1 { font-size: 20px; }
+  .stat b { font-size: 15px; }
+}
+
+/* Penyetelan lanjutan sesi 24 */
+.set-row { padding: 11px 0; gap: 12px; }
+.set-text b { font-size: 14px; }
+.set-text small { font-size: 12px; }
+.card h3 { margin: 12px 0 4px; }
+@media (max-width: 979px) { .sheet-grab { min-height: 48px; } }
+@media (max-width: 400px) {
+  img.brand-logo { display: none; }
+  .brand p { white-space: normal; }
+}

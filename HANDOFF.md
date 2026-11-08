@@ -56,6 +56,8 @@ ongkos kirim. Tujuan jangka panjang: "membangun peradaban baru", dengan proyek n
 Kalau toast itu muncul, penyebab tersering: login anonim belum menyala, SQL belum sukses, atau
 tag script `supabase-js` di `index.html` masih dikomentari.
 
+**Sesi 24:** tipografi dikecilkan (isi 14 px di HP, 15 px di layar lebar; tombol dan chip 38-42 px), header HP tidak lagi bertumpuk (logo disembunyikan di bawah 400 px), teks komoditas dipendekkan. Blok CSS "Sesi 24" di akhir `css/style.css`.
+
 **Sesi 18:** panel Kas dan Penduduk di header bisa diketuk (`js/ui/infobox.js`): rincian pemasukan per bangunan, pajak per wilayah, uang yang belum masuk kas, target berikutnya; dan penduduk, kesejahteraan, kebutuhan, pekerja, tren per wilayah. Tab Pasar dipersingkat: barang berstok kosong jadi baris tipis, grafik/saran per barang dilipat (tombol ▾), kartu Ekspor dilipat.
 
 ## 3. Keputusan desain dan alasannya
