@@ -90,6 +90,38 @@
         prod:  [0.85, 0.85, 0.9, 0.95, 1.05, 1.1, 1.15, 1.15, 1.1, 1.05, 0.95, 0.9],
         price: [1.03, 1.02, 1.0, 1.0, 0.98, 0.97, 0.97, 0.98, 1.0, 1.0, 1.02, 1.03]
       }
+    }),
+    teh: make({
+      id: 'teh', exportClass: 'bebas', name: 'Teh', icon: '🍵', region: 'jawa', realRpPerKg: 28000, unitKg: 50, marketDepth: 120,
+      seasonNote: 'Pucuk melimpah di musim hujan (Nov-Mei), berkurang saat kemarau (Jul-Sep)',
+      season: {
+        prod:  [1.15, 1.15, 1.1, 1.05, 0.95, 0.85, 0.8, 0.8, 0.85, 0.95, 1.1, 1.15],
+        price: [0.95, 0.95, 0.97, 1.0, 1.02, 1.06, 1.08, 1.08, 1.05, 1.02, 0.98, 0.95]
+      }
+    }),
+    gula: make({
+      id: 'gula', exportClass: 'domestik', name: 'Gula', icon: '🍬', region: 'jawa', realRpPerKg: 17000, unitKg: 50, marketDepth: 200,
+      seasonNote: 'Musim giling tebu Mei-Okt (puncak Jun-Sep); di luar itu pabrik sepi',
+      season: {
+        prod:  [0.4, 0.4, 0.4, 0.6, 1.1, 1.6, 1.8, 1.8, 1.6, 1.1, 0.5, 0.4],
+        price: [1.08, 1.08, 1.08, 1.05, 1.0, 0.94, 0.9, 0.9, 0.93, 0.98, 1.05, 1.08]
+      }
+    }),
+    tembakau: make({
+      id: 'tembakau', exportClass: 'bebas', name: 'Tembakau', icon: '🍂', region: 'jawa', realRpPerKg: 55000, unitKg: 50, marketDepth: 70,
+      seasonNote: 'Tanam saat kemarau; panen Agu-Okt (puncak Agu-Sep); sangat bergantung cuaca',
+      season: {
+        prod:  [0.4, 0.4, 0.4, 0.5, 0.6, 1.0, 1.5, 1.8, 1.8, 1.3, 0.6, 0.4],
+        price: [1.08, 1.08, 1.06, 1.05, 1.03, 1.0, 0.95, 0.9, 0.9, 0.95, 1.05, 1.08]
+      }
+    }),
+    garam: make({
+      id: 'garam', exportClass: 'domestik', name: 'Garam', icon: '🧂', region: 'jawa', realRpPerKg: 2000, unitKg: 50, freightFactor: 0.5, marketDepth: 300,
+      seasonNote: 'Dipanen saat kemarau (Jun-Okt) karena butuh penguapan; hujan menggagalkan panen',
+      season: {
+        prod:  [0.4, 0.4, 0.5, 0.8, 1.2, 1.6, 1.8, 1.9, 1.8, 1.5, 0.7, 0.4],
+        price: [1.1, 1.1, 1.1, 1.05, 1.0, 0.95, 0.9, 0.9, 0.9, 0.95, 1.05, 1.1]
+      }
     })
   };
 })((window.NT = window.NT || {}));

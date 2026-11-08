@@ -13,7 +13,12 @@
     kebun_kakao:   { id: 'kebun_kakao',   name: 'Kebun Kakao',    icon: '🍫', region: 'sulawesi', produces: 'kakao',   baseCost: 2000, baseRate: 0.65 },
     kebun_cengkeh: { id: 'kebun_cengkeh', name: 'Kebun Cengkeh',  icon: '🌿', region: 'sulawesi', produces: 'cengkeh', baseCost: 3000, baseRate: 0.75 },
     kebun_sawit:   { id: 'kebun_sawit',   name: 'Kebun Sawit',    icon: '🌴', region: 'kalimantan', produces: 'sawit',   baseCost: 4500, baseRate: 9 },
-    tambang_batubara: { id: 'tambang_batubara', name: 'Tambang Batubara', icon: '⛏️', region: 'kalimantan', produces: 'batubara', baseCost: 7000, baseRate: 4.5 }
+    tambang_batubara: { id: 'tambang_batubara', name: 'Tambang Batubara', icon: '⛏️', region: 'kalimantan', produces: 'batubara', baseCost: 7000, baseRate: 4.5 },
+    // Jawa (Fase 2a)
+    tambak_garam:    { id: 'tambak_garam',    name: 'Tambak Garam',    icon: '🧂', region: 'jawa', produces: 'garam',    baseCost: 250,  baseRate: 20 },
+    kebun_teh:       { id: 'kebun_teh',       name: 'Kebun Teh',       icon: '🍵', region: 'jawa', produces: 'teh',      baseCost: 800,  baseRate: 2.2 },
+    kebun_tebu:      { id: 'kebun_tebu',      name: 'Kebun Tebu',      icon: '🎋', region: 'jawa', produces: 'gula',     baseCost: 1200, baseRate: 3.5 },
+    kebun_tembakau:  { id: 'kebun_tembakau',  name: 'Kebun Tembakau',  icon: '🍂', region: 'jawa', produces: 'tembakau', baseCost: 1600, baseRate: 1.1 }
   };
 
   NT.data.infra = {

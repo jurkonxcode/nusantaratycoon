@@ -258,7 +258,7 @@ test('cheapestUpgrade: memilih termurah, mengabaikan buka wilayah dan pekerjaan 
   assert.strictEqual(c.cost, E.buildingCost('sawah', 1));
   assert.notStrictEqual(E.nextGoal(s).kind, undefined);
   s.regions.jawa.infra.tol = 5; s.regions.jawa.infra.pelabuhan = 5;
-  s.buildings.sawah.level = 40; s.buildings.sentra_batik = { level: 40, lastCollected: t0 };
+  NT.data.regions.jawa.buildings.forEach(function (bid) { s.buildings[bid] = { level: 40, lastCollected: t0 }; }); // semua bangunan Jawa maksimal
   assert.ok(E.cheapestUpgrade(s).cost > 1000);
 });
 

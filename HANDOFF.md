@@ -636,3 +636,18 @@ Sekarang: padi = `domestik`; batubara = `terbatas` dengan `quotaPct: 0.25` (DMO)
 | Sesi | File yang berubah |
 |---|---|
 | 15 | `js/data/commodities.js`, `js/data/exports.js`, `js/core/economy.js`, `js/ui/panels.js`, `js/main.js`, `css/style.css`, `tests/export.test.js` (baru), `tests/timing.test.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+
+## 30. Sesi 16: Fase 2a, komoditas dan bangunan baru di Jawa (8 November 2026)
+
+**Komoditas baru** (`data/commodities.js`, semua dari Jawa, dengan musim 12 bulan): `teh` (bebas), `gula` (domestik), `tembakau` (bebas), `garam` (domestik, `freightFactor` 0,5 karena curah murah).
+**Bangunan baru** (`data/buildings.js`, `data/regions.js`): `tambak_garam` (biaya 250, 20/mnt), `kebun_teh` (800, 2,2/mnt), `kebun_tebu` (1200, 3,5/mnt, menghasilkan gula), `kebun_tembakau` (1600, 1,1/mnt). Pendapatan level 1 sekitar 50-77/menit, balik modal 5-21 menit (sejajar bangunan lama).
+Slot peta (jatuh di daratan, jarak antar slot >= 22 px): garam [107.5,-6.2], teh [106.8,-7.1], tebu [111.6,-8.0], tembakau [114.2,-8.3]. Permintaan wilayah lain diisi (`demand`); ekspor teh dan tembakau ke Singapura/Jepang/Belanda (`data/exports.js`). Gula dan garam tidak punya tujuan ekspor.
+**Aset:** `tools/art_jawa.py` (baru) membuat 4 sprite dan 4 ikon; `make_assets.py` dan `art_tiers.py` (warna aksen) diperluas; hiasan `_t2`/`_t3` otomatis. `js/ui/assets.js` dibangun ulang (aset lama tidak berubah byte-nya). Sprite memakai SVG biasa (3-28 KB, setara kebun kopi/sawah).
+**Tes:** `tests/jawa.test.js` (10 baru). `economy.test.js` tes `cheapestUpgrade` kini memaksimalkan SEMUA bangunan Jawa (bukan hanya 2). Total 25 + 10 + 10 + 10 + 11 + 20 lolos. Save lama aman (normalize mengisi bangunan baru level 0).
+**Belum:** sprite dan ikon belum dilihat di browser (lingkungan pembuat tidak punya perender SVG): cek tampilan di peta dan tab Pasar; keseimbangan angka lewat bermain; fakta resmi (BPS/Kementan) untuk layar Info.
+**Berikutnya:** 2b Sumatra (timah, lada, minyak bumi).
+
+| Sesi | File yang berubah |
+|---|---|
+| 16 | `js/data/{commodities,buildings,regions,exports}.js`, `js/ui/assets.js`, `tools/{art_jawa,make_assets,art_tiers}.py`, `assets/sprites/{kebun_teh,kebun_tebu,kebun_tembakau,tambak_garam}{,_t2,_t3}.svg`, `assets/commodities/{teh,gula,tembakau,garam}.svg`, `tests/jawa.test.js` (baru), `tests/economy.test.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
