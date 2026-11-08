@@ -1,7 +1,7 @@
 # HANDOFF: Nusantara Tycoon
 
 Dokumen serah-terima untuk melanjutkan proyek di sesi baru (dengan Claude atau siapa pun).
-Terakhir diperbarui: 8 November 2026 (sesi 12: penyetelan keseimbangan).
+Terakhir diperbarui: 8 November 2026 (sesi 13: peta lebih realistis).
 
 > **Sumber kebenaran adalah repo GitHub**, bukan salinan di chat. Repo: `github.com/jurkonxcode/nusantaratycoon`.
 > Kalau kode di repo berbeda dengan yang dijelaskan di sini, percayai repo, lalu perbarui dokumen ini.
@@ -42,6 +42,7 @@ ongkos kirim. Tujuan jangka panjang: "membangun peradaban baru", dengan proyek n
 | Deploy GitHub Pages | Perlu dikonfirmasi (Settings > Pages > `main` / root) |
 | Login (email/Google), leaderboard, pasar bersama, proyek nasional | Belum ada |
 | Wilayah Kalimantan (sawit, batubara) | Selesai (sesi 11), dapat dimainkan |
+| Peta realistis (garis pantai fraktal, relief, gunung api, danau, sungai, batimetri laut) | Selesai (sesi 13), diuji di Chrome headless (desktop dan HP 430 px) |
 | Wilayah Nusa Tenggara, Maluku, Papua | Hanya kerangka di peta (`comingSoon`) |
 
 **Checklist yang perlu dikonfirmasi pemilik di awal sesi berikutnya:**
@@ -100,7 +101,9 @@ js/
     index.js                NT.getStorage() memilih driver
   ui/
     toast.js                notifikasi
-    sprites.js              sprite pixel art 8x8 (bangunan, pelabuhan, kapal)
+    sprites.js              sprite pixel art 8x8 (bangunan, pelabuhan, kapal); cadangan bila SVG tidak ada
+    terrain.js              render peta realistis: pantai fraktal, relief, bioma, laut berkedalaman (lihat bagian 27)
+    fx.js, settings.js, welcome.js   efek/suara, pengaturan, layar selamat datang
     map.js                  peta pixel art SVG (dibuat sekali; kelas dan lapisan dinamis diperbarui)
     panels.js               panel wilayah, tab pasar, tab info, tick
   main.js                   menyambungkan data, aksi pemain, loop, simpan
@@ -110,6 +113,7 @@ tests/world.test.js         tes musim, peristiwa, ongkir km, dan geografi peta
 tools/simulate.js           simulator pemain otomatis (aktif/santai/harian) untuk menyetel keseimbangan
 tools/balance.js            cetak harga, ongkir, jarak, dan waktu balik modal tiap bangunan
 tools/bundle.js             membuat dist/nusantara-tycoon.html (satu file) untuk pratinjau
+tools/art_tiers.py, art_kalimantan.py   hiasan tingkat sprite (sesi 9) dan sprite/ikon Kalimantan (sesi 11)
 README.md                   panduan singkat pengguna dan deploy
 HANDOFF.md                  dokumen ini
 ```
@@ -536,3 +540,67 @@ Wilayah dibuka (santai): Sumatra 1 jam, Sulawesi 9 jam, Kalimantan 21 jam. Porsi
 | Sesi | File yang berubah |
 |---|---|
 | 12 | `js/config.js`, `js/data/buildings.js`, `js/data/regions.js`, `js/core/achievements.js`, `js/core/economy.js` (komentar), `tools/simulate.js` (baru), `tests/economy.test.js`, `README.md`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+
+## 27. Sesi 13: peta lebih realistis (8 November 2026)
+
+**Catatan temuan:** `js/ui/terrain.js` (peta realistis dari sesi sebelumnya: garis pantai fraktal, peta ketinggian, hillshade, bioma, laut dangkal Sunda/Sahul)
+sudah ada di repo tetapi **belum tercatat** di dokumen ini. Cara kerjanya: `compute()` membuat dua kanvas (laut dan darat) sekali setelah peta tampil,
+lalu `attach()` memasangnya ke elemen `<image data-tex="sea|<id wilayah>">`. Geometri (path poligon) sinkron; tekstur menyusul sekitar 30 ms kemudian.
+`js/ui/map.js` hanya memasang lapisan (kedalaman pulau, label, pin, sprite bangunan, kapal).
+
+### 27.1 Yang dikerjakan
+
+1. **Garis pantai** (`js/data/geo.js`): Kalimantan digambar ulang dengan sekitar 75 simpul (tonjolan Sarawak dan Sabah, Tanjung Mangkalihat,
+   teluk Balikpapan, pantai selatan yang datar, tonjolan Pontianak) menggantikan bentuk membulat sebelumnya. Daratan tetangga (`neighbor`) kini
+   berisi Semenanjung Malaya yang lebih lebar dan **Papua Nugini** (jalur sempit di tepi timur, sehingga Papua tidak terpotong lurus).
+2. **Relief** (`terrain.js`): `VOLCANOES` (17 gunung api: Merapi, Semeru, Bromo, Agung, Rinjani, Tambora, Kerinci, dst.) menambah kerucut ke peta ketinggian
+   dengan kawah kecil; `shade` hillshade otomatis membuatnya tampak berbentuk. Tekstur kanopi (derau frekuensi tinggi) membuat hutan tidak rata.
+3. **Danau** (`LAKES`): Toba (elips miring), Poso, Towuti, Singkarak, Ranau. Digambar di tekstur darat sebagai air dengan tepi pasir tipis.
+4. **Sungai** (`RIVERS`, `drawRivers()`): 16 sungai besar (Kapuas, Barito, Mahakam, Kayan, Rajang, Batang Hari, Musi, Mamberamo, Digul, Bengawan Solo, dst.),
+   berkelok, melebar ke muara, dan dipotong otomatis agar hanya tampil di daratan (`source-atop`).
+5. **Laut**: batimetri lebih halus (landai 26 px dari tepi paparan benua, bukan tepi tajam), garis kontur tipis di tepi paparan,
+   dan riak memanjang searah angin yang lebih jelas di laut dalam.
+6. **Warna**: sawah Jawa tidak lagi hijau neon; daratan tetangga lebih abu-abu agar jelas bukan wilayah yang bisa dimainkan.
+
+**Dicoba lalu dibuang:** lapisan awan melayang. Di peta gelap awan terlihat seperti pulau abu-abu dan membingungkan; keterbacaan lebih penting.
+
+### 27.2 Cara menyetel
+
+- Tambah/ubah gunung api, danau, atau sungai: edit larik `VOLCANOES`, `LAKES`, `RIVERS` di `terrain.js` (koordinat [bujur, lintang]).
+- Sungai terlalu tipis/tebal: `wdt` di `drawRivers()`. Relief terlalu lembut/keras: pengali `7` pada `shade` dan `r0 = 5.2 * K` pada kerucut gunung api.
+- Mengubah bentuk pulau: edit simpul di `geo.js`; `tests/world.test.js` menjaga slot bangunan tetap di darat dan pelabuhan tetap di laut.
+- Waktu hitung tekstur naik sedikit (kerucut, sungai, danau). Bila terasa berat di HP lama: kecilkan `K` (kanvas 2x menjadi 1x) di bagian atas `terrain.js`.
+
+### 27.3 Belum dilakukan / risiko
+
+- **Bentuk pulau masih perkiraan dari ingatan** (tidak ada data geografi resmi di lingkungan kerja). Sulawesi, Papua, Sumatra bagian utara, dan Nusa Tenggara
+  belum sedetail Kalimantan. Cara paling akurat: ambil poligon Natural Earth 10m (domain publik), sederhanakan, dan tempel ke `geo.js`.
+- Gunung api, danau, dan sungai hanya terlihat jelas bila layar peta dekat ukuran penuh; di HP kecil sebagian halus sekali.
+- Belum dilihat di HP sungguhan setelah deploy. `tests/browser_paket_*.py` belum dijalankan ulang.
+- Wilayah Nusa Tenggara, Maluku, Papua masih `comingSoon`; Papua dan Maluku sudah punya bentuk dan relief siap pakai.
+
+### 27.4 Cara menerapkan di Codespaces
+
+```bash
+cd /workspaces/nusantaratycoon && git pull
+unzip -oq nusantaratycoon-update-peta-realistis.zip -d /tmp/upd
+cp /tmp/upd/js/data/geo.js js/data/
+cp /tmp/upd/js/ui/terrain.js /tmp/upd/js/ui/map.js js/ui/
+cp /tmp/upd/dist/nusantara-tycoon.html dist/
+cp /tmp/upd/HANDOFF.md .
+rm nusantaratycoon-update-peta-realistis.zip
+for t in tests/*.test.js; do node $t | tail -1; done   # harus 25 + 10 + 20 tes lolos
+git add -A && git commit -m "Peta lebih realistis: Kalimantan, relief, danau, sungai, laut" && git push
+```
+
+### 27.5 Prompt untuk sesi berikutnya
+
+> Saya melanjutkan proyek game web "Nusantara Tycoon" (GitHub Pages + Supabase). Baca `HANDOFF.md` di repo `jurkonxcode/nusantaratycoon`
+> dulu (terutama bagian 26 dan 27), lalu `README.md`. Jelaskan langkah dengan perintah yang bisa disalin karena saya bekerja dari HP dan
+> Codespaces; selalu `git pull` sebelum mulai. Login ditunda. Tugas hari ini: <pilih: "perhalus bentuk Sulawesi dan Papua" / "buka wilayah Nusa Tenggara"
+> / "misi harian" / "uji main dan setel keseimbangan">.
+
+| Sesi | File yang berubah |
+|---|---|
+| 13 | `js/data/geo.js`, `js/ui/terrain.js`, `js/ui/map.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
