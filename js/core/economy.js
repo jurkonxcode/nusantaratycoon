@@ -524,10 +524,44 @@
       durationMs: exportDuration(state, commodityId, exportId), maxQty: exportMaxQty(state, commodityId) };
   }
 
+  // Kelas ekspor: 'bebas' | 'terbatas' | 'domestik'. Komoditas tanpa tanda dianggap bebas.
+  function exportClassOf(commodityId) {
+    const c = D.commodities[commodityId];
+    return (c && c.exportClass) || 'bebas';
+  }
+
+  // Boleh diekspor sekarang? Mengembalikan { cls, ok, reason }. reason selalu menjelaskan cara membukanya.
+  function exportStatus(state, commodityId) {
+    const c = D.commodities[commodityId];
+    if (!c) return { cls: 'bebas', ok: false, reason: 'Komoditas tidak dikenal.' };
+    const cls = exportClassOf(commodityId);
+    if (cls === 'domestik') {
+      return { cls: cls, ok: false, reason: c.name + ' adalah kebutuhan dalam negeri dan tidak bisa diekspor. Jual ke pasar pulau lain (menu Pasar).' };
+    }
+    if (cls === 'terbatas') {
+      const rule = c.exportRule || {};
+      if (rule.needBuilding && buildingLevel(state, rule.needBuilding) < 1) {
+        const b = D.buildings && D.buildings[rule.needBuilding];
+        return { cls: cls, ok: false, reason: c.name + ' tidak boleh diekspor mentah. Bangun ' + (b ? b.name : rule.needBuilding) + ' dulu.' };
+      }
+    }
+    return { cls: cls, ok: true, reason: '' };
+  }
+
+  // Wajib jual dalam negeri (DMO): bagian kiriman yang dipotong otomatis. exportQty = yang benar-benar berlayar.
+  function exportPlan(commodityId, qty) {
+    qty = Math.floor(qty);
+    const rule = (exportClassOf(commodityId) === 'terbatas' && D.commodities[commodityId].exportRule) || {};
+    const dmoQty = rule.quotaPct ? Math.floor(qty * rule.quotaPct) : 0;
+    return { qty: qty, dmoQty: dmoQty, exportQty: qty - dmoQty };
+  }
+
   function exportGoods(state, commodityId, exportId, qty, now) {
     qty = Math.floor(qty);
     const c = D.commodities[commodityId], m = D.exportMarkets && D.exportMarkets[exportId];
     if (!c || !m) return fail('Tujuan ekspor tidak dikenal.');
+    const st = exportStatus(state, commodityId);
+    if (!st.ok) return fail(st.reason);
     const port = infraLevel(state, c.region, 'pelabuhan');
     if (port < m.minPort) return fail('Ekspor ke ' + m.name + ' butuh Pelabuhan level ' + m.minPort + ' di ' + D.regions[c.region].name + '.');
     if (qty < 1) return fail('Tidak ada barang untuk diekspor.');
@@ -536,21 +570,36 @@
     if (qty > max) return fail('Satu kapal hanya muat ' + max + ' satuan. Naikkan level pelabuhan untuk muatan lebih besar.');
     if (slotsUsed(state) >= shipSlots(state)) return fail('Semua kapal sedang berlayar (' + shipSlots(state) + '). Tunggu salah satu tiba atau naikkan pelabuhan.');
 
-    const q = quoteExport(state, commodityId, exportId, qty, now);
+    const plan = exportPlan(commodityId, qty);
+    if (plan.exportQty < 1) return fail('Setelah kuota dalam negeri (' + Math.round(plan.dmoQty / qty * 100) + '%) tidak ada yang tersisa untuk diekspor.');
+    const q = quoteExport(state, commodityId, exportId, plan.exportQty, now);
     if (q.net <= 0) return fail('Ongkir lebih mahal dari hasil jual. Naikkan pelabuhan atau coba tujuan lain.');
+
+    // Kuota dalam negeri (DMO): dibayar tunai di pasar wilayah asal, tanpa kapal.
+    let dmoNet = 0;
+    if (plan.dmoQty > 0) {
+      const home = c.region;
+      const dq = quoteSale(state, commodityId, home, plan.dmoQty, now);
+      dmoNet = Math.max(0, dq.revenue);
+      state.market[home] = state.market[home] || {};
+      const hs = marketStock(state, home, commodityId, now);
+      state.market[home][commodityId] = { stock: hs + plan.dmoQty, updatedAt: now };
+      state.cash += dmoNet;
+      state.totalEarned += dmoNet;
+    }
 
     const key = exportKey(exportId);
     state.market[key] = state.market[key] || {};
     const stock = marketStock(state, key, commodityId, now);
-    state.market[key][commodityId] = { stock: stock + qty, updatedAt: now };
+    state.market[key][commodityId] = { stock: stock + plan.exportQty, updatedAt: now };
     state.inventory[commodityId] -= qty;
     enqueueShipment(state, {
       id: 'x' + now.toString(36) + shipmentsOf(state).length, kind: 'export', local: false,
-      commodity: commodityId, qty: qty, market: exportId,
+      commodity: commodityId, qty: plan.exportQty, market: exportId,
       revenue: q.revenue, shipping: q.shipping, net: q.net, startedAt: now, endsAt: now + q.durationMs
     });
     stat(state, 'sold', qty);
-    return { ok: true, qty: qty, net: q.net, revenue: q.revenue, shipping: q.shipping, queued: true, durationMs: q.durationMs };
+    return { ok: true, qty: plan.exportQty, dmoQty: plan.dmoQty, dmoNet: dmoNet, net: q.net, revenue: q.revenue, shipping: q.shipping, queued: true, durationMs: q.durationMs };
   }
 
   function sell(state, commodityId, marketId, qty, now) {
@@ -718,6 +767,9 @@
     shipSlots: shipSlots,
     slotsUsed: slotsUsed,
     exportGoods: exportGoods,
+    exportStatus: exportStatus,
+    exportClassOf: exportClassOf,
+    exportPlan: exportPlan,
     quoteExport: quoteExport,
     exportDuration: exportDuration,
     exportMaxQty: exportMaxQty,

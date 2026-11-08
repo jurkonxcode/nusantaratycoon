@@ -620,3 +620,19 @@ muatan maks `exportBatchPerPort` x level pelabuhan, harga lebih tinggi per komod
 **State baru:** `shipments[]`, `stats.exports`, `market['export:*']` (save lama otomatis kosong lewat `normalize`).
 **UI:** kartu Pengiriman (timer) dan kartu Ekspor di tab Pasar (`panels.js`), aksi `ship-export` di `main.js`. **Server nanti:** `settleShipments`, `exportGoods` ikut jadi RPC memakai `now()` server.
 **Tes:** `tests/timing.test.js` (11). Total 25 + 10 + 11 + 20 lolos. **Belum:** diuji di browser, keseimbangan angka lewat bermain, percepat kiriman dengan uang, `tools/simulate.js` belum memodelkan waktu kirim.
+
+
+## 29. Sesi 15: Fase 1, klasifikasi ekspor (8 November 2026)
+
+**Data** (`data/commodities.js`): tiap komoditas punya `exportClass` (`bebas` | `terbatas` | `domestik`) dan, bila `terbatas`, `exportRule: { needBuilding?, quotaPct? }`.
+Sekarang: padi = `domestik`; batubara = `terbatas` dengan `quotaPct: 0.25` (DMO); lainnya `bebas`. Permintaan padi dihapus dari `data/exports.js`.
+**Logika** (`core/economy.js`): `exportClassOf`, `exportStatus(state, cid)` (`{cls, ok, reason}`; reason selalu menjelaskan cara membuka), `exportPlan(cid, qty)` (pecah `dmoQty` dan `exportQty`).
+`exportGoods` menolak komoditas yang tidak boleh. Kuota DMO: `floor(qty x quotaPct)` otomatis dijual tunai di pasar wilayah asal (menambah tekanan stok), sisanya berlayar. Hasil `exportGoods` kini punya `dmoQty` dan `dmoNet`.
+`needBuilding` sudah didukung tetapi belum dipakai data apa pun; aktif di Fase 5 (smelter) tanpa ubah kode.
+**UI** (`panels.js`, `main.js`, `css/style.css`): lencana 🌍/🔒/🏠 di kartu pasar dan kartu Ekspor; komoditas domestik disembunyikan dari daftar ekspor dan dijelaskan di catatan kartu; pesan sukses menyebut potongan DMO.
+**Tes:** `tests/export.test.js` (10 baru); `tests/timing.test.js` tes ongkir kini memakai sawit (bukan padi). Total 25 + 10 + 10 + 11 + 20 lolos. **Tidak ada perubahan state/save.**
+**Belum:** diuji di browser; keseimbangan DMO 25%; fakta resmi aturan ekspor belum ditulis ke layar Info (cek BPS/ESDM/Kemendag dulu).
+
+| Sesi | File yang berubah |
+|---|---|
+| 15 | `js/data/commodities.js`, `js/data/exports.js`, `js/core/economy.js`, `js/ui/panels.js`, `js/main.js`, `css/style.css`, `tests/export.test.js` (baru), `tests/timing.test.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |

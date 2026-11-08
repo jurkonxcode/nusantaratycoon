@@ -210,6 +210,10 @@ body {
 .tag { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; vertical-align: middle; margin-left: 4px; }
 .tag.raya { background: #dff3d6; color: #1f6b34; }
 .tag.paceklik { background: #fbe3d8; color: #9a3a1a; }
+.tag.xc-bebas { background: #dcefe9; color: #14584a; }
+.tag.xc-terbatas { background: #fdecc8; color: #7a5200; }
+.tag.xc-domestik { background: #e8e4f3; color: #4a3d86; }
+.xc-notes { margin: 6px 0 10px; padding-left: 18px; line-height: 1.5; }
 .mult.up { color: var(--green); font-weight: 800; }
 .mult.down { color: var(--red); font-weight: 800; }
 .cal { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin: 4px 0 10px; }
@@ -759,6 +763,11 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
  * season.prod  = pengali produksi per bulan (Jan..Des), season.price = pengali harga per bulan.
  * Tabel dinormalkan di world.js sehingga rata-rata setahun = 1 (musim hanya menggeser waktu, bukan total).
  * freightFactor (opsional, default 1) = pengali ongkir untuk muatan curah raksasa seperti batubara.
+ * exportClass = 'bebas' (boleh diekspor) | 'terbatas' (ada syarat, lihat exportRule) | 'domestik' (kebutuhan dalam negeri, tidak bisa diekspor).
+ * exportRule (hanya 'terbatas'), semua bagian opsional:
+ *   needBuilding: id bangunan yang harus sudah dibangun (mis. smelter); quotaPct: bagian tiap kiriman yang WAJIB dijual
+ *   ke pasar dalam negeri lebih dulu (DMO), dipotong otomatis dan dibayar tunai di wilayah asal.
+ * Catatan: kelas dan aturan di sini adalah penyederhanaan untuk game, bukan aturan resmi (cek Kemendag/ESDM).
  * marketDepth = berapa unit yang bisa diserap pasar sebelum harga mulai jatuh.
  */
 (function (NT) {
@@ -772,7 +781,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 
   NT.data.commodities = {
     padi: make({
-      id: 'padi', name: 'Padi', icon: '🌾', region: 'jawa', realRpPerKg: 6500, unitKg: 50, marketDepth: 300,
+      id: 'padi', exportClass: 'domestik', name: 'Padi', icon: '🌾', region: 'jawa', realRpPerKg: 6500, unitKg: 50, marketDepth: 300,
       seasonNote: 'Panen raya Mar-Apr, panen gadu Jul-Sep, paceklik Okt-Jan',
       season: {
         prod:  [0.8, 1.0, 1.4, 1.4, 1.0, 0.9, 1.1, 1.2, 1.1, 0.8, 0.7, 0.7],
@@ -780,7 +789,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       }
     }),
     batik: make({
-      id: 'batik', name: 'Batik', icon: '👘', region: 'jawa', realRpPerKg: 625000, unitKg: 4, marketDepth: 60,
+      id: 'batik', exportClass: 'bebas', name: 'Batik', icon: '👘', region: 'jawa', realRpPerKg: 625000, unitKg: 4, marketDepth: 60,
       seasonNote: 'Permintaan naik jelang Lebaran, Hari Batik (2 Okt), dan akhir tahun; sulit dijemur saat hujan',
       season: {
         prod:  [0.9, 0.9, 1.0, 1.0, 1.0, 1.05, 1.05, 1.05, 1.05, 1.0, 0.95, 0.9],
@@ -788,7 +797,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       }
     }),
     kopi: make({
-      id: 'kopi', name: 'Kopi', icon: '☕', region: 'sumatra', realRpPerKg: 75000, unitKg: 50, marketDepth: 100,
+      id: 'kopi', exportClass: 'bebas', name: 'Kopi', icon: '☕', region: 'sumatra', realRpPerKg: 75000, unitKg: 50, marketDepth: 100,
       seasonNote: 'Panen raya Mei-Agu',
       season: {
         prod:  [0.6, 0.6, 0.7, 0.9, 1.3, 1.5, 1.5, 1.3, 0.9, 0.7, 0.6, 0.6],
@@ -796,7 +805,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       }
     }),
     karet: make({
-      id: 'karet', name: 'Karet', icon: '🛞', region: 'sumatra', realRpPerKg: 17000, unitKg: 50, marketDepth: 150,
+      id: 'karet', exportClass: 'bebas', name: 'Karet', icon: '🛞', region: 'sumatra', realRpPerKg: 17000, unitKg: 50, marketDepth: 150,
       seasonNote: 'Getah turun saat gugur daun (Feb-Apr) dan hujan lebat; puncak Agu-Okt',
       season: {
         prod:  [0.75, 0.65, 0.65, 0.8, 0.95, 1.05, 1.15, 1.2, 1.2, 1.15, 0.95, 0.8],
@@ -804,7 +813,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       }
     }),
     kakao: make({
-      id: 'kakao', name: 'Kakao', icon: '🍫', region: 'sulawesi', realRpPerKg: 110000, unitKg: 50, marketDepth: 80,
+      id: 'kakao', exportClass: 'bebas', name: 'Kakao', icon: '🍫', region: 'sulawesi', realRpPerKg: 110000, unitKg: 50, marketDepth: 80,
       seasonNote: 'Panen utama Apr-Jul, panen kecil Okt-Des',
       season: {
         prod:  [0.8, 0.8, 0.9, 1.2, 1.3, 1.3, 1.2, 1.0, 0.8, 1.0, 1.0, 0.9],
@@ -812,7 +821,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       }
     }),
     cengkeh: make({
-      id: 'cengkeh', name: 'Cengkeh', icon: '🌿', region: 'sulawesi', realRpPerKg: 130000, unitKg: 50, marketDepth: 60,
+      id: 'cengkeh', exportClass: 'bebas', name: 'Cengkeh', icon: '🌿', region: 'sulawesi', realRpPerKg: 130000, unitKg: 50, marketDepth: 60,
       seasonNote: 'Panen Jun-Okt (puncak Jul-Sep), sisanya sepi',
       season: {
         prod:  [0.5, 0.5, 0.5, 0.6, 0.8, 1.3, 1.7, 1.8, 1.6, 1.1, 0.6, 0.5],
@@ -820,7 +829,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       }
     }),
     sawit: make({
-      id: 'sawit', name: 'Minyak Sawit', icon: '🌴', region: 'kalimantan', realRpPerKg: 14000, unitKg: 50, marketDepth: 400,
+      id: 'sawit', exportClass: 'bebas', name: 'Minyak Sawit', icon: '🌴', region: 'kalimantan', realRpPerKg: 14000, unitKg: 50, marketDepth: 400,
       seasonNote: 'Buah berlimpah Agu-Nov; turun saat kemarau panjang dan musim hujan deras',
       season: {
         prod:  [0.9, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.1, 1.15, 1.15, 1.05, 0.9],
@@ -828,7 +837,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       }
     }),
     batubara: make({
-      id: 'batubara', name: 'Batubara', icon: '⚫', region: 'kalimantan', realRpPerKg: 1600, unitKg: 1000, freightFactor: 0.12, marketDepth: 150,
+      id: 'batubara', exportClass: 'terbatas', exportRule: { quotaPct: 0.25 }, name: 'Batubara', icon: '⚫', region: 'kalimantan', realRpPerKg: 1600, unitKg: 1000, freightFactor: 0.12, marketDepth: 150,
       seasonNote: 'Tambang lancar saat kemarau (Jun-Sep); hujan deras mengganggu angkutan',
       season: {
         prod:  [0.85, 0.85, 0.9, 0.95, 1.05, 1.1, 1.15, 1.15, 1.1, 1.05, 0.95, 0.9],
@@ -1024,7 +1033,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
   NT.data = NT.data || {};
   NT.data.exportMarkets = {
     singapura: { id: 'singapura', name: 'Singapura',    icon: '🇸🇬', km: 900,   baseHours: 1,  minPort: 1, mult: 1.2,
-      demand: { sawit: 1.35, karet: 1.3, padi: 1.1 } },
+      demand: { sawit: 1.35, karet: 1.3 } },
     tiongkok:  { id: 'tiongkok',  name: 'Tiongkok',     icon: '🇨🇳', km: 4500,  baseHours: 6,  minPort: 2, mult: 1.3,
       demand: { batubara: 1.5, karet: 1.45, sawit: 1.4 } },
     jepang:    { id: 'jepang',    name: 'Jepang',       icon: '🇯🇵', km: 5800,  baseHours: 10, minPort: 2, mult: 1.35,
@@ -2032,10 +2041,44 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       durationMs: exportDuration(state, commodityId, exportId), maxQty: exportMaxQty(state, commodityId) };
   }
 
+  // Kelas ekspor: 'bebas' | 'terbatas' | 'domestik'. Komoditas tanpa tanda dianggap bebas.
+  function exportClassOf(commodityId) {
+    const c = D.commodities[commodityId];
+    return (c && c.exportClass) || 'bebas';
+  }
+
+  // Boleh diekspor sekarang? Mengembalikan { cls, ok, reason }. reason selalu menjelaskan cara membukanya.
+  function exportStatus(state, commodityId) {
+    const c = D.commodities[commodityId];
+    if (!c) return { cls: 'bebas', ok: false, reason: 'Komoditas tidak dikenal.' };
+    const cls = exportClassOf(commodityId);
+    if (cls === 'domestik') {
+      return { cls: cls, ok: false, reason: c.name + ' adalah kebutuhan dalam negeri dan tidak bisa diekspor. Jual ke pasar pulau lain (menu Pasar).' };
+    }
+    if (cls === 'terbatas') {
+      const rule = c.exportRule || {};
+      if (rule.needBuilding && buildingLevel(state, rule.needBuilding) < 1) {
+        const b = D.buildings && D.buildings[rule.needBuilding];
+        return { cls: cls, ok: false, reason: c.name + ' tidak boleh diekspor mentah. Bangun ' + (b ? b.name : rule.needBuilding) + ' dulu.' };
+      }
+    }
+    return { cls: cls, ok: true, reason: '' };
+  }
+
+  // Wajib jual dalam negeri (DMO): bagian kiriman yang dipotong otomatis. exportQty = yang benar-benar berlayar.
+  function exportPlan(commodityId, qty) {
+    qty = Math.floor(qty);
+    const rule = (exportClassOf(commodityId) === 'terbatas' && D.commodities[commodityId].exportRule) || {};
+    const dmoQty = rule.quotaPct ? Math.floor(qty * rule.quotaPct) : 0;
+    return { qty: qty, dmoQty: dmoQty, exportQty: qty - dmoQty };
+  }
+
   function exportGoods(state, commodityId, exportId, qty, now) {
     qty = Math.floor(qty);
     const c = D.commodities[commodityId], m = D.exportMarkets && D.exportMarkets[exportId];
     if (!c || !m) return fail('Tujuan ekspor tidak dikenal.');
+    const st = exportStatus(state, commodityId);
+    if (!st.ok) return fail(st.reason);
     const port = infraLevel(state, c.region, 'pelabuhan');
     if (port < m.minPort) return fail('Ekspor ke ' + m.name + ' butuh Pelabuhan level ' + m.minPort + ' di ' + D.regions[c.region].name + '.');
     if (qty < 1) return fail('Tidak ada barang untuk diekspor.');
@@ -2044,21 +2087,36 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     if (qty > max) return fail('Satu kapal hanya muat ' + max + ' satuan. Naikkan level pelabuhan untuk muatan lebih besar.');
     if (slotsUsed(state) >= shipSlots(state)) return fail('Semua kapal sedang berlayar (' + shipSlots(state) + '). Tunggu salah satu tiba atau naikkan pelabuhan.');
 
-    const q = quoteExport(state, commodityId, exportId, qty, now);
+    const plan = exportPlan(commodityId, qty);
+    if (plan.exportQty < 1) return fail('Setelah kuota dalam negeri (' + Math.round(plan.dmoQty / qty * 100) + '%) tidak ada yang tersisa untuk diekspor.');
+    const q = quoteExport(state, commodityId, exportId, plan.exportQty, now);
     if (q.net <= 0) return fail('Ongkir lebih mahal dari hasil jual. Naikkan pelabuhan atau coba tujuan lain.');
+
+    // Kuota dalam negeri (DMO): dibayar tunai di pasar wilayah asal, tanpa kapal.
+    let dmoNet = 0;
+    if (plan.dmoQty > 0) {
+      const home = c.region;
+      const dq = quoteSale(state, commodityId, home, plan.dmoQty, now);
+      dmoNet = Math.max(0, dq.revenue);
+      state.market[home] = state.market[home] || {};
+      const hs = marketStock(state, home, commodityId, now);
+      state.market[home][commodityId] = { stock: hs + plan.dmoQty, updatedAt: now };
+      state.cash += dmoNet;
+      state.totalEarned += dmoNet;
+    }
 
     const key = exportKey(exportId);
     state.market[key] = state.market[key] || {};
     const stock = marketStock(state, key, commodityId, now);
-    state.market[key][commodityId] = { stock: stock + qty, updatedAt: now };
+    state.market[key][commodityId] = { stock: stock + plan.exportQty, updatedAt: now };
     state.inventory[commodityId] -= qty;
     enqueueShipment(state, {
       id: 'x' + now.toString(36) + shipmentsOf(state).length, kind: 'export', local: false,
-      commodity: commodityId, qty: qty, market: exportId,
+      commodity: commodityId, qty: plan.exportQty, market: exportId,
       revenue: q.revenue, shipping: q.shipping, net: q.net, startedAt: now, endsAt: now + q.durationMs
     });
     stat(state, 'sold', qty);
-    return { ok: true, qty: qty, net: q.net, revenue: q.revenue, shipping: q.shipping, queued: true, durationMs: q.durationMs };
+    return { ok: true, qty: plan.exportQty, dmoQty: plan.dmoQty, dmoNet: dmoNet, net: q.net, revenue: q.revenue, shipping: q.shipping, queued: true, durationMs: q.durationMs };
   }
 
   function sell(state, commodityId, marketId, qty, now) {
@@ -2226,6 +2284,9 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     shipSlots: shipSlots,
     slotsUsed: slotsUsed,
     exportGoods: exportGoods,
+    exportStatus: exportStatus,
+    exportClassOf: exportClassOf,
+    exportPlan: exportPlan,
     quoteExport: quoteExport,
     exportDuration: exportDuration,
     exportMaxQty: exportMaxQty,
@@ -3684,30 +3745,61 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     return '<div class="card"><h2>Pengiriman <small class="muted">kapal ' + E.slotsUsed(state) + '/' + E.shipSlots(state) + '</small></h2>' + rows + '</div>';
   }
 
+  // Lencana kelas ekspor: 🌍 bebas, 🔒 terbatas, 🏠 domestik.
+  function exportBadge(cid) {
+    const cls = E.exportClassOf(cid);
+    const t = { bebas: ['🌍 Ekspor', 'Boleh diekspor'], terbatas: ['🔒 Terbatas', 'Ekspor dengan syarat'], domestik: ['🏠 Domestik', 'Tidak bisa diekspor'] }[cls];
+    return '<span class="tag xc-' + cls + '" title="' + t[1] + '">' + t[0] + '</span>';
+  }
+
+  // Penjelasan singkat aturan 'terbatas' untuk satu komoditas.
+  function exportRuleText(cid) {
+    const c = D.commodities[cid], rule = c.exportRule || {};
+    const parts = [];
+    if (rule.quotaPct) parts.push(Math.round(rule.quotaPct * 100) + '% tiap kiriman wajib dijual di dalam negeri (DMO)');
+    if (rule.needBuilding) parts.push('butuh ' + ((D.buildings[rule.needBuilding] || {}).name || rule.needBuilding));
+    return parts.join(' · ');
+  }
+
   // Ekspor ke luar negeri: makin jauh makin lama, tetapi harga lebih tinggi.
   function exportHtml(state, now) {
     const markets = Object.keys(D.exportMarkets || {}).map(function (mid) {
       const m = D.exportMarkets[mid];
       const rows = Object.keys(D.commodities).filter(function (cid) {
-        return Math.floor(state.inventory[cid] || 0) >= 1;
+        return Math.floor(state.inventory[cid] || 0) >= 1 && E.exportClassOf(cid) !== 'domestik';
       }).map(function (cid) {
         const c = D.commodities[cid];
         const have = Math.floor(state.inventory[cid]);
         const port = state.regions[c.region] ? state.regions[c.region].infra.pelabuhan : 0;
-        const ok = port >= m.minPort;
+        const st = E.exportStatus(state, cid);
+        const portOk = port >= m.minPort;
+        const ok = st.ok && portOk;
         const qty = Math.min(have, Math.max(1, E.exportMaxQty(state, cid)));
-        const q = ok ? E.quoteExport(state, cid, mid, qty, now) : null;
-        return '<div class="row"><div class="row-main"><b>' + c.name + '</b>' +
-          '<small>' + (ok ? 'kirim ' + F.num(qty) + ' · bersih ' + F.money(q.net) + ' · tiba ' + F.short(q.durationMs)
-            : '🔒 butuh Pelabuhan ' + D.regions[c.region].name + ' level ' + m.minPort) + '</small></div>' +
-          '<button class="btn' + (ok ? ' primary' : '') + '" data-action="ship-export" data-c="' + cid + '" data-x="' + mid + '"' + (ok ? '' : ' disabled') + '>🚢 Ekspor</button></div>';
+        const plan = E.exportPlan(cid, qty);
+        const q = ok && plan.exportQty >= 1 ? E.quoteExport(state, cid, mid, plan.exportQty, now) : null;
+        let info;
+        if (!st.ok) info = '🔒 ' + st.reason;
+        else if (!portOk) info = '🔒 butuh Pelabuhan ' + D.regions[c.region].name + ' level ' + m.minPort;
+        else if (!q) info = 'jumlah terlalu sedikit setelah kuota dalam negeri';
+        else info = 'kirim ' + F.num(plan.exportQty) + (plan.dmoQty ? ' (+' + F.num(plan.dmoQty) + ' wajib dalam negeri)' : '') +
+          ' · bersih ' + F.money(q.net) + ' · tiba ' + F.short(q.durationMs);
+        return '<div class="row"><div class="row-main"><b>' + c.name + exportBadge(cid) + '</b>' +
+          '<small>' + info + '</small></div>' +
+          '<button class="btn' + (ok && q ? ' primary' : '') + '" data-action="ship-export" data-c="' + cid + '" data-x="' + mid + '"' + (ok && q ? '' : ' disabled') + '>🚢 Ekspor</button></div>';
       }).join('');
       return '<div class="goods"><div class="goods-head"><div class="row-icon">' + m.icon + '</div>' +
         '<div class="row-main"><b>' + m.name + '</b><small>±' + F.short(m.baseHours * 3600000) + ' di laut · butuh Pelabuhan level ' + m.minPort + '</small></div></div>' +
         (rows || '<small class="muted">Gudang kosong.</small>') + '</div>';
     }).join('');
+    const notes = Object.keys(D.commodities).filter(function (cid) { return E.exportClassOf(cid) !== 'bebas'; }).map(function (cid) {
+      const c = D.commodities[cid];
+      const txt = E.exportClassOf(cid) === 'domestik' ? 'tidak bisa diekspor; jual ke pasar pulau lain.' : exportRuleText(cid) + '.';
+      return '<li><b>' + c.name + '</b>' + exportBadge(cid) + ' ' + txt + '</li>';
+    }).join('');
     return '<div class="card"><h2>Ekspor luar negeri</h2>' +
-      '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' + markets + '</div>';
+      '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' +
+      '<p class="muted small">🌍 Ekspor = bebas · 🔒 Terbatas = ada syarat · 🏠 Domestik = kebutuhan dalam negeri. Aturan ini penyederhanaan untuk game.</p>' +
+      (notes ? '<ul class="xc-notes small muted">' + notes + '</ul>' : '') + markets + '</div>';
   }
 
   function renderMarket(state, now) {
@@ -3726,7 +3818,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       '<div class="goods">' +
         '<div class="goods-head">' +
           '<div class="row-icon">' + (NT.ui.art.comm(c.id) || c.icon) + '</div>' +
-          '<div class="row-main"><b>' + c.name + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
+          '<div class="row-main"><b>' + c.name + exportBadge(cid) + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
           '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>' +
         '</div>' +
         '<div class="goods-price">' +
@@ -4516,7 +4608,8 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       const res = E.exportGoods(state, cid, mid, qty, now());
       if (res.ok) {
         res.message = '🚢 ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name + ' berlayar ke ' + NT.data.exportMarkets[mid].name +
-          ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')';
+          ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')' +
+          (res.dmoQty ? ' · ' + F.num(res.dmoQty) + ' wajib dalam negeri (+' + F.money(res.dmoNet) + ')' : '');
         res.sfx = 'click';
       }
       return res;

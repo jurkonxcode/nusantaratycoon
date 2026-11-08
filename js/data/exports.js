@@ -9,7 +9,7 @@
   NT.data = NT.data || {};
   NT.data.exportMarkets = {
     singapura: { id: 'singapura', name: 'Singapura',    icon: '🇸🇬', km: 900,   baseHours: 1,  minPort: 1, mult: 1.2,
-      demand: { sawit: 1.35, karet: 1.3, padi: 1.1 } },
+      demand: { sawit: 1.35, karet: 1.3 } },
     tiongkok:  { id: 'tiongkok',  name: 'Tiongkok',     icon: '🇨🇳', km: 4500,  baseHours: 6,  minPort: 2, mult: 1.3,
       demand: { batubara: 1.5, karet: 1.45, sawit: 1.4 } },
     jepang:    { id: 'jepang',    name: 'Jepang',       icon: '🇯🇵', km: 5800,  baseHours: 10, minPort: 2, mult: 1.35,

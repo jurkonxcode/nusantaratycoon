@@ -192,7 +192,8 @@
       const res = E.exportGoods(state, cid, mid, qty, now());
       if (res.ok) {
         res.message = '🚢 ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name + ' berlayar ke ' + NT.data.exportMarkets[mid].name +
-          ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')';
+          ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')' +
+          (res.dmoQty ? ' · ' + F.num(res.dmoQty) + ' wajib dalam negeri (+' + F.money(res.dmoNet) + ')' : '');
         res.sfx = 'click';
       }
       return res;

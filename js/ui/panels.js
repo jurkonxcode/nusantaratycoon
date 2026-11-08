@@ -155,30 +155,61 @@
     return '<div class="card"><h2>Pengiriman <small class="muted">kapal ' + E.slotsUsed(state) + '/' + E.shipSlots(state) + '</small></h2>' + rows + '</div>';
   }
 
+  // Lencana kelas ekspor: 🌍 bebas, 🔒 terbatas, 🏠 domestik.
+  function exportBadge(cid) {
+    const cls = E.exportClassOf(cid);
+    const t = { bebas: ['🌍 Ekspor', 'Boleh diekspor'], terbatas: ['🔒 Terbatas', 'Ekspor dengan syarat'], domestik: ['🏠 Domestik', 'Tidak bisa diekspor'] }[cls];
+    return '<span class="tag xc-' + cls + '" title="' + t[1] + '">' + t[0] + '</span>';
+  }
+
+  // Penjelasan singkat aturan 'terbatas' untuk satu komoditas.
+  function exportRuleText(cid) {
+    const c = D.commodities[cid], rule = c.exportRule || {};
+    const parts = [];
+    if (rule.quotaPct) parts.push(Math.round(rule.quotaPct * 100) + '% tiap kiriman wajib dijual di dalam negeri (DMO)');
+    if (rule.needBuilding) parts.push('butuh ' + ((D.buildings[rule.needBuilding] || {}).name || rule.needBuilding));
+    return parts.join(' · ');
+  }
+
   // Ekspor ke luar negeri: makin jauh makin lama, tetapi harga lebih tinggi.
   function exportHtml(state, now) {
     const markets = Object.keys(D.exportMarkets || {}).map(function (mid) {
       const m = D.exportMarkets[mid];
       const rows = Object.keys(D.commodities).filter(function (cid) {
-        return Math.floor(state.inventory[cid] || 0) >= 1;
+        return Math.floor(state.inventory[cid] || 0) >= 1 && E.exportClassOf(cid) !== 'domestik';
       }).map(function (cid) {
         const c = D.commodities[cid];
         const have = Math.floor(state.inventory[cid]);
         const port = state.regions[c.region] ? state.regions[c.region].infra.pelabuhan : 0;
-        const ok = port >= m.minPort;
+        const st = E.exportStatus(state, cid);
+        const portOk = port >= m.minPort;
+        const ok = st.ok && portOk;
         const qty = Math.min(have, Math.max(1, E.exportMaxQty(state, cid)));
-        const q = ok ? E.quoteExport(state, cid, mid, qty, now) : null;
-        return '<div class="row"><div class="row-main"><b>' + c.name + '</b>' +
-          '<small>' + (ok ? 'kirim ' + F.num(qty) + ' · bersih ' + F.money(q.net) + ' · tiba ' + F.short(q.durationMs)
-            : '🔒 butuh Pelabuhan ' + D.regions[c.region].name + ' level ' + m.minPort) + '</small></div>' +
-          '<button class="btn' + (ok ? ' primary' : '') + '" data-action="ship-export" data-c="' + cid + '" data-x="' + mid + '"' + (ok ? '' : ' disabled') + '>🚢 Ekspor</button></div>';
+        const plan = E.exportPlan(cid, qty);
+        const q = ok && plan.exportQty >= 1 ? E.quoteExport(state, cid, mid, plan.exportQty, now) : null;
+        let info;
+        if (!st.ok) info = '🔒 ' + st.reason;
+        else if (!portOk) info = '🔒 butuh Pelabuhan ' + D.regions[c.region].name + ' level ' + m.minPort;
+        else if (!q) info = 'jumlah terlalu sedikit setelah kuota dalam negeri';
+        else info = 'kirim ' + F.num(plan.exportQty) + (plan.dmoQty ? ' (+' + F.num(plan.dmoQty) + ' wajib dalam negeri)' : '') +
+          ' · bersih ' + F.money(q.net) + ' · tiba ' + F.short(q.durationMs);
+        return '<div class="row"><div class="row-main"><b>' + c.name + exportBadge(cid) + '</b>' +
+          '<small>' + info + '</small></div>' +
+          '<button class="btn' + (ok && q ? ' primary' : '') + '" data-action="ship-export" data-c="' + cid + '" data-x="' + mid + '"' + (ok && q ? '' : ' disabled') + '>🚢 Ekspor</button></div>';
       }).join('');
       return '<div class="goods"><div class="goods-head"><div class="row-icon">' + m.icon + '</div>' +
         '<div class="row-main"><b>' + m.name + '</b><small>±' + F.short(m.baseHours * 3600000) + ' di laut · butuh Pelabuhan level ' + m.minPort + '</small></div></div>' +
         (rows || '<small class="muted">Gudang kosong.</small>') + '</div>';
     }).join('');
+    const notes = Object.keys(D.commodities).filter(function (cid) { return E.exportClassOf(cid) !== 'bebas'; }).map(function (cid) {
+      const c = D.commodities[cid];
+      const txt = E.exportClassOf(cid) === 'domestik' ? 'tidak bisa diekspor; jual ke pasar pulau lain.' : exportRuleText(cid) + '.';
+      return '<li><b>' + c.name + '</b>' + exportBadge(cid) + ' ' + txt + '</li>';
+    }).join('');
     return '<div class="card"><h2>Ekspor luar negeri</h2>' +
-      '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' + markets + '</div>';
+      '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' +
+      '<p class="muted small">🌍 Ekspor = bebas · 🔒 Terbatas = ada syarat · 🏠 Domestik = kebutuhan dalam negeri. Aturan ini penyederhanaan untuk game.</p>' +
+      (notes ? '<ul class="xc-notes small muted">' + notes + '</ul>' : '') + markets + '</div>';
   }
 
   function renderMarket(state, now) {
@@ -197,7 +228,7 @@
       '<div class="goods">' +
         '<div class="goods-head">' +
           '<div class="row-icon">' + (NT.ui.art.comm(c.id) || c.icon) + '</div>' +
-          '<div class="row-main"><b>' + c.name + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
+          '<div class="row-main"><b>' + c.name + exportBadge(cid) + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
           '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>' +
         '</div>' +
         '<div class="goods-price">' +

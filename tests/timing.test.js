@@ -119,9 +119,9 @@ test('ekspor: muatan dibatasi pelabuhan, kas masuk saat tiba, harga lebih tinggi
 });
 
 test('ekspor ditolak bila ongkir lebih mahal dari hasil jual', function () {
-  const s = rich(); s.regions.jawa.infra.pelabuhan = 4; s.inventory.padi = 100;
-  const r = E.exportGoods(s, 'padi', 'belanda', 100, t0);
-  // padi murah dan Belanda jauh: boleh rugi tipis atau ditolak, tetapi tidak boleh menghasilkan kas negatif
+  const s = rich(); s.regions.kalimantan.infra.pelabuhan = 4; s.inventory.sawit = 100;
+  const r = E.exportGoods(s, 'sawit', 'belanda', 100, t0);
+  // sawit murah dan Belanda jauh: boleh rugi tipis atau ditolak, tetapi tidak boleh menghasilkan kas negatif
   if (r.ok) assert.ok(r.net > 0); else assert.ok(/Ongkir/.test(r.reason));
 });
 

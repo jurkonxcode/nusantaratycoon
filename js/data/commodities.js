@@ -10,6 +10,11 @@
  * season.prod  = pengali produksi per bulan (Jan..Des), season.price = pengali harga per bulan.
  * Tabel dinormalkan di world.js sehingga rata-rata setahun = 1 (musim hanya menggeser waktu, bukan total).
  * freightFactor (opsional, default 1) = pengali ongkir untuk muatan curah raksasa seperti batubara.
+ * exportClass = 'bebas' (boleh diekspor) | 'terbatas' (ada syarat, lihat exportRule) | 'domestik' (kebutuhan dalam negeri, tidak bisa diekspor).
+ * exportRule (hanya 'terbatas'), semua bagian opsional:
+ *   needBuilding: id bangunan yang harus sudah dibangun (mis. smelter); quotaPct: bagian tiap kiriman yang WAJIB dijual
+ *   ke pasar dalam negeri lebih dulu (DMO), dipotong otomatis dan dibayar tunai di wilayah asal.
+ * Catatan: kelas dan aturan di sini adalah penyederhanaan untuk game, bukan aturan resmi (cek Kemendag/ESDM).
  * marketDepth = berapa unit yang bisa diserap pasar sebelum harga mulai jatuh.
  */
 (function (NT) {
@@ -23,7 +28,7 @@
 
   NT.data.commodities = {
     padi: make({
-      id: 'padi', name: 'Padi', icon: '🌾', region: 'jawa', realRpPerKg: 6500, unitKg: 50, marketDepth: 300,
+      id: 'padi', exportClass: 'domestik', name: 'Padi', icon: '🌾', region: 'jawa', realRpPerKg: 6500, unitKg: 50, marketDepth: 300,
       seasonNote: 'Panen raya Mar-Apr, panen gadu Jul-Sep, paceklik Okt-Jan',
       season: {
         prod:  [0.8, 1.0, 1.4, 1.4, 1.0, 0.9, 1.1, 1.2, 1.1, 0.8, 0.7, 0.7],
@@ -31,7 +36,7 @@
       }
     }),
     batik: make({
-      id: 'batik', name: 'Batik', icon: '👘', region: 'jawa', realRpPerKg: 625000, unitKg: 4, marketDepth: 60,
+      id: 'batik', exportClass: 'bebas', name: 'Batik', icon: '👘', region: 'jawa', realRpPerKg: 625000, unitKg: 4, marketDepth: 60,
       seasonNote: 'Permintaan naik jelang Lebaran, Hari Batik (2 Okt), dan akhir tahun; sulit dijemur saat hujan',
       season: {
         prod:  [0.9, 0.9, 1.0, 1.0, 1.0, 1.05, 1.05, 1.05, 1.05, 1.0, 0.95, 0.9],
@@ -39,7 +44,7 @@
       }
     }),
     kopi: make({
-      id: 'kopi', name: 'Kopi', icon: '☕', region: 'sumatra', realRpPerKg: 75000, unitKg: 50, marketDepth: 100,
+      id: 'kopi', exportClass: 'bebas', name: 'Kopi', icon: '☕', region: 'sumatra', realRpPerKg: 75000, unitKg: 50, marketDepth: 100,
       seasonNote: 'Panen raya Mei-Agu',
       season: {
         prod:  [0.6, 0.6, 0.7, 0.9, 1.3, 1.5, 1.5, 1.3, 0.9, 0.7, 0.6, 0.6],
@@ -47,7 +52,7 @@
       }
     }),
     karet: make({
-      id: 'karet', name: 'Karet', icon: '🛞', region: 'sumatra', realRpPerKg: 17000, unitKg: 50, marketDepth: 150,
+      id: 'karet', exportClass: 'bebas', name: 'Karet', icon: '🛞', region: 'sumatra', realRpPerKg: 17000, unitKg: 50, marketDepth: 150,
       seasonNote: 'Getah turun saat gugur daun (Feb-Apr) dan hujan lebat; puncak Agu-Okt',
       season: {
         prod:  [0.75, 0.65, 0.65, 0.8, 0.95, 1.05, 1.15, 1.2, 1.2, 1.15, 0.95, 0.8],
@@ -55,7 +60,7 @@
       }
     }),
     kakao: make({
-      id: 'kakao', name: 'Kakao', icon: '🍫', region: 'sulawesi', realRpPerKg: 110000, unitKg: 50, marketDepth: 80,
+      id: 'kakao', exportClass: 'bebas', name: 'Kakao', icon: '🍫', region: 'sulawesi', realRpPerKg: 110000, unitKg: 50, marketDepth: 80,
       seasonNote: 'Panen utama Apr-Jul, panen kecil Okt-Des',
       season: {
         prod:  [0.8, 0.8, 0.9, 1.2, 1.3, 1.3, 1.2, 1.0, 0.8, 1.0, 1.0, 0.9],
@@ -63,7 +68,7 @@
       }
     }),
     cengkeh: make({
-      id: 'cengkeh', name: 'Cengkeh', icon: '🌿', region: 'sulawesi', realRpPerKg: 130000, unitKg: 50, marketDepth: 60,
+      id: 'cengkeh', exportClass: 'bebas', name: 'Cengkeh', icon: '🌿', region: 'sulawesi', realRpPerKg: 130000, unitKg: 50, marketDepth: 60,
       seasonNote: 'Panen Jun-Okt (puncak Jul-Sep), sisanya sepi',
       season: {
         prod:  [0.5, 0.5, 0.5, 0.6, 0.8, 1.3, 1.7, 1.8, 1.6, 1.1, 0.6, 0.5],
@@ -71,7 +76,7 @@
       }
     }),
     sawit: make({
-      id: 'sawit', name: 'Minyak Sawit', icon: '🌴', region: 'kalimantan', realRpPerKg: 14000, unitKg: 50, marketDepth: 400,
+      id: 'sawit', exportClass: 'bebas', name: 'Minyak Sawit', icon: '🌴', region: 'kalimantan', realRpPerKg: 14000, unitKg: 50, marketDepth: 400,
       seasonNote: 'Buah berlimpah Agu-Nov; turun saat kemarau panjang dan musim hujan deras',
       season: {
         prod:  [0.9, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.1, 1.15, 1.15, 1.05, 0.9],
@@ -79,7 +84,7 @@
       }
     }),
     batubara: make({
-      id: 'batubara', name: 'Batubara', icon: '⚫', region: 'kalimantan', realRpPerKg: 1600, unitKg: 1000, freightFactor: 0.12, marketDepth: 150,
+      id: 'batubara', exportClass: 'terbatas', exportRule: { quotaPct: 0.25 }, name: 'Batubara', icon: '⚫', region: 'kalimantan', realRpPerKg: 1600, unitKg: 1000, freightFactor: 0.12, marketDepth: 150,
       seasonNote: 'Tambang lancar saat kemarau (Jun-Sep); hujan deras mengganggu angkutan',
       season: {
         prod:  [0.85, 0.85, 0.9, 0.95, 1.05, 1.1, 1.15, 1.15, 1.1, 1.05, 0.95, 0.9],

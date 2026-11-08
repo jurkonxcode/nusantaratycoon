@@ -191,6 +191,10 @@ body {
 .tag { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; vertical-align: middle; margin-left: 4px; }
 .tag.raya { background: #dff3d6; color: #1f6b34; }
 .tag.paceklik { background: #fbe3d8; color: #9a3a1a; }
+.tag.xc-bebas { background: #dcefe9; color: #14584a; }
+.tag.xc-terbatas { background: #fdecc8; color: #7a5200; }
+.tag.xc-domestik { background: #e8e4f3; color: #4a3d86; }
+.xc-notes { margin: 6px 0 10px; padding-left: 18px; line-height: 1.5; }
 .mult.up { color: var(--green); font-weight: 800; }
 .mult.down { color: var(--red); font-weight: 800; }
 .cal { display: grid; grid-template-columns: repeat(12, 1fr); gap: 2px; margin: 4px 0 10px; }
