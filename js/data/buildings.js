@@ -30,6 +30,10 @@
       id: 'tol', name: 'Jalan Tol', icon: '🛣️', baseCost: 500, maxLevel: 5,
       desc: '+20% produksi semua bangunan di wilayah ini per level'
     },
+    perumahan: {
+      id: 'perumahan', name: 'Perumahan', icon: '🏘️', baseCost: 350, maxLevel: 5,
+      desc: '+30% daya tampung penduduk wilayah ini per level'
+    },
     pelabuhan: {
       id: 'pelabuhan', name: 'Pelabuhan', icon: '⚓', baseCost: 400, maxLevel: 5,
       desc: '-15% ongkos kirim dari dan ke wilayah ini per level'

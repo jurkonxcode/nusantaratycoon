@@ -815,3 +815,32 @@ Keluhan pemilik: penarikan peta kurang smooth dan kurang stabil.
 **Dicoba dan dibuang:** `contain: layout paint` dan `will-change: contents` pada peta membuat bingkai lebih buruk (p50 16,7 menjadi 50 ms di HP); jangan dipakai lagi.
 **Tes.** `browser_zoom.py` 41 (tes geser disesuaikan: jari berhenti dulu sebelum lepas; tes luncur baru). Perf (CPU 4x, headless): HP zoom awal bingkai terburuk 117 menjadi 50 ms; HP diperbesar 100 menjadi 83 ms.
 **Belum diuji:** HP sungguhan (rasa luncuran: konstanta 325 ms dan ambang 0,15 px/ms di `glide`).
+
+## 38. Sesi 24: Fase 3, sistem populasi (8 November 2026)
+
+Mengikuti `HANDOFF-LANJUTAN.md` bagian 3 dengan "alternatif sederhana" (3.5): kebutuhan penduduk tidak menguras gudang pemain.
+
+**Model (`js/core/population.js`, murni, dites di Node; semua konstanta di `config.js` blok `population`):**
+1. **Kepuasan** tiap kategori (pangan, sandang, energi) = min(1, pasokan / kebutuhan + swasembada). Pasokan = laju produksi bangunan penghasil komoditas kebutuhan itu x bobot (`data/regions.js` `popNeeds`: pangan padi/gula 0,5/garam 0,1; sandang batik; energi minyak/batubara sebagai pendekatan listrik) x jangkauan (wilayah sendiri 1; dari wilayah lain 0,1 + 0,225 x (level pelabuhan asal + tujuan), maks 1). Kebutuhan = penduduk x (6 / 0,8 / 4 per menit).
+2. **Kesejahteraan** = 100 x (0,5 pangan + 0,25 sandang + 0,25 energi) x bonus (3% per level tol + pelabuhan, maks 20%), maks 100. Awal Jawa tepat 50 (stabil).
+3. **Pertumbuhan** per jam: pop x (1 + 0,02 x (kesejahteraan - 50)/50), dibatasi **daya tampung** (1,6 x penduduk awal + 0,3 per level infrastruktur baru **Perumahan**) dan lantai 60% penduduk awal. Dihitung dari timestamp (langkah 0,5 jam, maks 72 jam offline).
+4. **Pekerja**: 20 per indeks penduduk; tiap level bangunan butuh 0,5. Produksi wilayah x max(0,5, tersedia/dibutuhkan), maks 1 (tidak ada bonus). Dipasang di `economy.productionRate`.
+5. **Pasar**: harga jual wilayah x (pop/pop awal)^0,35 (awal = 1, jadi keseimbangan awal tidak berubah); kedalaman pasar x pop^0,6 (batas 0,5 sampai 3). Ekspor tidak terpengaruh.
+6. **Pajak**: kas per menit = pop x kesejahteraan/100 x 16, dihitung dari timestamp (`population.settle`, dipanggil tiap detik, saat memuat, dan saat kembali ke tab). **Sengaja tidak masuk `totalEarned`**: langkah panduan awal "Kumpulkan/Jual" memakai `totalEarned > 0` sebagai tanda sudah berdagang; bila pajak masuk, panduan selesai sendiri setelah 10 detik (ketahuan oleh `browser_layout.py`). Pajak dicatat di `stats.tax` dan dihitung di skor peradaban.
+7. **UI**: kotak "Penduduk" di panel wilayah (jiwa perkiraan, kesejahteraan, tiga bilah kebutuhan, peringatan pekerja, petunjuk apa yang kurang, pajak, daya tampung); baris Perumahan di Infrastruktur; pajak ikut di pemasukan per menit; toast pajak setelah pergi lama; istilah `kesejahteraan` dan `pekerja` di glosarium.
+
+**Perubahan lain yang perlu diketahui:** `applyJob` kini rebase SEMUA bangunan wilayah (pekerja dipakai bersama), dan upgrade tanpa timer mengamankan hasil seluruh wilayah. `normalPrice/unitPrice` menerima `state` opsional. `state.population` dan `infra.perumahan` ditambahkan di `state.js` (save lama aman: diisi nilai awal, tanpa pajak surut). Tes lama `economy.test.js` (upgrade termurah) disesuaikan karena Perumahan Rp 350 kini kandidat termurah.
+
+**Tes.** Baru: `tests/population.test.js` (15), `tests/browser_population.py` (14). Hijau: Node 25/10/10/10/15/12/11/14/20; browser paket B 22, paket C 33, layout 30, Z2 18. `browser_zoom.py`: 40 lolos, 1 gagal ("pin Jawa terlihat setelah reset", HP) **juga gagal di repo asli** sebelum perubahan ini; tidak diselidiki. `browser_perf.py` melewati anggaran di sandbox ini dengan angka sebanding repo asli (mesin sandbox lebih lambat); bandingkan di mesin pemilik.
+
+**BELUM dikerjakan / belum diuji (jujur):**
+- **Keseimbangan belum disetel.** `tools/simulate.js` belum memuat `population.js`, jadi bot tidak tahu pajak, pekerja, atau Perumahan (bot tidak akan membeli Perumahan). Semua angka di blok `population` adalah tebakan awal; Fase 9. Risiko terbesar: lantai pekerja 50% di Sulawesi/Kalimantan (penduduk awal kecil) pada level bangunan tinggi, dan pertumbuhan 2%/jam yang mungkin terlalu pelan untuk sesi pendek.
+- Wilayah baru yang dibuka tanpa pelabuhan mulai dengan kesejahteraan rendah (pangan hanya swasembada 20% + 10% jangkauan); penduduknya turun pelan sampai lantai 60%. Disengaja (mengajarkan pelabuhan), tetapi belum diuji rasanya.
+- Kenaikan kelas kota (Desa, Kota Kecil, Metropolitan) dan struktur yang dibuka per kelas (3.4) belum ada. Tab "Info wilayah" (bagian 4) dan kebutuhan listrik (Fase 4) belum ada. Tabel `player_regions` Supabase belum disentuh (populasi ikut di state JSON yang sama).
+- Pasokan memakai laju produksi tanpa musim, sehingga paceklik tidak menurunkan kesejahteraan. Pekerja memakai laju sesaat untuk jendela produksi yang belum dikumpulkan (selisih kecil karena gudang maks 6 jam).
+- Angka jiwa nyata (indeks x 150 juta) hanya perkiraan kasar; perlu verifikasi BPS sebelum dipakai di layar Info.
+- HP sungguhan dan Safari/iOS belum dicoba; tangkapan layar hanya Chromium headless.
+
+| Sesi | File yang berubah |
+|---|---|
+| 24 | `js/core/population.js` (baru), `js/core/state.js`, `js/core/economy.js`, `js/config.js`, `js/data/regions.js`, `js/data/buildings.js`, `js/main.js`, `js/ui/panels.js`, `css/style.css`, `index.html`, `tests/population.test.js` (baru), `tests/browser_population.py` (baru), `tests/economy.test.js`, `dist/nusantara-tycoon.html`, `HANDOFF.md` |

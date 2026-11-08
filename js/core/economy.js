@@ -55,7 +55,8 @@
     const lvl = buildingLevel(state, buildingId);
     if (!lvl) return 0;
     const tol = infraLevel(state, b.region, 'tol');
-    return b.baseRate * lvl * (1 + C.tolBonusPerLevel * tol) * worldProdMult(buildingId, now);
+    const labor = NT.population ? NT.population.laborFactor(state, b.region) : 1;   // Fase 3: kekurangan pekerja (min 50%)
+    return b.baseRate * lvl * (1 + C.tolBonusPerLevel * tol) * labor * worldProdMult(buildingId, now);
   }
 
   function capacity(state, buildingId, now) {
@@ -180,11 +181,11 @@
   // Terapkan hasil pembangunan yang selesai pada waktu job.endsAt (aman dipanggil belakangan, mis. setelah offline).
   function applyJob(state, j) {
     if (j.kind === 'building') {
-      if (!state.buildings[j.id]) {
-        state.buildings[j.id] = { level: 1, lastCollected: j.endsAt };
-      } else {
-        rebase(state, [j.id], j.endsAt, function () { state.buildings[j.id].level = j.to; });
-      }
+      // Pekerja dipakai bersama satu wilayah (Fase 3), jadi level baru bisa mengubah laju bangunan lain di wilayah itu: rebase semuanya.
+      rebase(state, D.regions[j.region].buildings, j.endsAt, function () {
+        if (!state.buildings[j.id]) state.buildings[j.id] = { level: 1, lastCollected: j.endsAt };
+        else state.buildings[j.id].level = j.to;
+      });
     } else if (j.id === 'tol') {
       rebase(state, D.regions[j.region].buildings, j.endsAt, function () { state.regions[j.region].infra.tol = j.to; });
     } else {
@@ -248,7 +249,7 @@
       return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0, queued: true, durationMs: dur };
     }
 
-    gather(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
+    D.regions[b.region].buildings.forEach(function (bid) { gather(state, bid, now); }); // amankan hasil sebelum laju produksi berubah (pekerja dipakai bersama)
     state.cash -= cost;
     if (lvl === 0) {
       state.buildings[buildingId] = { level: 1, lastCollected: now };
@@ -370,20 +371,23 @@
   }
 
   // Harga normal (tanpa fluktuasi dan tanpa tekanan pasokan).
-  function normalPrice(regionId, commodityId) {
+  // `state` opsional: bila ada, harga dikali pengali penduduk wilayah (Fase 3).
+  function normalPrice(regionId, commodityId, state) {
     const demand = (D.regions[regionId].demand && D.regions[regionId].demand[commodityId]) || 1;
-    return D.commodities[commodityId].basePrice * demand;
+    const pop = state && NT.population ? NT.population.priceMult(state, regionId) : 1;
+    return D.commodities[commodityId].basePrice * demand * pop;
   }
 
-  function unitPrice(regionId, commodityId, stock, now) {
-    const depth = D.commodities[commodityId].marketDepth;
+  function unitPrice(regionId, commodityId, stock, now, state) {
+    const dm = state && NT.population ? NT.population.depthMult(state, regionId) : 1;
+    const depth = D.commodities[commodityId].marketDepth * dm;
     const pressure = stock / (stock + depth);
-    return normalPrice(regionId, commodityId) * wave(regionId, commodityId, now) *
+    return normalPrice(regionId, commodityId, state) * wave(regionId, commodityId, now) *
       worldPriceMult(commodityId, now) * (1 - C.maxMarketDrop * pressure);
   }
 
   function currentPrice(state, regionId, commodityId, now) {
-    return unitPrice(regionId, commodityId, marketStock(state, regionId, commodityId, now), now);
+    return unitPrice(regionId, commodityId, marketStock(state, regionId, commodityId, now), now, state);
   }
 
   // Ongkir per unit dari wilayah asal komoditas ke pasar tujuan:
@@ -409,7 +413,7 @@
     let stock = marketStock(state, marketId, commodityId, now);
     let revenue = 0;
     for (let i = 0; i < qty; i++) {
-      revenue += unitPrice(marketId, commodityId, stock, now);
+      revenue += unitPrice(marketId, commodityId, stock, now, state);
       stock += 1;
     }
     const shipping = shippingPerUnit(state, commodityId, marketId) * qty;
@@ -676,7 +680,7 @@
     const span = (backMin + fwdMin) * 60000;
     for (let i = 0; i <= steps; i++) {
       const t = now - backMin * 60000 + span * i / steps;
-      out.push({ t: t, price: unitPrice(marketId, commodityId, marketStock(state, marketId, commodityId, t), t) });
+      out.push({ t: t, price: unitPrice(marketId, commodityId, marketStock(state, marketId, commodityId, t), t, state) });
     }
     return out;
   }
@@ -685,7 +689,7 @@
   // peakInMin = menit sampai puncak dalam 30 menit ke depan bila lebih tinggi >= 5% dari sekarang.
   function priceSignal(state, marketId, commodityId, now) {
     const cur = currentPrice(state, marketId, commodityId, now);
-    const ratio = cur / normalPrice(marketId, commodityId);
+    const ratio = cur / normalPrice(marketId, commodityId, state);
     const id = ratio >= 1.08 ? 'bagus' : (ratio <= 0.92 ? 'rendah' : 'normal');
     let peakInMin = null, peak = cur;
     priceSeries(state, marketId, commodityId, now, 0, 30, 30).forEach(function (p) {
@@ -716,7 +720,7 @@
       if (r.unlocked && !D.regions[rid].start) s += 100;
       s += ((r.infra.tol || 0) + (r.infra.pelabuhan || 0)) * 25;
     });
-    s += Math.floor(state.totalEarned / 1000);
+    s += Math.floor((state.totalEarned + ((state.stats && state.stats.tax) || 0)) / 1000);
     return s;
   }
 

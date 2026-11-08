@@ -836,6 +836,17 @@ details.how > p { margin: 0 0 6px; }
 .map-scroll.moving .art, .map-scroll.moving .pin-dot, .map-scroll.moving .island-land { filter: none; }
 .map-scroll.moving .map-svg * { animation-play-state: paused; }
 
+
+/* Penduduk (Fase 3) */
+.pop-box { border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 12px; padding: 10px 12px; }
+.pop-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+.pop-need { display: grid; grid-template-columns: minmax(96px, 38%) 1fr 40px; align-items: center; gap: 8px; margin: 4px 0; font-size: .9em; }
+.pop-need span[role="button"] { cursor: pointer; }
+.pop-need b { text-align: right; font-variant-numeric: tabular-nums; }
+.pop-need .bar { display: block; height: 8px; margin: 0; }
+.pop-need .bar.low i { background: #e0813d; }
+.pop-warn { margin: 6px 0 2px; color: #e0813d; font-size: .88em; }
+
 </style>
 </head>
 <body>
@@ -981,6 +992,34 @@ details.how > p { margin: 0 0 6px; }
     marketDecayPerMin: 0.08,  // tekanan pasokan turun 8% per menit
     maxMarketDrop: 0.55,      // harga paling banyak turun 55% karena banjir pasokan
     priceWaveAmplitude: 0.10, // fluktuasi harga +-10%
+
+    // Populasi (js/core/population.js). Semua angka awal, perlu disetel dengan tools/simulate.js (Fase 9).
+    population: {
+      enabled: true,
+      realMillionPerIndex: 150, // indeks 1,0 = sekitar 150 juta jiwa (Jawa). Hanya untuk tampilan, perkiraan kasar.
+      growthPerHour: 0.02,      // pada kesejahteraan 100: +2% per jam; pada 0: -2% per jam; 50 = stabil
+      floorShare: 0.6,          // penduduk tidak turun di bawah 60% dari jumlah awal (wilayah tidak "kosong")
+      housingBase: 1.6,         // daya tampung awal = 1,6 x penduduk awal
+      housingPerLevel: 0.3,     // +0,3 x penduduk awal per level Perumahan
+      // Kebutuhan per indeks penduduk per menit (satuan komoditas) dan bobot tiap kategori pada kesejahteraan.
+      demandPerPop: { pangan: 6, sandang: 0.8, energi: 4 },
+      catWeight: { pangan: 0.5, sandang: 0.25, energi: 0.25 },
+      subsistence: { pangan: 0.2, sandang: 0, energi: 0 },  // swasembada dasar (kebun rumah, dll.), bagian kebutuhan yang selalu terpenuhi
+      portLinkBase: 0.1,        // barang dari wilayah lain menjangkau sebuah wilayah: 0,1 + 0,225 x (pelabuhan asal + tujuan), maks 1
+      portLinkPerLevel: 0.225,
+      facilityBonus: 0.03,      // +3% kesejahteraan per level (tol + pelabuhan), maks +20%
+      facilityBonusMax: 0.2,
+      workersPerPop: 20,        // pekerja tersedia = penduduk x ini
+      workersPerLevel: 0.5,     // pekerja dibutuhkan per level bangunan
+      laborFloor: 0.5,          // produksi tidak turun di bawah 50% walau kekurangan pekerja
+      priceExp: 0.35,           // harga jual di wilayah dikali (penduduk / penduduk awal)^0,35
+      depthExp: 0.6,            // kedalaman pasar dikali penduduk^0,6 (Jawa awal = 1)
+      depthMin: 0.5, depthMax: 3,
+      taxPerMin: 16,            // kas per menit = penduduk x kesejahteraan/100 x ini
+      minStepSec: 10,           // hitung ulang paling cepat tiap 10 detik
+      stepHours: 0.5,           // langkah integrasi (penduduk berubah pelan; langkah lebih kecil tidak mengubah hasil berarti)
+      maxOfflineHours: 72       // waktu pergi yang dihitung paling banyak segini
+    },
 
     // Zoom peta (js/core/viewport.js)
     map: {
@@ -1247,6 +1286,10 @@ details.how > p { margin: 0 0 6px; }
       id: 'tol', name: 'Jalan Tol', icon: '🛣️', baseCost: 500, maxLevel: 5,
       desc: '+20% produksi semua bangunan di wilayah ini per level'
     },
+    perumahan: {
+      id: 'perumahan', name: 'Perumahan', icon: '🏘️', baseCost: 350, maxLevel: 5,
+      desc: '+30% daya tampung penduduk wilayah ini per level'
+    },
     pelabuhan: {
       id: 'pelabuhan', name: 'Pelabuhan', icon: '⚓', baseCost: 400, maxLevel: 5,
       desc: '-15% ongkos kirim dari dan ke wilayah ini per level'
@@ -1260,14 +1303,24 @@ details.how > p { margin: 0 0 6px; }
  * Wilayah. demand = pengali harga jual di pasar wilayah itu (default 1).
  * hub = kota pelabuhan utama (dipakai menghitung jarak dan ongkir secara nyata).
  * map.pin / label / port / slots = posisi di peta dalam [bujur, lintang]; bentuk pulau ada di data/geo.js.
+ * population.start = indeks penduduk awal (Jawa = 1,0; angka nyata kasar: Jawa 150, Sumatra 60, Sulawesi 20, Kalimantan 17 juta; perlu verifikasi BPS).
+ * needs (opsional) = menimpa NT.data.popNeeds untuk wilayah itu.
  * comingSoon = wilayah yang belum bisa dimainkan (kerangka untuk pengembangan berikutnya).
  */
 (function (NT) {
   NT.data = NT.data || {};
 
+  // Kebutuhan penduduk: kategori -> { komoditas: bobot }. Pasokan = laju produksi komoditas itu x bobot (lihat core/population.js).
+  // Energi memakai minyak dan batubara sebagai pendekatan; listrik menyusul di Fase 4.
+  NT.data.popNeeds = {
+    pangan: { padi: 1, gula: 0.5, garam: 0.1 },
+    sandang: { batik: 1 },
+    energi: { minyak: 1, batubara: 1.2 }
+  };
+
   NT.data.regions = {
     sumatra: {
-      id: 'sumatra', name: 'Sumatra', icon: '☕', artIcon: 'kopi', tagline: 'Kebun kopi dan karet di tanah Andalas',
+      id: 'sumatra', population: { start: 0.4 }, name: 'Sumatra', icon: '☕', artIcon: 'kopi', tagline: 'Kebun kopi dan karet di tanah Andalas',
       unlockCost: 600, infraCostFactor: 1.5, buildings: ['kebun_kopi', 'kebun_karet', 'kebun_lada', 'tambang_timah', 'sumur_minyak'],
       demand: { padi: 1.3, batik: 1.4, kopi: 0.9, karet: 0.9, kakao: 1.1, cengkeh: 1.2, sawit: 1.1, batubara: 1.2 , teh: 1.2, gula: 1.3, tembakau: 1.2, garam: 1.2, lada: 0.9, timah: 0.9, minyak: 0.9 },
       hub: { name: 'Medan (Belawan)', lon: 98.7, lat: 3.78 },
@@ -1277,7 +1330,7 @@ details.how > p { margin: 0 0 6px; }
       }
     },
     jawa: {
-      id: 'jawa', name: 'Jawa', icon: '🌾', artIcon: 'padi', tagline: 'Lumbung padi dan pusat batik', start: true,
+      id: 'jawa', population: { start: 1.0 }, name: 'Jawa', icon: '🌾', artIcon: 'padi', tagline: 'Lumbung padi dan pusat batik', start: true,
       unlockCost: 0, infraCostFactor: 1, buildings: ['sawah', 'sentra_batik', 'tambak_garam', 'kebun_teh', 'kebun_tebu', 'kebun_tembakau'],
       demand: { padi: 0.9, batik: 1.1, kopi: 1.3, karet: 1.2, kakao: 1.1, cengkeh: 1.4, sawit: 1.3, batubara: 1.4, teh: 0.9, gula: 0.9, tembakau: 0.9, garam: 0.9, lada: 1.3, timah: 1.2, minyak: 1.4 },
       hub: { name: 'Jakarta (Tanjung Priok)', lon: 106.85, lat: -6.1 },
@@ -1290,7 +1343,7 @@ details.how > p { margin: 0 0 6px; }
       }
     },
     sulawesi: {
-      id: 'sulawesi', name: 'Sulawesi', icon: '🍫', artIcon: 'kakao', tagline: 'Kakao dan cengkeh dari tanah Celebes',
+      id: 'sulawesi', population: { start: 0.13 }, name: 'Sulawesi', icon: '🍫', artIcon: 'kakao', tagline: 'Kakao dan cengkeh dari tanah Celebes',
       unlockCost: 2000, infraCostFactor: 2.5, buildings: ['kebun_kakao', 'kebun_cengkeh'],
       demand: { padi: 1.2, batik: 1.3, kopi: 1.2, karet: 1.1, kakao: 0.9, cengkeh: 0.9, sawit: 1.2, batubara: 1.2 , teh: 1.2, gula: 1.3, tembakau: 1.2, garam: 1.3, lada: 1.2, timah: 1.2, minyak: 1.2 },
       hub: { name: 'Makassar', lon: 119.4, lat: -5.13 },
@@ -1300,7 +1353,7 @@ details.how > p { margin: 0 0 6px; }
       }
     },
     kalimantan: {
-      id: 'kalimantan', artIcon: 'sawit', name: 'Kalimantan', icon: '🌴', tagline: 'Sawit dan batubara dari rimba Borneo',
+      id: 'kalimantan', population: { start: 0.11 }, artIcon: 'sawit', name: 'Kalimantan', icon: '🌴', tagline: 'Sawit dan batubara dari rimba Borneo',
       unlockCost: 10000, infraCostFactor: 3.5, buildings: ['kebun_sawit', 'tambang_batubara'],
       demand: { padi: 1.3, batik: 1.4, kopi: 1.2, karet: 1.2, kakao: 1.2, cengkeh: 1.3, sawit: 0.9, batubara: 0.9 , teh: 1.3, gula: 1.4, tembakau: 1.3, garam: 1.4, lada: 1.2, timah: 1.3, minyak: 1.2 },
       hub: { name: 'Balikpapan', lon: 116.8, lat: -1.27 },
@@ -1918,7 +1971,7 @@ details.how > p { margin: 0 0 6px; }
   const D = NT.data;
   const VERSION = 1;
 
-  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs', 'exports'];
+  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs', 'exports', 'tax'];
   const LOG_MAX = 40;
 
   function freshStats() {
@@ -1933,7 +1986,8 @@ details.how > p { margin: 0 0 6px; }
       createdAt: now,
       cash: 50,
       totalEarned: 0,
-      regions: {},     // id -> { unlocked, infra: { tol, pelabuhan } }
+      regions: {},     // id -> { unlocked, infra: { tol, pelabuhan, perumahan } }
+      population: {},  // wilayah -> { pop (indeks), welfare (0-100), at (waktu hitung terakhir, ms) }
       buildings: {},   // id -> { level, lastCollected }
       inventory: {},   // komoditas -> jumlah
       market: {},      // wilayah -> komoditas -> { stock, updatedAt }
@@ -1948,8 +2002,9 @@ details.how > p { margin: 0 0 6px; }
     Object.keys(D.regions).forEach(function (id) {
       const r = D.regions[id];
       if (r.comingSoon) return;
-      s.regions[id] = { unlocked: !!r.start, infra: { tol: 0, pelabuhan: 0 } };
+      s.regions[id] = { unlocked: !!r.start, infra: { tol: 0, pelabuhan: 0, perumahan: 0 } };
       s.market[id] = {};
+      if (r.population) s.population[id] = { pop: r.population.start, welfare: 50, at: now };
     });
     Object.keys(D.exportMarkets || {}).forEach(function (id) { s.market['export:' + id] = {}; });
     Object.keys(D.commodities).forEach(function (id) { s.inventory[id] = 0; });
@@ -1974,6 +2029,18 @@ details.how > p { margin: 0 0 6px; }
       base.regions[id].unlocked = !!sr.unlocked || !!D.regions[id].start;
       base.regions[id].infra.tol = (sr.infra && sr.infra.tol) || 0;
       base.regions[id].infra.pelabuhan = (sr.infra && sr.infra.pelabuhan) || 0;
+      base.regions[id].infra.perumahan = (sr.infra && sr.infra.perumahan) || 0;
+    });
+
+    // Penduduk: save lama tanpa data ini mulai dari nilai awal (tanpa pajak surut).
+    Object.keys(base.population).forEach(function (id) {
+      const sp = saved.population && saved.population[id];
+      if (!sp) return;
+      const start = D.regions[id].population.start;
+      const pop = Number(sp.pop), w = Number(sp.welfare), at = Number(sp.at);
+      if (pop > 0 && isFinite(pop)) base.population[id].pop = Math.min(pop, start * 50);
+      if (w >= 0 && w <= 100) base.population[id].welfare = w;
+      if (at > 0 && at <= now) base.population[id].at = at;
     });
 
     base.buildings = {};
@@ -2079,7 +2146,8 @@ details.how > p { margin: 0 0 6px; }
     const lvl = buildingLevel(state, buildingId);
     if (!lvl) return 0;
     const tol = infraLevel(state, b.region, 'tol');
-    return b.baseRate * lvl * (1 + C.tolBonusPerLevel * tol) * worldProdMult(buildingId, now);
+    const labor = NT.population ? NT.population.laborFactor(state, b.region) : 1;   // Fase 3: kekurangan pekerja (min 50%)
+    return b.baseRate * lvl * (1 + C.tolBonusPerLevel * tol) * labor * worldProdMult(buildingId, now);
   }
 
   function capacity(state, buildingId, now) {
@@ -2204,11 +2272,11 @@ details.how > p { margin: 0 0 6px; }
   // Terapkan hasil pembangunan yang selesai pada waktu job.endsAt (aman dipanggil belakangan, mis. setelah offline).
   function applyJob(state, j) {
     if (j.kind === 'building') {
-      if (!state.buildings[j.id]) {
-        state.buildings[j.id] = { level: 1, lastCollected: j.endsAt };
-      } else {
-        rebase(state, [j.id], j.endsAt, function () { state.buildings[j.id].level = j.to; });
-      }
+      // Pekerja dipakai bersama satu wilayah (Fase 3), jadi level baru bisa mengubah laju bangunan lain di wilayah itu: rebase semuanya.
+      rebase(state, D.regions[j.region].buildings, j.endsAt, function () {
+        if (!state.buildings[j.id]) state.buildings[j.id] = { level: 1, lastCollected: j.endsAt };
+        else state.buildings[j.id].level = j.to;
+      });
     } else if (j.id === 'tol') {
       rebase(state, D.regions[j.region].buildings, j.endsAt, function () { state.regions[j.region].infra.tol = j.to; });
     } else {
@@ -2272,7 +2340,7 @@ details.how > p { margin: 0 0 6px; }
       return { ok: true, cost: cost, level: lvl + 1, built: lvl === 0, queued: true, durationMs: dur };
     }
 
-    gather(state, buildingId, now); // amankan hasil sebelum laju produksi berubah
+    D.regions[b.region].buildings.forEach(function (bid) { gather(state, bid, now); }); // amankan hasil sebelum laju produksi berubah (pekerja dipakai bersama)
     state.cash -= cost;
     if (lvl === 0) {
       state.buildings[buildingId] = { level: 1, lastCollected: now };
@@ -2394,20 +2462,23 @@ details.how > p { margin: 0 0 6px; }
   }
 
   // Harga normal (tanpa fluktuasi dan tanpa tekanan pasokan).
-  function normalPrice(regionId, commodityId) {
+  // `state` opsional: bila ada, harga dikali pengali penduduk wilayah (Fase 3).
+  function normalPrice(regionId, commodityId, state) {
     const demand = (D.regions[regionId].demand && D.regions[regionId].demand[commodityId]) || 1;
-    return D.commodities[commodityId].basePrice * demand;
+    const pop = state && NT.population ? NT.population.priceMult(state, regionId) : 1;
+    return D.commodities[commodityId].basePrice * demand * pop;
   }
 
-  function unitPrice(regionId, commodityId, stock, now) {
-    const depth = D.commodities[commodityId].marketDepth;
+  function unitPrice(regionId, commodityId, stock, now, state) {
+    const dm = state && NT.population ? NT.population.depthMult(state, regionId) : 1;
+    const depth = D.commodities[commodityId].marketDepth * dm;
     const pressure = stock / (stock + depth);
-    return normalPrice(regionId, commodityId) * wave(regionId, commodityId, now) *
+    return normalPrice(regionId, commodityId, state) * wave(regionId, commodityId, now) *
       worldPriceMult(commodityId, now) * (1 - C.maxMarketDrop * pressure);
   }
 
   function currentPrice(state, regionId, commodityId, now) {
-    return unitPrice(regionId, commodityId, marketStock(state, regionId, commodityId, now), now);
+    return unitPrice(regionId, commodityId, marketStock(state, regionId, commodityId, now), now, state);
   }
 
   // Ongkir per unit dari wilayah asal komoditas ke pasar tujuan:
@@ -2433,7 +2504,7 @@ details.how > p { margin: 0 0 6px; }
     let stock = marketStock(state, marketId, commodityId, now);
     let revenue = 0;
     for (let i = 0; i < qty; i++) {
-      revenue += unitPrice(marketId, commodityId, stock, now);
+      revenue += unitPrice(marketId, commodityId, stock, now, state);
       stock += 1;
     }
     const shipping = shippingPerUnit(state, commodityId, marketId) * qty;
@@ -2700,7 +2771,7 @@ details.how > p { margin: 0 0 6px; }
     const span = (backMin + fwdMin) * 60000;
     for (let i = 0; i <= steps; i++) {
       const t = now - backMin * 60000 + span * i / steps;
-      out.push({ t: t, price: unitPrice(marketId, commodityId, marketStock(state, marketId, commodityId, t), t) });
+      out.push({ t: t, price: unitPrice(marketId, commodityId, marketStock(state, marketId, commodityId, t), t, state) });
     }
     return out;
   }
@@ -2709,7 +2780,7 @@ details.how > p { margin: 0 0 6px; }
   // peakInMin = menit sampai puncak dalam 30 menit ke depan bila lebih tinggi >= 5% dari sekarang.
   function priceSignal(state, marketId, commodityId, now) {
     const cur = currentPrice(state, marketId, commodityId, now);
-    const ratio = cur / normalPrice(marketId, commodityId);
+    const ratio = cur / normalPrice(marketId, commodityId, state);
     const id = ratio >= 1.08 ? 'bagus' : (ratio <= 0.92 ? 'rendah' : 'normal');
     let peakInMin = null, peak = cur;
     priceSeries(state, marketId, commodityId, now, 0, 30, 30).forEach(function (p) {
@@ -2740,7 +2811,7 @@ details.how > p { margin: 0 0 6px; }
       if (r.unlocked && !D.regions[rid].start) s += 100;
       s += ((r.infra.tol || 0) + (r.infra.pelabuhan || 0)) * 25;
     });
-    s += Math.floor(state.totalEarned / 1000);
+    s += Math.floor((state.totalEarned + ((state.stats && state.stats.tax) || 0)) / 1000);
     return s;
   }
 
@@ -2805,6 +2876,242 @@ details.how > p { margin: 0 0 6px; }
     score: score,
     rank: rank,
     _fmt: fmt
+  };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Populasi (Fase 3). Fungsi murni terhadap `state` dan `now`, tanpa DOM; dites di Node.
+ *
+ * Model sederhana (sesuai HANDOFF-LANJUTAN bagian 3.5, "alternatif sederhana"):
+ *  - Kebutuhan (pangan, sandang, energi) TIDAK menguras gudang pemain. Pasokan sebuah wilayah dihitung dari laju produksi
+ *    bangunan penghasil komoditas kebutuhan itu: di wilayah sendiri penuh, dari wilayah lain dikali daya jangkau pelabuhan.
+ *  - Kepuasan tiap kategori = min(1, pasokan / kebutuhan), kebutuhan = penduduk x konstanta per kategori.
+ *  - Kesejahteraan = 100 x jumlah(bobot x kepuasan) x bonus fasilitas (tol + pelabuhan), maksimum 100.
+ *  - Penduduk tumbuh/turun menurut kesejahteraan, dibatasi daya tampung (Perumahan) dan lantai.
+ *  - Pekerja membatasi produksi (lantai 50%); penduduk menaikkan harga dan kedalaman pasar; penduduk membayar pajak per menit.
+ *  Semua dihitung dari timestamp seperti produksi, jadi tetap jalan saat offline.
+ *
+ * Bergantung pada NT.economy hanya lewat NT.economy.productionRate (dipanggil saat runtime, bukan saat dimuat).
+ */
+(function (NT) {
+  const D = NT.data;
+  const C = NT.config;
+  const CATS = ['pangan', 'sandang', 'energi'];
+
+  function P() { return C.population; }
+  function enabled() { return !!(P() && P().enabled); }
+  function entry(state, rid) { return (state.population && state.population[rid]) || null; }
+  function startOf(rid) { return D.regions[rid].population.start; }
+
+  function level(state, rid, infraId) {
+    const r = state.regions[rid];
+    return (r && r.infra && r.infra[infraId]) || 0;
+  }
+
+  function needsOf(rid) { return D.regions[rid].needs || D.popNeeds; }
+
+  /* ---------- Batas dan angka tampilan ---------- */
+
+  function housingCap(state, rid) {
+    return startOf(rid) * (P().housingBase + P().housingPerLevel * level(state, rid, 'perumahan'));
+  }
+
+  function floorPop(rid) { return startOf(rid) * P().floorShare; }
+
+  // Perkiraan jumlah jiwa nyata (juta) untuk tampilan. Angka kasar untuk keperluan game.
+  function millions(pop) { return pop * P().realMillionPerIndex; }
+
+  /* ---------- Pekerja ---------- */
+
+  function workersNeeded(state, rid) {
+    let n = 0;
+    D.regions[rid].buildings.forEach(function (bid) {
+      n += ((state.buildings[bid] && state.buildings[bid].level) || 0) * P().workersPerLevel;
+    });
+    return n;
+  }
+
+  function workersAvailable(state, rid, pop) {
+    const e = entry(state, rid);
+    return (pop != null ? pop : (e ? e.pop : 0)) * P().workersPerPop;
+  }
+
+  // Pengali produksi 0,5..1 untuk bangunan di wilayah ini. 1 bila fitur mati atau data populasi tidak ada.
+  function laborFactor(state, rid) {
+    if (!enabled() || !D.regions[rid] || !D.regions[rid].population) return 1;
+    const e = entry(state, rid);
+    if (!e) return 1;
+    const need = workersNeeded(state, rid);
+    if (need <= 0) return 1;
+    return Math.max(P().laborFloor, Math.min(1, workersAvailable(state, rid, e.pop) / need));
+  }
+
+  /* ---------- Kebutuhan dan kesejahteraan ---------- */
+
+  // Seberapa jauh barang dari wilayah `src` menjangkau wilayah `dst` (0..1).
+  function reach(state, src, dst) {
+    if (src === dst) return 1;
+    const ports = level(state, src, 'pelabuhan') + level(state, dst, 'pelabuhan');
+    return Math.min(1, P().portLinkBase + P().portLinkPerLevel * ports);
+  }
+
+  // Pasokan kategori `cat` untuk wilayah `rid` (satuan per menit): laju produksi (tanpa musim) x bobot x jangkauan.
+  function supply(state, rid, cat) {
+    const needs = needsOf(rid)[cat] || {};
+    const E = NT.economy;
+    let total = 0;
+    Object.keys(D.buildings).forEach(function (bid) {
+      const b = D.buildings[bid];
+      const w = needs[b.produces];
+      if (!w || !state.buildings[bid] || !state.regions[b.region] || !state.regions[b.region].unlocked) return;
+      total += E.productionRate(state, bid) * w * reach(state, b.region, rid);
+    });
+    return total;
+  }
+
+  function demand(rid, cat, pop) { return pop * P().demandPerPop[cat]; }
+
+  // Kepuasan 0..1 tiap kategori pada penduduk `pop` (bawaan: penduduk sekarang).
+  function satisfaction(state, rid, pop) {
+    const e = entry(state, rid);
+    const n = pop != null ? pop : (e ? e.pop : 0);
+    const out = {};
+    CATS.forEach(function (cat) {
+      const d = demand(rid, cat, n);
+      const sup = supply(state, rid, cat);
+      const raw = d > 0 ? sup / d : 1;
+      out[cat] = Math.max(0, Math.min(1, raw + (P().subsistence[cat] || 0)));
+    });
+    return out;
+  }
+
+  function facilityBonus(state, rid) {
+    const lv = level(state, rid, 'tol') + level(state, rid, 'pelabuhan');
+    return 1 + Math.min(P().facilityBonusMax, P().facilityBonus * lv);
+  }
+
+  function welfareFrom(sat, state, rid) {
+    let w = 0;
+    CATS.forEach(function (cat) { w += P().catWeight[cat] * sat[cat]; });
+    return Math.max(0, Math.min(100, 100 * w * facilityBonus(state, rid)));
+  }
+
+  /* ---------- Pengaruh ke pasar ---------- */
+
+  function active(state, rid) { return enabled() && !!entry(state, rid) && !!(state.regions[rid] && state.regions[rid].unlocked); }
+
+  // Pengali harga jual di pasar wilayah: (penduduk / penduduk awal)^0,35. Awal = 1, jadi tidak mengubah keseimbangan awal.
+  function priceMult(state, rid) {
+    if (!state || !entry(state, rid) || !enabled()) return 1;
+    return Math.pow(entry(state, rid).pop / startOf(rid), P().priceExp);
+  }
+
+  // Pengali kedalaman pasar: penduduk^0,6 (Jawa awal = 1), dibatasi.
+  function depthMult(state, rid) {
+    if (!state || !entry(state, rid) || !enabled()) return 1;
+    return Math.max(P().depthMin, Math.min(P().depthMax, Math.pow(entry(state, rid).pop, P().depthExp)));
+  }
+
+  /* ---------- Waktu: pertumbuhan dan pajak ---------- */
+
+  function taxRatePerMin(pop, welfare) { return pop * welfare / 100 * P().taxPerMin; }
+
+  // Pajak per menit saat ini seluruh wilayah terbuka (untuk tampilan pemasukan).
+  function taxPerMin(state) {
+    if (!enabled()) return 0;
+    let v = 0;
+    Object.keys(state.population || {}).forEach(function (rid) {
+      if (!active(state, rid)) return;
+      const e = entry(state, rid);
+      v += taxRatePerMin(e.pop, welfareFrom(satisfaction(state, rid, e.pop), state, rid));
+    });
+    return v;
+  }
+
+  // Maju satu langkah `h` jam untuk satu wilayah. Mengembalikan pajak (kas) yang dihasilkan.
+  function step(state, rid, h) {
+    const e = entry(state, rid);
+    const w = welfareFrom(satisfaction(state, rid, e.pop), state, rid);
+    const before = e.pop;
+    let pop = before * Math.pow(Math.max(0.01, 1 + P().growthPerHour * (w - 50) / 50), h);
+    const cap = housingCap(state, rid), lo = floorPop(rid);
+    // Penduduk yang sudah di atas daya tampung (mis. save diimpor) tidak dipaksa turun mendadak, hanya tidak tumbuh lagi.
+    pop = w >= 50 ? Math.min(pop, Math.max(cap, before)) : Math.max(pop, Math.min(lo, before));
+    e.pop = pop;
+    e.welfare = w;
+    return taxRatePerMin((before + pop) / 2, w) * h * 60;
+  }
+
+  // Terapkan pertumbuhan dan pajak sampai `now`. Aman dipanggil belakangan (setelah offline). Mengembalikan pajak yang masuk kas.
+  function settle(state, now) {
+    if (!enabled() || !state.population) return 0;
+    let taxTotal = 0;
+    Object.keys(state.population).forEach(function (rid) {
+      const e = state.population[rid];
+      if (!state.regions[rid] || !state.regions[rid].unlocked) { e.at = now; return; }
+      const ms = now - e.at;
+      if (!(ms > 0)) { e.at = Math.min(e.at, now); return; }
+      if (ms < P().minStepSec * 1000) return;
+      let hours = Math.min(ms / 3600000, P().maxOfflineHours);
+      e.at = now;
+      while (hours > 1e-9) {
+        const h = Math.min(hours, P().stepHours);
+        taxTotal += step(state, rid, h);
+        hours -= h;
+      }
+    });
+    if (taxTotal > 0) {
+      // Sengaja TIDAK masuk totalEarned: panduan awal dan pencapaian dagang memakai totalEarned sebagai tanda "sudah berdagang".
+      // Pajak dicatat di stats.tax dan tetap dihitung di skor peradaban.
+      state.cash += taxTotal;
+      state.stats.tax = (state.stats.tax || 0) + taxTotal;
+    }
+    return taxTotal;
+  }
+
+  /* ---------- Ringkasan untuk antarmuka ---------- */
+
+  // Kategori dengan kepuasan terendah (< 0,95), atau null. Dipakai untuk petunjuk "apa yang kurang".
+  function worstNeed(sat) {
+    let worst = null;
+    CATS.forEach(function (cat) { if (sat[cat] < 0.95 && (!worst || sat[cat] < sat[worst])) worst = cat; });
+    return worst;
+  }
+
+  function info(state, rid) {
+    if (!enabled() || !entry(state, rid) || !D.regions[rid].population) return null;
+    const e = entry(state, rid);
+    const sat = satisfaction(state, rid, e.pop);
+    const welfare = welfareFrom(sat, state, rid);
+    const need = workersNeeded(state, rid), have = workersAvailable(state, rid, e.pop);
+    return {
+      pop: e.pop, millions: millions(e.pop), welfare: welfare, sat: sat, worst: worstNeed(sat),
+      cap: housingCap(state, rid), floor: floorPop(rid),
+      trend: Math.pow(Math.max(0.01, 1 + P().growthPerHour * (welfare - 50) / 50), 1) - 1,   // perubahan per jam
+      workersNeed: need, workersHave: have, labor: laborFactor(state, rid),
+      taxPerMin: taxRatePerMin(e.pop, welfare), priceMult: priceMult(state, rid), depthMult: depthMult(state, rid)
+    };
+  }
+
+  NT.population = {
+    CATS: CATS,
+    enabled: enabled,
+    laborFactor: laborFactor,
+    priceMult: priceMult,
+    depthMult: depthMult,
+    housingCap: housingCap,
+    supply: supply,
+    demand: demand,
+    reach: reach,
+    satisfaction: satisfaction,
+    welfareFrom: welfareFrom,
+    workersNeeded: workersNeeded,
+    taxPerMin: taxPerMin,
+    settle: settle,
+    info: info,
+    millions: millions
   };
 })((window.NT = window.NT || {}));
 
@@ -4645,6 +4952,8 @@ details.how > p { margin: 0 0 6px; }
     peradaban: 'Skor peradaban: dihitung dari level bangunan, infrastruktur, wilayah yang terbuka, dan total pendapatan. Makin tinggi, makin besar gelarmu.',
     tekanan: 'Tekanan pasar: menjual banyak barang sekaligus menurunkan harga di pasar itu, lalu pulih pelan-pelan. Sebar penjualan ke beberapa pasar.',
     tol: 'Jalan tol: menaikkan produksi semua bangunan di wilayah itu 20% per level.',
+    kesejahteraan: 'Kesejahteraan (0-100): separuh dari pangan, seperempat sandang, seperempat energi yang tercukupi, ditambah bonus tol dan pelabuhan. Di atas 50 penduduk bertambah, di bawah 50 berkurang. Pangan: padi (juga gula dan garam). Sandang: batik. Energi: minyak dan batubara.',
+    pekerja: 'Pekerja: tiap 1 indeks penduduk menyediakan 20 pekerja; tiap level bangunan butuh 0,5. Bila kurang, produksi wilayah itu turun (paling banyak sampai separuhnya). Naikkan Perumahan agar penduduk bisa bertambah.',
     pelabuhan: 'Pelabuhan: memotong ongkir kirim antar wilayah. Pelabuhan di asal dan tujuan sama-sama berpengaruh.'
   };
 
@@ -4737,6 +5046,40 @@ details.how > p { margin: 0 0 6px; }
     '</div>';
   }
 
+  /* ---------- Penduduk (Fase 3) ---------- */
+
+  const NEED_LABEL = { pangan: '🍚 Pangan', sandang: '👘 Sandang', energi: '⚡ Energi' };
+  // Petunjuk "apa yang kurang": bangunan penghasil di wilayah ini bila ada; bila tidak, pelabuhan agar barang dari wilayah lain menjangkau.
+  function needHint(regionId, cat) {
+    const needs = (D.regions[regionId].needs || D.popNeeds)[cat] || {};
+    const local = D.regions[regionId].buildings.filter(function (bid) { return needs[D.buildings[bid].produces]; });
+    if (local.length) return 'Bangun atau naikkan ' + local.map(function (bid) { return D.buildings[bid].name; }).join(', ') + '.';
+    const far = Object.keys(D.buildings).filter(function (bid) { return needs[D.buildings[bid].produces]; })
+      .map(function (bid) { return D.buildings[bid].name + ' (' + D.regions[D.buildings[bid].region].name + ')'; });
+    return 'Barangnya datang dari wilayah lain: bangun ' + far.join(' atau ') + ', dan naikkan Pelabuhan di sini dan di asalnya.';
+  }
+
+  function popHtml(state, regionId) {
+    const i = NT.population.info(state, regionId);
+    if (!i) return '';
+    const bar = function (v, cls) { return '<span class="bar mini ' + (cls || '') + '"><i style="width:' + Math.round(Math.max(0, Math.min(1, v)) * 100) + '%"></i></span>'; };
+    const needs = NT.population.CATS.map(function (c) {
+      return '<div class="pop-need"><span>' + NEED_LABEL[c] + '</span>' + bar(i.sat[c], i.sat[c] < 0.5 ? 'low' : '') + '<b>' + Math.round(i.sat[c] * 100) + '%</b></div>';
+    }).join('');
+    const trend = i.pop >= i.cap - 1e-6 && i.trend > 0 ? 'penuh, naikkan Perumahan'
+      : (i.trend > 0.0005 ? 'bertambah' : (i.trend < -0.0005 ? 'berkurang' : 'stabil'));
+    const labor = i.labor < 0.999
+      ? '<p class="pop-warn">👷 Kekurangan pekerja: produksi wilayah ' + Math.round(i.labor * 100) + '% (butuh ' + F.num(i.workersNeed, 1) + ', ada ' + F.num(i.workersHave, 1) + '). Naikkan Perumahan.</p>' : '';
+    const hint = i.worst ? '<p class="muted small">Yang kurang: ' + needHint(regionId, i.worst) + '</p>' : '';
+    return '<h3>Penduduk</h3><div class="pop-box">' +
+      '<div class="pop-top"><b>👥 ≈ ' + F.num(i.millions, i.millions < 20 ? 1 : 0) + ' juta jiwa</b>' +
+        '<small class="muted"> indeks ' + F.num(i.pop, 2) + ' · ' + trend + '</small></div>' +
+      '<div class="pop-need"><span data-action="term" data-term="kesejahteraan" role="button" tabindex="0">😊 Kesejahteraan ⓘ</span>' + bar(i.welfare / 100, i.welfare < 40 ? 'low' : '') + '<b>' + Math.round(i.welfare) + '</b></div>' +
+      needs + labor + hint +
+      '<p class="muted small">Pajak ≈ +' + F.money(i.taxPerMin) + '/mnt · harga jual ×' + F.num(i.priceMult, 2) + ' · daya tampung ' + F.num(i.cap, 2) + '</p>' +
+      '<p class="muted small">Jumlah jiwa nyata hanya perkiraan kasar untuk game (perlu verifikasi BPS).</p></div>';
+  }
+
   function renderRegion(state, now) {
     const r = D.regions[view.region];
     const host = $('region-panel');
@@ -4758,6 +5101,7 @@ details.how > p { margin: 0 0 6px; }
       html = '<div class="card"><h2>' + regionArt(r) + ' ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
         '<h3>Produksi</h3>' + r.buildings.map(function (bid) { return buildingRow(state, bid, now); }).join('') +
         '<h3>Infrastruktur</h3>' + Object.keys(D.infra).map(function (iid) { return infraRow(state, r.id, iid, now); }).join('') +
+        '<div data-live="popbox" data-region="' + r.id + '">' + popHtml(state, r.id) + '</div>' +
         '</div>';
     }
     host.innerHTML = html;
@@ -4887,7 +5231,7 @@ details.how > p { margin: 0 0 6px; }
   function sparkSvg(state, cid, now) {
     const W = 240, H = 46, PAD = 4;
     const ser = E.priceSeries(state, view.market, cid, now, 30, 30, 40);
-    const base = E.normalPrice(view.market, cid);
+    const base = E.normalPrice(view.market, cid, state);
     let lo = base, hi = base;
     ser.forEach(function (p) { lo = Math.min(lo, p.price); hi = Math.max(hi, p.price); });
     const span = (hi - lo) || 1;
@@ -5174,7 +5518,7 @@ details.how > p { margin: 0 0 6px; }
     NT.ui.fx.setCash($('stat-cash'), state.cash);
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
-    const inc0 = E.incomePerMin(state, now);
+    const inc0 = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
     $('stat-income').textContent = inc0 > 0 ? '≈ +' + F.money(inc0) + '/mnt' : '\u00a0';
     $('stat-rankpct').textContent = rk.next ? Math.round(Math.max(0, Math.min(1, (sc - rk.current.min) / (rk.next.min - rk.current.min))) * 100) + '% ke ' + rk.next.name : 'Gelar tertinggi';
 
@@ -5218,7 +5562,7 @@ details.how > p { margin: 0 0 6px; }
       $('goal-ico').innerHTML = (goal.kind === 'building' || goal.kind === 'infra') ? (NT.ui.art.sprite(goal.id, 'sm') || goal.icon) : goal.icon;
       $('goal-title').textContent = goal.label + ' · ' + F.money(goal.cost);
       $('goal-bar').style.width = Math.min(100, state.cash / goal.cost * 100) + '%';
-      const inc = E.incomePerMin(state, now);
+      const inc = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
       $('goal-eta').textContent = state.cash >= goal.cost ? '✅ Kas cukup, ayo bangun!'
         : (inc > 0 ? '≈ ' + F.duration((goal.cost - state.cash) / inc * 60000) + ' lagi jika semua hasil dijual' : '');
     } else {
@@ -5286,7 +5630,7 @@ details.how > p { margin: 0 0 6px; }
     });
     each('[data-live="trend"]', function (el) {
       const cid = el.getAttribute('data-c');
-      const ratio = E.currentPrice(state, view.market, cid, now) / E.normalPrice(view.market, cid) - 1;
+      const ratio = E.currentPrice(state, view.market, cid, now) / E.normalPrice(view.market, cid, state) - 1;
       const pct = Math.round(ratio * 100);
       el.textContent = (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '%';
       el.className = 'trend ' + (pct >= 0 ? 'up' : 'down');
@@ -5330,6 +5674,12 @@ details.how > p { margin: 0 0 6px; }
       const have = state.inventory[el.getAttribute('data-c')] || 0;
       const qty = el.getAttribute('data-qty');
       el.disabled = qty === 'all' ? have < 1 : have < Number(qty);
+    });
+
+    // Kotak penduduk: hanya teks, diganti bila isinya berubah
+    each('[data-live="popbox"]', function (el) {
+      const h = popHtml(state, el.getAttribute('data-region'));
+      if (el.getAttribute('data-sig') !== h) { el.setAttribute('data-sig', h); el.innerHTML = h; }
     });
 
     // Capaian dan upgrade termurah
@@ -5857,6 +6207,8 @@ details.how > p { margin: 0 0 6px; }
       if (away < AWAY_MS) return;
       const done = E.settle(state, t);
       E.settleShipments(state, t);
+      const taxBack = NT.population.settle(state, t);
+      if (taxBack >= 1) toast('💼 Pajak penduduk selama kamu pergi: +' + F.money(taxBack), 'ok');
       if (!NT.ui.welcome.show(state, away, done, t) && done.length) celebrate(done, true);
       P.renderAll(state, t);
     });
@@ -5881,6 +6233,8 @@ details.how > p { margin: 0 0 6px; }
     state = NT.state.normalize(saved, t);
     const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
     E.settleShipments(state, t);              // kiriman yang tiba saat pemain pergi
+    const taxAway = NT.population.settle(state, t);   // pajak penduduk selama pemain pergi
+    if (lastSeen && taxAway >= 1 && t - lastSeen > AWAY_MS) toast('💼 Pajak penduduk selama kamu pergi: +' + F.money(taxAway), 'ok');
 
     NT.ui.settings.apply();
     NT.ui.map.mount();
@@ -5900,6 +6254,7 @@ details.how > p { margin: 0 0 6px; }
       if (!document.hidden) state.stats.playMs += 1000;
       const done = E.settle(state, t2);
       const arrived = E.settleShipments(state, t2);
+      NT.population.settle(state, t2);
       if (arrived.length) {
         const sum = arrived.reduce(function (a, x) { return a + x.net; }, 0);
         toast((arrived[0].kind === 'export' ? '🚢 ' : '🚚 ') + arrived.length + ' kiriman tiba: +' + F.money(sum), 'ok');

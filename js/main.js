@@ -400,6 +400,8 @@
       if (away < AWAY_MS) return;
       const done = E.settle(state, t);
       E.settleShipments(state, t);
+      const taxBack = NT.population.settle(state, t);
+      if (taxBack >= 1) toast('💼 Pajak penduduk selama kamu pergi: +' + F.money(taxBack), 'ok');
       if (!NT.ui.welcome.show(state, away, done, t) && done.length) celebrate(done, true);
       P.renderAll(state, t);
     });
@@ -424,6 +426,8 @@
     state = NT.state.normalize(saved, t);
     const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
     E.settleShipments(state, t);              // kiriman yang tiba saat pemain pergi
+    const taxAway = NT.population.settle(state, t);   // pajak penduduk selama pemain pergi
+    if (lastSeen && taxAway >= 1 && t - lastSeen > AWAY_MS) toast('💼 Pajak penduduk selama kamu pergi: +' + F.money(taxAway), 'ok');
 
     NT.ui.settings.apply();
     NT.ui.map.mount();
@@ -443,6 +447,7 @@
       if (!document.hidden) state.stats.playMs += 1000;
       const done = E.settle(state, t2);
       const arrived = E.settleShipments(state, t2);
+      NT.population.settle(state, t2);
       if (arrived.length) {
         const sum = arrived.reduce(function (a, x) { return a + x.net; }, 0);
         toast((arrived[0].kind === 'export' ? '🚢 ' : '🚚 ') + arrived.length + ' kiriman tiba: +' + F.money(sum), 'ok');

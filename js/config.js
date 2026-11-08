@@ -62,6 +62,34 @@
     maxMarketDrop: 0.55,      // harga paling banyak turun 55% karena banjir pasokan
     priceWaveAmplitude: 0.10, // fluktuasi harga +-10%
 
+    // Populasi (js/core/population.js). Semua angka awal, perlu disetel dengan tools/simulate.js (Fase 9).
+    population: {
+      enabled: true,
+      realMillionPerIndex: 150, // indeks 1,0 = sekitar 150 juta jiwa (Jawa). Hanya untuk tampilan, perkiraan kasar.
+      growthPerHour: 0.02,      // pada kesejahteraan 100: +2% per jam; pada 0: -2% per jam; 50 = stabil
+      floorShare: 0.6,          // penduduk tidak turun di bawah 60% dari jumlah awal (wilayah tidak "kosong")
+      housingBase: 1.6,         // daya tampung awal = 1,6 x penduduk awal
+      housingPerLevel: 0.3,     // +0,3 x penduduk awal per level Perumahan
+      // Kebutuhan per indeks penduduk per menit (satuan komoditas) dan bobot tiap kategori pada kesejahteraan.
+      demandPerPop: { pangan: 6, sandang: 0.8, energi: 4 },
+      catWeight: { pangan: 0.5, sandang: 0.25, energi: 0.25 },
+      subsistence: { pangan: 0.2, sandang: 0, energi: 0 },  // swasembada dasar (kebun rumah, dll.), bagian kebutuhan yang selalu terpenuhi
+      portLinkBase: 0.1,        // barang dari wilayah lain menjangkau sebuah wilayah: 0,1 + 0,225 x (pelabuhan asal + tujuan), maks 1
+      portLinkPerLevel: 0.225,
+      facilityBonus: 0.03,      // +3% kesejahteraan per level (tol + pelabuhan), maks +20%
+      facilityBonusMax: 0.2,
+      workersPerPop: 20,        // pekerja tersedia = penduduk x ini
+      workersPerLevel: 0.5,     // pekerja dibutuhkan per level bangunan
+      laborFloor: 0.5,          // produksi tidak turun di bawah 50% walau kekurangan pekerja
+      priceExp: 0.35,           // harga jual di wilayah dikali (penduduk / penduduk awal)^0,35
+      depthExp: 0.6,            // kedalaman pasar dikali penduduk^0,6 (Jawa awal = 1)
+      depthMin: 0.5, depthMax: 3,
+      taxPerMin: 16,            // kas per menit = penduduk x kesejahteraan/100 x ini
+      minStepSec: 10,           // hitung ulang paling cepat tiap 10 detik
+      stepHours: 0.5,           // langkah integrasi (penduduk berubah pelan; langkah lebih kecil tidak mengubah hasil berarti)
+      maxOfflineHours: 72       // waktu pergi yang dihitung paling banyak segini
+    },
+
     // Zoom peta (js/core/viewport.js)
     map: {
       maxZoom: 4,             // zoom maksimum = 4x dari tampilan "pas layar"

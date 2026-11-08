@@ -6,7 +6,7 @@
   const D = NT.data;
   const VERSION = 1;
 
-  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs', 'exports'];
+  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs', 'exports', 'tax'];
   const LOG_MAX = 40;
 
   function freshStats() {
@@ -21,7 +21,8 @@
       createdAt: now,
       cash: 50,
       totalEarned: 0,
-      regions: {},     // id -> { unlocked, infra: { tol, pelabuhan } }
+      regions: {},     // id -> { unlocked, infra: { tol, pelabuhan, perumahan } }
+      population: {},  // wilayah -> { pop (indeks), welfare (0-100), at (waktu hitung terakhir, ms) }
       buildings: {},   // id -> { level, lastCollected }
       inventory: {},   // komoditas -> jumlah
       market: {},      // wilayah -> komoditas -> { stock, updatedAt }
@@ -36,8 +37,9 @@
     Object.keys(D.regions).forEach(function (id) {
       const r = D.regions[id];
       if (r.comingSoon) return;
-      s.regions[id] = { unlocked: !!r.start, infra: { tol: 0, pelabuhan: 0 } };
+      s.regions[id] = { unlocked: !!r.start, infra: { tol: 0, pelabuhan: 0, perumahan: 0 } };
       s.market[id] = {};
+      if (r.population) s.population[id] = { pop: r.population.start, welfare: 50, at: now };
     });
     Object.keys(D.exportMarkets || {}).forEach(function (id) { s.market['export:' + id] = {}; });
     Object.keys(D.commodities).forEach(function (id) { s.inventory[id] = 0; });
@@ -62,6 +64,18 @@
       base.regions[id].unlocked = !!sr.unlocked || !!D.regions[id].start;
       base.regions[id].infra.tol = (sr.infra && sr.infra.tol) || 0;
       base.regions[id].infra.pelabuhan = (sr.infra && sr.infra.pelabuhan) || 0;
+      base.regions[id].infra.perumahan = (sr.infra && sr.infra.perumahan) || 0;
+    });
+
+    // Penduduk: save lama tanpa data ini mulai dari nilai awal (tanpa pajak surut).
+    Object.keys(base.population).forEach(function (id) {
+      const sp = saved.population && saved.population[id];
+      if (!sp) return;
+      const start = D.regions[id].population.start;
+      const pop = Number(sp.pop), w = Number(sp.welfare), at = Number(sp.at);
+      if (pop > 0 && isFinite(pop)) base.population[id].pop = Math.min(pop, start * 50);
+      if (w >= 0 && w <= 100) base.population[id].welfare = w;
+      if (at > 0 && at <= now) base.population[id].at = at;
     });
 
     base.buildings = {};

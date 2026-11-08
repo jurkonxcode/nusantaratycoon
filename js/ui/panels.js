@@ -20,6 +20,8 @@
     peradaban: 'Skor peradaban: dihitung dari level bangunan, infrastruktur, wilayah yang terbuka, dan total pendapatan. Makin tinggi, makin besar gelarmu.',
     tekanan: 'Tekanan pasar: menjual banyak barang sekaligus menurunkan harga di pasar itu, lalu pulih pelan-pelan. Sebar penjualan ke beberapa pasar.',
     tol: 'Jalan tol: menaikkan produksi semua bangunan di wilayah itu 20% per level.',
+    kesejahteraan: 'Kesejahteraan (0-100): separuh dari pangan, seperempat sandang, seperempat energi yang tercukupi, ditambah bonus tol dan pelabuhan. Di atas 50 penduduk bertambah, di bawah 50 berkurang. Pangan: padi (juga gula dan garam). Sandang: batik. Energi: minyak dan batubara.',
+    pekerja: 'Pekerja: tiap 1 indeks penduduk menyediakan 20 pekerja; tiap level bangunan butuh 0,5. Bila kurang, produksi wilayah itu turun (paling banyak sampai separuhnya). Naikkan Perumahan agar penduduk bisa bertambah.',
     pelabuhan: 'Pelabuhan: memotong ongkir kirim antar wilayah. Pelabuhan di asal dan tujuan sama-sama berpengaruh.'
   };
 
@@ -112,6 +114,40 @@
     '</div>';
   }
 
+  /* ---------- Penduduk (Fase 3) ---------- */
+
+  const NEED_LABEL = { pangan: '🍚 Pangan', sandang: '👘 Sandang', energi: '⚡ Energi' };
+  // Petunjuk "apa yang kurang": bangunan penghasil di wilayah ini bila ada; bila tidak, pelabuhan agar barang dari wilayah lain menjangkau.
+  function needHint(regionId, cat) {
+    const needs = (D.regions[regionId].needs || D.popNeeds)[cat] || {};
+    const local = D.regions[regionId].buildings.filter(function (bid) { return needs[D.buildings[bid].produces]; });
+    if (local.length) return 'Bangun atau naikkan ' + local.map(function (bid) { return D.buildings[bid].name; }).join(', ') + '.';
+    const far = Object.keys(D.buildings).filter(function (bid) { return needs[D.buildings[bid].produces]; })
+      .map(function (bid) { return D.buildings[bid].name + ' (' + D.regions[D.buildings[bid].region].name + ')'; });
+    return 'Barangnya datang dari wilayah lain: bangun ' + far.join(' atau ') + ', dan naikkan Pelabuhan di sini dan di asalnya.';
+  }
+
+  function popHtml(state, regionId) {
+    const i = NT.population.info(state, regionId);
+    if (!i) return '';
+    const bar = function (v, cls) { return '<span class="bar mini ' + (cls || '') + '"><i style="width:' + Math.round(Math.max(0, Math.min(1, v)) * 100) + '%"></i></span>'; };
+    const needs = NT.population.CATS.map(function (c) {
+      return '<div class="pop-need"><span>' + NEED_LABEL[c] + '</span>' + bar(i.sat[c], i.sat[c] < 0.5 ? 'low' : '') + '<b>' + Math.round(i.sat[c] * 100) + '%</b></div>';
+    }).join('');
+    const trend = i.pop >= i.cap - 1e-6 && i.trend > 0 ? 'penuh, naikkan Perumahan'
+      : (i.trend > 0.0005 ? 'bertambah' : (i.trend < -0.0005 ? 'berkurang' : 'stabil'));
+    const labor = i.labor < 0.999
+      ? '<p class="pop-warn">👷 Kekurangan pekerja: produksi wilayah ' + Math.round(i.labor * 100) + '% (butuh ' + F.num(i.workersNeed, 1) + ', ada ' + F.num(i.workersHave, 1) + '). Naikkan Perumahan.</p>' : '';
+    const hint = i.worst ? '<p class="muted small">Yang kurang: ' + needHint(regionId, i.worst) + '</p>' : '';
+    return '<h3>Penduduk</h3><div class="pop-box">' +
+      '<div class="pop-top"><b>👥 ≈ ' + F.num(i.millions, i.millions < 20 ? 1 : 0) + ' juta jiwa</b>' +
+        '<small class="muted"> indeks ' + F.num(i.pop, 2) + ' · ' + trend + '</small></div>' +
+      '<div class="pop-need"><span data-action="term" data-term="kesejahteraan" role="button" tabindex="0">😊 Kesejahteraan ⓘ</span>' + bar(i.welfare / 100, i.welfare < 40 ? 'low' : '') + '<b>' + Math.round(i.welfare) + '</b></div>' +
+      needs + labor + hint +
+      '<p class="muted small">Pajak ≈ +' + F.money(i.taxPerMin) + '/mnt · harga jual ×' + F.num(i.priceMult, 2) + ' · daya tampung ' + F.num(i.cap, 2) + '</p>' +
+      '<p class="muted small">Jumlah jiwa nyata hanya perkiraan kasar untuk game (perlu verifikasi BPS).</p></div>';
+  }
+
   function renderRegion(state, now) {
     const r = D.regions[view.region];
     const host = $('region-panel');
@@ -133,6 +169,7 @@
       html = '<div class="card"><h2>' + regionArt(r) + ' ' + r.name + '</h2><p class="muted">' + r.tagline + '</p>' +
         '<h3>Produksi</h3>' + r.buildings.map(function (bid) { return buildingRow(state, bid, now); }).join('') +
         '<h3>Infrastruktur</h3>' + Object.keys(D.infra).map(function (iid) { return infraRow(state, r.id, iid, now); }).join('') +
+        '<div data-live="popbox" data-region="' + r.id + '">' + popHtml(state, r.id) + '</div>' +
         '</div>';
     }
     host.innerHTML = html;
@@ -262,7 +299,7 @@
   function sparkSvg(state, cid, now) {
     const W = 240, H = 46, PAD = 4;
     const ser = E.priceSeries(state, view.market, cid, now, 30, 30, 40);
-    const base = E.normalPrice(view.market, cid);
+    const base = E.normalPrice(view.market, cid, state);
     let lo = base, hi = base;
     ser.forEach(function (p) { lo = Math.min(lo, p.price); hi = Math.max(hi, p.price); });
     const span = (hi - lo) || 1;
@@ -549,7 +586,7 @@
     NT.ui.fx.setCash($('stat-cash'), state.cash);
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
-    const inc0 = E.incomePerMin(state, now);
+    const inc0 = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
     $('stat-income').textContent = inc0 > 0 ? '≈ +' + F.money(inc0) + '/mnt' : '\u00a0';
     $('stat-rankpct').textContent = rk.next ? Math.round(Math.max(0, Math.min(1, (sc - rk.current.min) / (rk.next.min - rk.current.min))) * 100) + '% ke ' + rk.next.name : 'Gelar tertinggi';
 
@@ -593,7 +630,7 @@
       $('goal-ico').innerHTML = (goal.kind === 'building' || goal.kind === 'infra') ? (NT.ui.art.sprite(goal.id, 'sm') || goal.icon) : goal.icon;
       $('goal-title').textContent = goal.label + ' · ' + F.money(goal.cost);
       $('goal-bar').style.width = Math.min(100, state.cash / goal.cost * 100) + '%';
-      const inc = E.incomePerMin(state, now);
+      const inc = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
       $('goal-eta').textContent = state.cash >= goal.cost ? '✅ Kas cukup, ayo bangun!'
         : (inc > 0 ? '≈ ' + F.duration((goal.cost - state.cash) / inc * 60000) + ' lagi jika semua hasil dijual' : '');
     } else {
@@ -661,7 +698,7 @@
     });
     each('[data-live="trend"]', function (el) {
       const cid = el.getAttribute('data-c');
-      const ratio = E.currentPrice(state, view.market, cid, now) / E.normalPrice(view.market, cid) - 1;
+      const ratio = E.currentPrice(state, view.market, cid, now) / E.normalPrice(view.market, cid, state) - 1;
       const pct = Math.round(ratio * 100);
       el.textContent = (pct >= 0 ? '▲ ' : '▼ ') + Math.abs(pct) + '%';
       el.className = 'trend ' + (pct >= 0 ? 'up' : 'down');
@@ -705,6 +742,12 @@
       const have = state.inventory[el.getAttribute('data-c')] || 0;
       const qty = el.getAttribute('data-qty');
       el.disabled = qty === 'all' ? have < 1 : have < Number(qty);
+    });
+
+    // Kotak penduduk: hanya teks, diganti bila isinya berubah
+    each('[data-live="popbox"]', function (el) {
+      const h = popHtml(state, el.getAttribute('data-region'));
+      if (el.getAttribute('data-sig') !== h) { el.setAttribute('data-sig', h); el.innerHTML = h; }
     });
 
     // Capaian dan upgrade termurah

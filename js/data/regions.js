@@ -2,14 +2,24 @@
  * Wilayah. demand = pengali harga jual di pasar wilayah itu (default 1).
  * hub = kota pelabuhan utama (dipakai menghitung jarak dan ongkir secara nyata).
  * map.pin / label / port / slots = posisi di peta dalam [bujur, lintang]; bentuk pulau ada di data/geo.js.
+ * population.start = indeks penduduk awal (Jawa = 1,0; angka nyata kasar: Jawa 150, Sumatra 60, Sulawesi 20, Kalimantan 17 juta; perlu verifikasi BPS).
+ * needs (opsional) = menimpa NT.data.popNeeds untuk wilayah itu.
  * comingSoon = wilayah yang belum bisa dimainkan (kerangka untuk pengembangan berikutnya).
  */
 (function (NT) {
   NT.data = NT.data || {};
 
+  // Kebutuhan penduduk: kategori -> { komoditas: bobot }. Pasokan = laju produksi komoditas itu x bobot (lihat core/population.js).
+  // Energi memakai minyak dan batubara sebagai pendekatan; listrik menyusul di Fase 4.
+  NT.data.popNeeds = {
+    pangan: { padi: 1, gula: 0.5, garam: 0.1 },
+    sandang: { batik: 1 },
+    energi: { minyak: 1, batubara: 1.2 }
+  };
+
   NT.data.regions = {
     sumatra: {
-      id: 'sumatra', name: 'Sumatra', icon: '☕', artIcon: 'kopi', tagline: 'Kebun kopi dan karet di tanah Andalas',
+      id: 'sumatra', population: { start: 0.4 }, name: 'Sumatra', icon: '☕', artIcon: 'kopi', tagline: 'Kebun kopi dan karet di tanah Andalas',
       unlockCost: 600, infraCostFactor: 1.5, buildings: ['kebun_kopi', 'kebun_karet', 'kebun_lada', 'tambang_timah', 'sumur_minyak'],
       demand: { padi: 1.3, batik: 1.4, kopi: 0.9, karet: 0.9, kakao: 1.1, cengkeh: 1.2, sawit: 1.1, batubara: 1.2 , teh: 1.2, gula: 1.3, tembakau: 1.2, garam: 1.2, lada: 0.9, timah: 0.9, minyak: 0.9 },
       hub: { name: 'Medan (Belawan)', lon: 98.7, lat: 3.78 },
@@ -19,7 +29,7 @@
       }
     },
     jawa: {
-      id: 'jawa', name: 'Jawa', icon: '🌾', artIcon: 'padi', tagline: 'Lumbung padi dan pusat batik', start: true,
+      id: 'jawa', population: { start: 1.0 }, name: 'Jawa', icon: '🌾', artIcon: 'padi', tagline: 'Lumbung padi dan pusat batik', start: true,
       unlockCost: 0, infraCostFactor: 1, buildings: ['sawah', 'sentra_batik', 'tambak_garam', 'kebun_teh', 'kebun_tebu', 'kebun_tembakau'],
       demand: { padi: 0.9, batik: 1.1, kopi: 1.3, karet: 1.2, kakao: 1.1, cengkeh: 1.4, sawit: 1.3, batubara: 1.4, teh: 0.9, gula: 0.9, tembakau: 0.9, garam: 0.9, lada: 1.3, timah: 1.2, minyak: 1.4 },
       hub: { name: 'Jakarta (Tanjung Priok)', lon: 106.85, lat: -6.1 },
@@ -32,7 +42,7 @@
       }
     },
     sulawesi: {
-      id: 'sulawesi', name: 'Sulawesi', icon: '🍫', artIcon: 'kakao', tagline: 'Kakao dan cengkeh dari tanah Celebes',
+      id: 'sulawesi', population: { start: 0.13 }, name: 'Sulawesi', icon: '🍫', artIcon: 'kakao', tagline: 'Kakao dan cengkeh dari tanah Celebes',
       unlockCost: 2000, infraCostFactor: 2.5, buildings: ['kebun_kakao', 'kebun_cengkeh'],
       demand: { padi: 1.2, batik: 1.3, kopi: 1.2, karet: 1.1, kakao: 0.9, cengkeh: 0.9, sawit: 1.2, batubara: 1.2 , teh: 1.2, gula: 1.3, tembakau: 1.2, garam: 1.3, lada: 1.2, timah: 1.2, minyak: 1.2 },
       hub: { name: 'Makassar', lon: 119.4, lat: -5.13 },
@@ -42,7 +52,7 @@
       }
     },
     kalimantan: {
-      id: 'kalimantan', artIcon: 'sawit', name: 'Kalimantan', icon: '🌴', tagline: 'Sawit dan batubara dari rimba Borneo',
+      id: 'kalimantan', population: { start: 0.11 }, artIcon: 'sawit', name: 'Kalimantan', icon: '🌴', tagline: 'Sawit dan batubara dari rimba Borneo',
       unlockCost: 10000, infraCostFactor: 3.5, buildings: ['kebun_sawit', 'tambang_batubara'],
       demand: { padi: 1.3, batik: 1.4, kopi: 1.2, karet: 1.2, kakao: 1.2, cengkeh: 1.3, sawit: 0.9, batubara: 0.9 , teh: 1.3, gula: 1.4, tembakau: 1.3, garam: 1.4, lada: 1.2, timah: 1.3, minyak: 1.2 },
       hub: { name: 'Balikpapan', lon: 116.8, lat: -1.27 },

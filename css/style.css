@@ -816,3 +816,14 @@ details.how > p { margin: 0 0 6px; }
    dan animasi gelembung/pin dijeda supaya tiap bingkai tidak menggambar ulang puluhan elemen berfilter. Kembali normal saat diam. */
 .map-scroll.moving .art, .map-scroll.moving .pin-dot, .map-scroll.moving .island-land { filter: none; }
 .map-scroll.moving .map-svg * { animation-play-state: paused; }
+
+
+/* Penduduk (Fase 3) */
+.pop-box { border: 1px solid var(--line, rgba(255,255,255,.12)); border-radius: 12px; padding: 10px 12px; }
+.pop-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+.pop-need { display: grid; grid-template-columns: minmax(96px, 38%) 1fr 40px; align-items: center; gap: 8px; margin: 4px 0; font-size: .9em; }
+.pop-need span[role="button"] { cursor: pointer; }
+.pop-need b { text-align: right; font-variant-numeric: tabular-nums; }
+.pop-need .bar { display: block; height: 8px; margin: 0; }
+.pop-need .bar.low i { background: #e0813d; }
+.pop-warn { margin: 6px 0 2px; color: #e0813d; font-size: .88em; }
