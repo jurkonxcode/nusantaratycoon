@@ -62,7 +62,7 @@
     return Math.floor(productionRate(state, buildingId, now) * 60 * C.storageHours);
   }
 
-  // Hasil tertunda memakai laju saat ini untuk seluruh jendela (gudang hanya 2 jam, jadi selisihnya kecil).
+  // Hasil tertunda memakai laju saat ini untuk seluruh jendela (gudang hanya beberapa jam, jadi selisihnya kecil).
   function pending(state, buildingId, now) {
     const sb = state.buildings[buildingId];
     if (!sb || !sb.level) return 0;

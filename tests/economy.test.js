@@ -37,7 +37,7 @@ test('produksi dihitung dari waktu dan dibatasi kapasitas gudang', function () {
   const s = NT.state.createInitialState(t0);
   assert.strictEqual(Math.floor(E.pending(s, 'sawah', t0 + 5 * MIN)), 30); // 6/menit
   assert.strictEqual(E.pending(s, 'sawah', t0 + 10 * 60 * MIN), E.capacity(s, 'sawah'));
-  assert.strictEqual(E.capacity(s, 'sawah'), 720);
+  assert.strictEqual(E.capacity(s, 'sawah'), 6 * 60 * NT.config.storageHours); // laju 6/menit
 });
 
 test('collect memindahkan hasil ke gudang dan menyimpan sisa pecahan', function () {
@@ -125,7 +125,8 @@ test('skor dan gelar naik seiring kemajuan', function () {
   s.regions.jawa.infra.tol = 2;
   assert.ok(E.score(s) > a);
   assert.strictEqual(E.rank(0).current.name, 'Desa Rintisan');
-  assert.strictEqual(E.rank(5000).current.name, 'Peradaban Nusantara');
+  assert.strictEqual(E.rank(5000).current.name, 'Provinsi Makmur');
+  assert.strictEqual(E.rank(100000).current.name, 'Peradaban Nusantara');
 });
 
 test('normalize aman untuk data lama atau rusak', function () {
@@ -258,6 +259,14 @@ test('cheapestUpgrade: memilih termurah, mengabaikan buka wilayah dan pekerjaan 
   s.regions.jawa.infra.tol = 5; s.regions.jawa.infra.pelabuhan = 5;
   s.buildings.sawah.level = 40; s.buildings.sentra_batik = { level: 40, lastCollected: t0 };
   assert.ok(E.cheapestUpgrade(s).cost > 1000);
+});
+
+test('ambang gelar naik tegas dan semua wilayah yang bisa dimainkan punya bangunan', function () {
+  for (let i = 1; i < NT.data.ranks.length; i++) assert.ok(NT.data.ranks[i].min > NT.data.ranks[i - 1].min * 2, 'gelar ' + i);
+  Object.keys(NT.data.regions).forEach(function (id) {
+    const r = NT.data.regions[id];
+    if (!r.comingSoon) assert.ok(r.buildings.length > 0, id);
+  });
 });
 
 console.log('\n' + passed + ' tes lolos');

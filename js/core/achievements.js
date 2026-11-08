@@ -18,6 +18,7 @@
   function maxInfra(state, infraId) {
     return Object.keys(state.regions).reduce(function (m, id) { return Math.max(m, state.regions[id].infra[infraId] || 0); }, 0);
   }
+  function rankMin(name) { return D.ranks.filter(function (r) { return r.name === name; })[0].min; }
   function st(state, k) { return (state.stats && state.stats[k]) || 0; }
 
   /* ---------- Panduan awal: 5 langkah ---------- */
@@ -89,9 +90,9 @@
         return Object.keys(D.infra).some(function (iid) { return maxInfra(s, iid) >= D.infra[iid].maxLevel; });
       } },
     { id: 'kota', icon: '🏘️', name: 'Kota Dagang', desc: 'Capai gelar Kota Dagang.',
-      test: function (s) { return E.rank(E.score(s)).current.min >= 150; } },
+      test: function (s) { return E.rank(E.score(s)).current.min >= rankMin('Kota Dagang'); } },
     { id: 'provinsi', icon: '🏛️', name: 'Provinsi Makmur', desc: 'Capai gelar Provinsi Makmur.',
-      test: function (s) { return E.rank(E.score(s)).current.min >= 900; } },
+      test: function (s) { return E.rank(E.score(s)).current.min >= rankMin('Provinsi Makmur'); } },
     { id: 'setia', icon: '⏳', name: 'Pemain Setia', desc: 'Bermain selama 1 jam (waktu layar terbuka).',
       test: function (s) { return st(s, 'playMs') >= 3600000; } }
   ];

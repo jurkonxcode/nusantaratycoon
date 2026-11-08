@@ -1,7 +1,7 @@
 # HANDOFF: Nusantara Tycoon
 
 Dokumen serah-terima untuk melanjutkan proyek di sesi baru (dengan Claude atau siapa pun).
-Terakhir diperbarui: 8 November 2026 (sesi 11: wilayah Kalimantan).
+Terakhir diperbarui: 8 November 2026 (sesi 12: penyetelan keseimbangan).
 
 > **Sumber kebenaran adalah repo GitHub**, bukan salinan di chat. Repo: `github.com/jurkonxcode/nusantaratycoon`.
 > Kalau kode di repo berbeda dengan yang dijelaskan di sini, percayai repo, lalu perbarui dokumen ini.
@@ -107,6 +107,7 @@ js/
 supabase/schema.sql         tabel game_saves + RLS (tahap 1) + rencana tabel (tahap 2)
 tests/economy.test.js       tes logika inti tanpa browser (musim/peristiwa dimatikan)
 tests/world.test.js         tes musim, peristiwa, ongkir km, dan geografi peta
+tools/simulate.js           simulator pemain otomatis (aktif/santai/harian) untuk menyetel keseimbangan
 tools/balance.js            cetak harga, ongkir, jarak, dan waktu balik modal tiap bangunan
 tools/bundle.js             membuat dist/nusantara-tycoon.html (satu file) untuk pratinjau
 README.md                   panduan singkat pengguna dan deploy
@@ -497,3 +498,41 @@ Sama seperti 22.5: pastikan deploy tayang, uji main 15-20 menit, lalu pilih Kali
 | Sesi | File yang berubah |
 |---|---|
 | 11 | `js/data/commodities.js`, `js/data/buildings.js`, `js/data/regions.js`, `js/data/events.js`, `js/core/economy.js`, `js/ui/sprites.js`, `js/ui/assets.js`, `assets/sprites/*`, `assets/commodities/*`, `tools/art_kalimantan.py` (baru), `tools/make_assets.py`, `tools/art_tiers.py`, `tests/world.test.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+
+## 26. Sesi 12: penyetelan keseimbangan ekonomi (8 November 2026)
+
+**Alat baru:** `node tools/simulate.js [jam=48] [musim=0|1]` memainkan game dengan bot serakah (panen, jual ke pasar terbaik, beli yang balik modalnya
+tercepat, pakai kas lebih untuk mempercepat bangunan) dalam tiga gaya: **aktif** (cek tiap 5 menit), **santai** (tiap 60 menit), **harian** (tiap 8 jam).
+Mencetak kapan wilayah terbuka, kas/pemasukan/skor per jam, porsi pendapatan tiap komoditas, dan level akhir.
+Coba angka lain tanpa mengubah file: `OVR='{"storageHours":8}' node tools/simulate.js 72`.
+
+**Temuan sebelum disetel** (hanya hasil simulasi bot, bukan pemain sungguhan):
+1. Gudang hanya 2 jam: pemain yang cek 8 jam sekali hampir tidak maju (pemasukan 50/mnt setelah 8 jam, skor 113 setelah 3 hari).
+2. Pemain aktif mencapai gelar tertinggi (3500 poin) dalam sekitar 4-5 jam; ambang gelar terlalu rendah dibanding laju skor (skor 200 ribu setelah seminggu).
+3. Sawit dan batubara menyumbang sekitar 40% pendapatan (laju/aliran per level jauh di atas komoditas lain), dan Kalimantan terbuka lebih cepat daripada Sulawesi untuk pemain aktif.
+
+**Perubahan:**
+| Angka | Sebelum | Sesudah |
+|---|---|---|
+| `storageHours` (`js/config.js`) | 2 | 6 |
+| Gelar (`NT.data.ranks`, `js/data/regions.js`) | 0 / 150 / 400 / 900 / 1800 / 3500 | 0 / 150 / 800 / 4000 / 20000 / 100000 |
+| Kalimantan `unlockCost` | 6000 | 10000 |
+| Kebun Sawit `baseRate` | 12 | 9 (balik modal sekitar 24 mnt) |
+| Tambang Batubara `baseRate` | 6 | 4,5 (balik modal sekitar 30 mnt) |
+
+Pencapaian "Kota Dagang" dan "Provinsi Makmur" kini membaca ambang dari daftar gelar (`rankMin()` di `js/core/achievements.js`), jadi tidak perlu diubah lagi saat gelar disetel.
+
+**Hasil sesudah** (tanpa musim): aktif: Kota Dagang sekitar 20 mnt, Provinsi Makmur sekitar 2 jam, Negara Maritim sekitar 1 hari, Peradaban Nusantara sekitar 5 hari.
+Santai: Kabupaten Maju sekitar 10 jam, Negara Maritim sekitar 3 hari. Harian: Provinsi Makmur sekitar 3 hari, Peradaban Nusantara sekitar 1 pekan.
+Wilayah dibuka (santai): Sumatra 1 jam, Sulawesi 9 jam, Kalimantan 21 jam. Porsi pendapatan terbesar tinggal sekitar 18%.
+
+**Belum disetel / catatan:**
+- Semua ini dari bot; **uji main sungguhan tetap perlu** (apakah menunggu terasa wajar, apakah ingin kembali). Angka di tabel gampang diubah.
+- Pemain aktif masih sangat cepat di jam pertama (3 wilayah dalam kurang dari 2 jam). Bila terasa kurang menantang, naikkan `unlockCost` Sulawesi atau `buildGrowth`.
+- Pemasukan pemain aktif mendatar sekitar 30 ribu/mnt setelah hari pertama (biaya level naik x1,55, hasil naik linear). Bila ingin kemajuan tak terbatas: tambah infrastruktur baru, prestise, atau proyek nasional.
+- Tes browser Python (`tests/browser_paket_*.py`) tidak dijalankan ulang; teks gelar dan lama gudang bisa memengaruhi pengecekannya.
+
+| Sesi | File yang berubah |
+|---|---|
+| 12 | `js/config.js`, `js/data/buildings.js`, `js/data/regions.js`, `js/core/achievements.js`, `js/core/economy.js` (komentar), `tools/simulate.js` (baru), `tests/economy.test.js`, `README.md`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |

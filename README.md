@@ -40,7 +40,7 @@ Itu yang membuat logikanya bisa dites sendiri dan nanti dipindah ke server.
 ## Cara kerja ekonomi
 
 - **Produksi** dihitung dari timestamp (`lastCollected`), bukan loop. Tetap jalan saat offline,
-  dan gudang bangunan penuh setelah 2 jam sehingga pemain punya alasan kembali.
+  dan gudang bangunan penuh setelah 6 jam sehingga pemain punya alasan kembali.
 - **Harga pasar** = harga dasar x permintaan wilayah x fluktuasi lambat x tekanan pasokan.
   Menjual banyak di satu pasar menekan harganya, tekanan itu meluruh 8% per menit.
 - **Ongkir** = berat x jarak laut nyata antar kota pelabuhan x tarif kapal. Pelabuhan di kedua ujung menurunkannya.

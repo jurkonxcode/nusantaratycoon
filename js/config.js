@@ -9,7 +9,7 @@
     autosaveMs: 5000,
 
     // Produksi
-    storageHours: 2,          // gudang bangunan penuh setelah N jam
+    storageHours: 6,          // gudang bangunan penuh setelah N jam
     tolBonusPerLevel: 0.2,    // +20% produksi per level tol
 
     // Waktu pembangunan: makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama.

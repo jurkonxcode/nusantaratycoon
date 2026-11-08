@@ -40,7 +40,7 @@
     },
     kalimantan: {
       id: 'kalimantan', artIcon: 'sawit', name: 'Kalimantan', icon: '🌴', tagline: 'Sawit dan batubara dari rimba Borneo',
-      unlockCost: 6000, infraCostFactor: 3.5, buildings: ['kebun_sawit', 'tambang_batubara'],
+      unlockCost: 10000, infraCostFactor: 3.5, buildings: ['kebun_sawit', 'tambang_batubara'],
       demand: { padi: 1.3, batik: 1.4, kopi: 1.2, karet: 1.2, kakao: 1.2, cengkeh: 1.3, sawit: 0.9, batubara: 0.9 },
       hub: { name: 'Balikpapan', lon: 116.8, lat: -1.27 },
       map: {
@@ -67,13 +67,14 @@
 
   // Jarak antar wilayah dihitung dari koordinat hub (lihat economy.distanceKm).
 
-  // Gelar berdasarkan skor peradaban.
+  // Gelar berdasarkan skor peradaban. Ambang disetel dengan tools/simulate.js (pemain aktif / santai / harian):
+  // Kota Dagang sekitar 20 menit (aktif) sampai 2 jam (santai); Peradaban Nusantara target pekan pertama.
   NT.data.ranks = [
-    { min: 0,    name: 'Desa Rintisan' },
-    { min: 150,  name: 'Kota Dagang' },
-    { min: 400,  name: 'Kabupaten Maju' },
-    { min: 900,  name: 'Provinsi Makmur' },
-    { min: 1800, name: 'Negara Maritim' },
-    { min: 3500, name: 'Peradaban Nusantara' }
+    { min: 0,      name: 'Desa Rintisan' },
+    { min: 150,    name: 'Kota Dagang' },
+    { min: 800,    name: 'Kabupaten Maju' },
+    { min: 4000,   name: 'Provinsi Makmur' },
+    { min: 20000,  name: 'Negara Maritim' },
+    { min: 100000, name: 'Peradaban Nusantara' }
   ];
 })((window.NT = window.NT || {}));
