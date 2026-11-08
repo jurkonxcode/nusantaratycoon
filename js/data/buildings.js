@@ -11,7 +11,9 @@
     kebun_kopi:    { id: 'kebun_kopi',    name: 'Kebun Kopi',     icon: '☕', region: 'sumatra',  produces: 'kopi',    baseCost: 900,  baseRate: 0.7 },
     kebun_karet:   { id: 'kebun_karet',   name: 'Kebun Karet',    icon: '🛞', region: 'sumatra',  produces: 'karet',   baseCost: 700,  baseRate: 3 },
     kebun_kakao:   { id: 'kebun_kakao',   name: 'Kebun Kakao',    icon: '🍫', region: 'sulawesi', produces: 'kakao',   baseCost: 2000, baseRate: 0.65 },
-    kebun_cengkeh: { id: 'kebun_cengkeh', name: 'Kebun Cengkeh',  icon: '🌿', region: 'sulawesi', produces: 'cengkeh', baseCost: 3000, baseRate: 0.75 }
+    kebun_cengkeh: { id: 'kebun_cengkeh', name: 'Kebun Cengkeh',  icon: '🌿', region: 'sulawesi', produces: 'cengkeh', baseCost: 3000, baseRate: 0.75 },
+    kebun_sawit:   { id: 'kebun_sawit',   name: 'Kebun Sawit',    icon: '🌴', region: 'kalimantan', produces: 'sawit',   baseCost: 4500, baseRate: 12 },
+    tambang_batubara: { id: 'tambang_batubara', name: 'Tambang Batubara', icon: '⛏️', region: 'kalimantan', produces: 'batubara', baseCost: 7000, baseRate: 6 }
   };
 
   NT.data.infra = {

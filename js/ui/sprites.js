@@ -14,6 +14,8 @@
     kebun_karet: ['..GGG...', '.GGGGG..', 'GGGGGGG.', '.GGGGG..', '...bb...', '...bb...', '..mbb...', '..kk....'],
     kebun_kakao: ['..GGG...', '.GGoGG..', 'GGGGGoG.', '.GoGGG..', '..GGoG..', '...bb...', '...bb...', '..kbbk..'],
     kebun_cengkeh: ['..GGG...', '.GpGGp..', 'GGGpGGG.', 'pGGGGpG.', '.GGpGG..', '...bb...', '...bb...', '..kbbk..'],
+    kebun_sawit: ['..GGG...', '.GGGGG..', 'GGoGoGG.', '.GGGGG..', '...bb...', '...bb...', '...bb...', '..kbbk..'],
+    tambang_batubara: ['........', '.....bb.', '....bbb.', '..kkkkk.', '.kkmkkkk', 'kkkkkkkk', '.kkkkkk.', '..bbbb..'],
     pelabuhan: ['....k...', '....k...', '..kkkkk.', '..k..k..', 'ooRRoomm', 'mmmmmmmm', 'BBBBBBBB', 'bBbBbBbB'],
     kapal: ['.....w..', '....ww..', 'kkkkkkk.', '.rrrrr..', '..rrr...', '........', '........', '........']
   };

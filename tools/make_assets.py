@@ -230,6 +230,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import art_v2 as _v2
 from art_tiers import decorate
+import art_kalimantan as _kal
+s_sawit, s_batubara, i_sawit, i_batubara = _kal.s_sawit, _kal.s_batubara, _kal.i_sawit, _kal.i_batubara
 s_sawah, s_batik, s_kopi, s_karet, s_kakao, s_cengkeh = _v2.s_sawah, _v2.s_batik, _v2.s_kopi, _v2.s_karet, _v2.s_kakao, _v2.s_cengkeh
 s_pelabuhan, s_kapal, s_tol = _v2.s_pelabuhan, _v2.s_kapal, _v2.s_tol
 i_padi, i_batik, i_kopi, i_karet, i_kakao, i_cengkeh, i_koin = _v2.i_padi, _v2.i_batik, _v2.i_kopi, _v2.i_karet, _v2.i_kakao, _v2.i_cengkeh, _v2.i_koin
@@ -241,12 +243,12 @@ if __name__ == '__main__':
     out('logo/logo-stacked.svg', logo_stacked(False)); out('logo/logo-stacked-dark.svg', logo_stacked(True))
     out('icons/favicon.svg', favicon()); out('icons/app-icon.svg', app_icon(.86)); out('icons/app-icon-maskable.svg', app_icon(.66, 'square'))
     out('patterns/batik-kawung.svg', kawung_tile())
-    for n, f in [('sawah', s_sawah), ('sentra_batik', s_batik), ('kebun_kopi', s_kopi), ('kebun_karet', s_karet), ('kebun_kakao', s_kakao), ('kebun_cengkeh', s_cengkeh), ('pelabuhan', s_pelabuhan), ('kapal', s_kapal), ('tol', s_tol)]:
+    for n, f in [('sawah', s_sawah), ('sentra_batik', s_batik), ('kebun_kopi', s_kopi), ('kebun_karet', s_karet), ('kebun_kakao', s_kakao), ('kebun_cengkeh', s_cengkeh), ('kebun_sawit', s_sawit), ('tambang_batubara', s_batubara), ('pelabuhan', s_pelabuhan), ('kapal', s_kapal), ('tol', s_tol)]:
         out(f'sprites/{n}.svg', f())
         if n not in ('kapal', 'tol'):
             for t in (2, 3):
                 out(f'sprites/{n}_t{t}.svg', decorate(n, t))
-    for n, f in [('padi', i_padi), ('batik', i_batik), ('kopi', i_kopi), ('karet', i_karet), ('kakao', i_kakao), ('cengkeh', i_cengkeh), ('koin', i_koin)]:
+    for n, f in [('padi', i_padi), ('batik', i_batik), ('kopi', i_kopi), ('karet', i_karet), ('kakao', i_kakao), ('cengkeh', i_cengkeh), ('sawit', i_sawit), ('batubara', i_batubara), ('koin', i_koin)]:
         out(f'commodities/{n}.svg', f())
     out('social/banner.svg', cover(1280, 320, 210, True)); out('social/og-image.svg', cover(1200, 630, 330, True))
     out('../manifest.webmanifest', webmanifest())

@@ -200,4 +200,28 @@ test('semua pulau punya sel daratan', function () {
   });
 });
 
+/* ---------- Kalimantan ---------- */
+
+test('Kalimantan terbuka: sawit dan batubara punya bangunan, musim, dan pasar di semua wilayah', function () {
+  const k = D.regions.kalimantan;
+  assert.ok(!k.comingSoon && k.unlockCost > D.regions.sulawesi.unlockCost);
+  ['kebun_sawit', 'tambang_batubara'].forEach(function (b) {
+    assert.ok(k.buildings.indexOf(b) >= 0 && D.buildings[b].region === 'kalimantan', b);
+    assert.ok(D.commodities[D.buildings[b].produces], 'komoditas ' + b);
+  });
+  Object.keys(D.regions).forEach(function (id) {
+    if (!D.regions[id].demand) return;
+    ['sawit', 'batubara'].forEach(function (c) { assert.ok(D.regions[id].demand[c], 'permintaan ' + c + ' di ' + id); });
+  });
+  assert.ok(W.seasonProd('batubara', at(7)) > W.seasonProd('batubara', at(1)));
+});
+
+test('ongkir batubara (curah raksasa) tetap jauh di bawah harganya', function () {
+  const s = NT.state.createInitialState(at(1));
+  ['jawa', 'sumatra', 'sulawesi'].forEach(function (m) {
+    const ship = E.shippingPerUnit(s, 'batubara', m);
+    assert.ok(ship < D.commodities.batubara.basePrice * 0.3, m + ' ' + ship);
+  });
+});
+
 console.log('\n' + passed + ' tes lolos');

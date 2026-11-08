@@ -38,6 +38,18 @@
       prod: {}, price: { batik: 1.4 } },
     { id: 'rokok_cengkeh', icon: '🏭', name: 'Pabrik rokok kretek menyerap cengkeh', months: [7, 8, 9], weight: 2,
       desc: 'Pabrik menimbun stok jelang akhir tahun.',
-      prod: {}, price: { cengkeh: 1.3 } }
+      prod: {}, price: { cengkeh: 1.3 } },
+    { id: 'banjir_kalimantan', icon: '🌊', name: 'Banjir di Kalimantan', months: [11, 12, 1, 2, 3], weight: 2,
+      desc: 'Sungai meluap, angkutan tambang dan kebun terhambat. Produksi Kalimantan turun.',
+      prod: { region: { kalimantan: 0.55 } }, price: { batubara: 1.1 } },
+    { id: 'karhutla', icon: '🔥', name: 'Kebakaran lahan dan kabut asap', months: [8, 9, 10], weight: 2,
+      desc: 'Kemarau memicu kebakaran lahan. Panen sawit merosot.',
+      prod: { commodity: { sawit: 0.8 } }, price: { sawit: 1.15 } },
+    { id: 'ekspor_sawit', icon: '📈', name: 'Permintaan minyak sawit dunia melonjak', months: null, weight: 2,
+      desc: 'Pembeli luar negeri memborong minyak sawit.',
+      prod: {}, price: { sawit: 1.35 } },
+    { id: 'batubara_anjlok', icon: '📉', name: 'Harga batubara dunia anjlok', months: null, weight: 2,
+      desc: 'Permintaan pembangkit listrik melemah.',
+      prod: {}, price: { batubara: 0.75 } }
   ];
 })((window.NT = window.NT || {}));

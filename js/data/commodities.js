@@ -5,9 +5,11 @@
  * Harga komoditas nyata sangat bergejolak; ubah angkanya di sini bila ingin menyesuaikan.
  *   - Padi: acuan pemerintah (HPP gabah kering panen) Rp 6.500/kg.
  *   - Kopi, kakao, cengkeh, karet: kisaran kasar harga tingkat petani/pengepul.
+ *   - Sawit: minyak sawit mentah (CPO) sekitar Rp 14.000/kg. Batubara: patokan sekitar Rp 1.600/kg, dijual per TON (1 satuan = 1.000 kg).
  *
  * season.prod  = pengali produksi per bulan (Jan..Des), season.price = pengali harga per bulan.
  * Tabel dinormalkan di world.js sehingga rata-rata setahun = 1 (musim hanya menggeser waktu, bukan total).
+ * freightFactor (opsional, default 1) = pengali ongkir untuk muatan curah raksasa seperti batubara.
  * marketDepth = berapa unit yang bisa diserap pasar sebelum harga mulai jatuh.
  */
 (function (NT) {
@@ -66,6 +68,22 @@
       season: {
         prod:  [0.5, 0.5, 0.5, 0.6, 0.8, 1.3, 1.7, 1.8, 1.6, 1.1, 0.6, 0.5],
         price: [1.1, 1.1, 1.1, 1.08, 1.05, 0.98, 0.9, 0.88, 0.9, 0.98, 1.05, 1.1]
+      }
+    }),
+    sawit: make({
+      id: 'sawit', name: 'Minyak Sawit', icon: '🌴', region: 'kalimantan', realRpPerKg: 14000, unitKg: 50, marketDepth: 400,
+      seasonNote: 'Buah berlimpah Agu-Nov; turun saat kemarau panjang dan musim hujan deras',
+      season: {
+        prod:  [0.9, 0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.1, 1.15, 1.15, 1.05, 0.9],
+        price: [1.0, 1.02, 1.03, 1.0, 0.98, 0.97, 0.97, 0.98, 1.0, 1.02, 1.03, 1.03]
+      }
+    }),
+    batubara: make({
+      id: 'batubara', name: 'Batubara', icon: '⚫', region: 'kalimantan', realRpPerKg: 1600, unitKg: 1000, freightFactor: 0.12, marketDepth: 150,
+      seasonNote: 'Tambang lancar saat kemarau (Jun-Sep); hujan deras mengganggu angkutan',
+      season: {
+        prod:  [0.85, 0.85, 0.9, 0.95, 1.05, 1.1, 1.15, 1.15, 1.1, 1.05, 0.95, 0.9],
+        price: [1.03, 1.02, 1.0, 1.0, 0.98, 0.97, 0.97, 0.98, 1.0, 1.0, 1.02, 1.03]
       }
     })
   };

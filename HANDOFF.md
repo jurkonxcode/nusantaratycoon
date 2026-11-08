@@ -1,7 +1,7 @@
 # HANDOFF: Nusantara Tycoon
 
 Dokumen serah-terima untuk melanjutkan proyek di sesi baru (dengan Claude atau siapa pun).
-Terakhir diperbarui: 8 November 2026 (sesi 10: rapikan kecil).
+Terakhir diperbarui: 8 November 2026 (sesi 11: wilayah Kalimantan).
 
 > **Sumber kebenaran adalah repo GitHub**, bukan salinan di chat. Repo: `github.com/jurkonxcode/nusantaratycoon`.
 > Kalau kode di repo berbeda dengan yang dijelaskan di sini, percayai repo, lalu perbarui dokumen ini.
@@ -41,7 +41,8 @@ ongkos kirim. Tujuan jangka panjang: "membangun peradaban baru", dengan proyek n
 | Sprite berubah per level (tingkat 1/2/3) | Selesai (sesi 9), diuji di Chrome headless; belum dilihat di HP sungguhan |
 | Deploy GitHub Pages | Perlu dikonfirmasi (Settings > Pages > `main` / root) |
 | Login (email/Google), leaderboard, pasar bersama, proyek nasional | Belum ada |
-| Wilayah Kalimantan, Nusa Tenggara, Maluku, Papua | Hanya kerangka di peta (`comingSoon`) |
+| Wilayah Kalimantan (sawit, batubara) | Selesai (sesi 11), dapat dimainkan |
+| Wilayah Nusa Tenggara, Maluku, Papua | Hanya kerangka di peta (`comingSoon`) |
 
 **Checklist yang perlu dikonfirmasi pemilik di awal sesi berikutnya:**
 
@@ -472,3 +473,27 @@ Sama seperti 22.5: pastikan deploy tayang, uji main 15-20 menit, lalu pilih Kali
   Wilayah terkunci tetap 🔒, wilayah "segera hadir" tetap '…' (judul panel memakai emoji aslinya). Wilayah baru: isi `artIcon`
   (atau biarkan kosong untuk jatuh ke emoji `icon`).
 - Tes tetap 24 + 10 + 18 lolos. Belum dilihat di HP sungguhan.
+
+
+## 25. Sesi 11: wilayah Kalimantan (8 November 2026)
+
+- **Wilayah:** `kalimantan` tidak lagi `comingSoon`. `unlockCost` 6000, `infraCostFactor` 3.5 (Sulawesi: 2000 dan 2.5). Pin `[113.8, 0.0]`,
+  pelabuhan `[117.9, -1.6]` (laut), slot sawit `[111.2, 0.8]` dan batubara `[115.7, -0.6]` (darat); dicek otomatis oleh `tests/world.test.js`.
+  Hub Balikpapan; jarak ke wilayah lain dihitung otomatis dari koordinat hub.
+- **Komoditas baru** (`js/data/commodities.js`): `sawit` (minyak sawit/CPO, Rp 14.000/kg, 1 satuan = 50 kg, harga game 17,5) dan `batubara`
+  (Rp 1.600/kg, **1 satuan = 1 ton**, harga game 40). Keduanya punya musim (sawit melimpah Agu-Nov; batubara lancar Jun-Sep).
+  `demand` sawit dan batubara ditambahkan di Sumatra, Jawa, Sulawesi, Kalimantan.
+- **Bangunan baru** (`js/data/buildings.js`): `kebun_sawit` (biaya 4500, laju 12/mnt, balik modal sekitar 18 mnt) dan `tambang_batubara`
+  (biaya 7000, laju 6/mnt, sekitar 23 mnt). Angka masih tebakan awal; cek dengan `node tools/balance.js`.
+- **Ongkir:** komoditas boleh punya `freightFactor` (default 1). Batubara 0.12 karena kapal curah raksasa jauh lebih murah per kg;
+  tanpa itu ongkirnya lebih mahal dari harganya. Rumus ada di `shippingPerUnit()` (`js/core/economy.js`).
+- **Peristiwa baru** (`js/data/events.js`): banjir Kalimantan, kebakaran lahan, lonjakan permintaan sawit, harga batubara anjlok.
+- **Seni:** `tools/art_kalimantan.py` (sprite kebun sawit dan tambang batubara, ikon sawit dan batubara); `make_assets.py` memanggilnya.
+  Hiasan tingkat (`_t2`, `_t3`) otomatis dibuat juga untuk dua bangunan ini. `artIcon` wilayah = `sawit`. Sprite piksel cadangan ada di `js/ui/sprites.js`.
+- **Tes:** `tests/world.test.js` menjadi 20 tes (dua tes Kalimantan baru); ekonomi 24, jobs 10.
+- **Belum dilakukan:** pencapaian/panduan khusus Kalimantan, tampilan di HP sungguhan, uji keseimbangan dengan main sungguhan.
+- Wilayah berikutnya yang masih `comingSoon`: Nusa Tenggara, Maluku, Papua (ikuti bagian 12).
+
+| Sesi | File yang berubah |
+|---|---|
+| 11 | `js/data/commodities.js`, `js/data/buildings.js`, `js/data/regions.js`, `js/data/events.js`, `js/core/economy.js`, `js/ui/sprites.js`, `js/ui/assets.js`, `assets/sprites/*`, `assets/commodities/*`, `tools/art_kalimantan.py` (baru), `tools/make_assets.py`, `tools/art_tiers.py`, `tests/world.test.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |

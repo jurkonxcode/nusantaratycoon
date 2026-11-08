@@ -388,7 +388,8 @@
     if (!km) return 0;
     const ports = infraLevel(state, c.region, 'pelabuhan') + infraLevel(state, marketId, 'pelabuhan');
     const discount = Math.min(C.maxShippingDiscount, ports * C.portDiscountPerLevel);
-    const realRp = c.unitKg * km * C.seaFreightRpPerKgKm;
+    // freightFactor < 1 untuk muatan curah raksasa (batubara memakai kapal tongkang/bulk carrier, jauh lebih murah per kg).
+    const realRp = c.unitKg * km * C.seaFreightRpPerKgKm * (c.freightFactor || 1);
     return realRp / C.priceScale * (1 - discount);
   }
 

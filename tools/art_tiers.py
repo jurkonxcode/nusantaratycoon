@@ -4,7 +4,7 @@ Hasilnya hanya LAPISAN hiasan (SVG kecil, transparan) yang digambar di atas spri
 jadi sprite dasar tidak digandakan. Dipakai oleh tools/make_assets.py; nama aset '<id>_t2' dan '<id>_t3'."""
 
 ACCENT = {'sawah': '#e6c864', 'sentra_batik': '#2a3f78', 'kebun_kopi': '#b5483a', 'kebun_karet': '#e9e4d0',
-          'kebun_kakao': '#8a4a2a', 'kebun_cengkeh': '#7a2f3a', 'pelabuhan': '#2d8fd0'}
+          'kebun_kakao': '#8a4a2a', 'kebun_cengkeh': '#7a2f3a', 'kebun_sawit': '#e0661f', 'tambang_batubara': '#e8b020', 'pelabuhan': '#2d8fd0'}
 
 
 def crates(x, y, rows):
