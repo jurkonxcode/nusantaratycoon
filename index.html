@@ -32,16 +32,16 @@
           </div>
         </div>
         <div class="stats">
-          <div class="stat stat-cash term-stat" data-action="info-cash" role="button" tabindex="0" aria-label="Rincian keuangan"><span>Kas</span><b id="stat-cash">Rp 0</b><small class="stat-sub" id="stat-income" title="Perkiraan pemasukan per menit">&nbsp;</small></div>
-          <div class="stat stat-pop term-stat" data-action="info-pop" role="button" tabindex="0" aria-label="Rincian penduduk"><span>Penduduk</span><b id="stat-pop">0</b><small class="stat-sub" id="stat-popsub">&nbsp;</small></div>
-          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span>Peradaban</span><b id="stat-score">0</b><small class="stat-sub" id="stat-rankpct">&nbsp;</small></div>
+          <div class="stat stat-cash term-stat" data-action="info-cash" role="button" tabindex="0" aria-label="Rincian keuangan"><span><i class="ic" data-icon="coin"></i>Kas</span><b id="stat-cash">Rp 0</b><small class="stat-sub" id="stat-income" title="Perkiraan pemasukan per menit">&nbsp;</small></div>
+          <div class="stat stat-pop term-stat" data-action="info-pop" role="button" tabindex="0" aria-label="Rincian penduduk"><span><i class="ic" data-icon="people"></i>Penduduk</span><b id="stat-pop">0</b><small class="stat-sub" id="stat-popsub">&nbsp;</small></div>
+          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span><i class="ic" data-icon="star"></i>Peradaban</span><b id="stat-score">0</b><small class="stat-sub" id="stat-rankpct">&nbsp;</small></div>
         </div>
       </div>
 
       <nav class="tabs" role="tablist" aria-label="Menu utama">
-        <button class="tab" data-action="tab" data-id="map" role="tab"><span class="ti" aria-hidden="true">🗺️</span><span class="tl">Peta</span></button>
-        <button class="tab" data-action="tab" data-id="market" role="tab"><span class="ti" aria-hidden="true">⚖️</span><span class="tl">Pasar</span></button>
-        <button class="tab" data-action="tab" data-id="kingdom" role="tab"><span class="ti" aria-hidden="true">🏛️</span><span class="tl">Kerajaan</span></button>
+        <button class="tab" data-action="tab" data-id="map" role="tab"><span class="ti" aria-hidden="true"><i class="ic" data-icon="map"></i></span><span class="tl">Peta</span></button>
+        <button class="tab" data-action="tab" data-id="market" role="tab"><span class="ti" aria-hidden="true"><i class="ic" data-icon="scale"></i></span><span class="tl">Pasar</span></button>
+        <button class="tab" data-action="tab" data-id="kingdom" role="tab"><span class="ti" aria-hidden="true"><i class="ic" data-icon="kingdom"></i></span><span class="tl">Kerajaan</span></button>
       </nav>
     </div>
   </header>
@@ -55,7 +55,7 @@
           <div class="info-row">
           <div class="goal" id="goal">
             <div class="goal-top">
-              <span class="goal-ico" id="goal-ico">🎯</span>
+              <span class="goal-ico" id="goal-ico"><i class="ic" data-icon="star"></i></span>
               <div class="goal-text"><small>Target berikutnya</small><b id="goal-title">…</b></div>
               <div class="builders" id="builders" title="Tukang yang sedang bekerja"></div>
             </div>
@@ -64,7 +64,7 @@
           </div>
         </div>
             <div class="map-card">
-              <button id="world-bell" class="world-bell" data-action="banner-toggle" aria-label="Kabar dunia" aria-expanded="false"><span aria-hidden="true">🔔</span><i class="dot" aria-hidden="true"></i></button>
+              <button id="world-bell" class="world-bell" data-action="banner-toggle" aria-label="Kabar dunia" aria-expanded="false"><i class="ic" data-icon="bell"></i><i class="dot" aria-hidden="true"></i></button>
               <div id="world-banner" class="world-banner" data-action="banner-toggle" role="button" tabindex="0" aria-label="Kabar dunia, ketuk untuk menutup"></div>
               <div class="map-scroll"><div id="map"></div></div>
               <div id="region-chips" class="region-chips"></div>
@@ -72,15 +72,15 @@
           </div>
           <div class="side-col">
             <div class="actbar" id="actbar">
-              <button class="btn primary wide collect-all" data-action="collect-all"><span data-live="collect-label">📦 Kumpulkan<span class="lg"> semua hasil</span></span></button>
-              <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label">⬆ Upgrade termurah</span></button>
+              <button class="btn primary wide collect-all" data-action="collect-all"><span data-live="collect-label"><i class="ic" data-icon="box"></i> Kumpulkan<span class="lg"> semua hasil</span></span></button>
+              <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label"><i class="ic" data-icon="up"></i> Upgrade termurah</span></button>
             </div>
             <div id="sheet" class="sheet">
               <div class="sheet-box" id="sheet-box">
                 <div class="sheet-grab" id="sheet-grab" data-action="sheet-close" role="button" tabindex="0" aria-label="Tutup panel wilayah">
                   <i class="sheet-bar" aria-hidden="true"></i>
                   <span class="sheet-title" id="sheet-title"></span>
-                  <b class="sheet-x" aria-hidden="true">✕</b>
+                  <b class="sheet-x" aria-hidden="true"><i class="ic" data-icon="close"></i></b>
                 </div>
                 <div id="region-panel"></div>
               </div>
@@ -90,9 +90,9 @@
       </section>
       <section id="tab-market" class="tab-panel"></section>
       <div id="kingdom-seg" class="segs kingdom-seg" role="tablist" aria-label="Kerajaan">
-        <button class="seg" data-action="kingdom-sub" data-id="stats" role="tab">🏆 Capaian</button>
-        <button class="seg" data-action="kingdom-sub" data-id="about" role="tab">ℹ️ Info</button>
-        <button class="seg" data-action="kingdom-sub" data-id="settings" role="tab">⚙️ Atur</button>
+        <button class="seg" data-action="kingdom-sub" data-id="stats" role="tab"><i class="ic" data-icon="trophy"></i> Capaian</button>
+        <button class="seg" data-action="kingdom-sub" data-id="about" role="tab"><i class="ic" data-icon="info"></i> Info</button>
+        <button class="seg" data-action="kingdom-sub" data-id="settings" role="tab"><i class="ic" data-icon="sliders"></i> Atur</button>
       </div>
       <section id="tab-stats" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
@@ -122,6 +122,7 @@
   <script src="js/storage/local-storage.js"></script>
   <script src="js/storage/supabase-storage.js"></script>
   <script src="js/storage/index.js"></script>
+  <script src="js/ui/icons.js"></script>
   <script src="js/ui/toast.js"></script>
   <script src="js/ui/fx.js"></script>
   <script src="js/ui/settings.js"></script>

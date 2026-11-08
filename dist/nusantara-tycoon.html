@@ -1127,6 +1127,73 @@ body.guide-on .guide { margin-bottom: 0; }
   }
 }
 
+/* =====================================================================================================
+   Sesi 25 (Sprint 2): sistem desain, ikon seragam, HUD, tombol, kartu bangunan
+   Aturan: 3 ukuran teks (12 / 14 / 17), 4 langkah jarak (4 / 8 / 16 / 24), 3 jenis tombol
+   (utama = emas, sekunder = putih bergaris, kecil/ghost = tanpa latar). Area sentuh minimal 44 px.
+   ===================================================================================================== */
+:root {
+  --fs-s: 12px; --fs-m: 14px; --fs-l: 17px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px;
+  --touch: 44px;
+}
+
+/* Ikon garis */
+.ic { display: inline-block; width: 1.2em; height: 1.2em; flex: none; vertical-align: -.2em; line-height: 0; font-style: normal; }
+.ic svg { width: 100%; height: 100%; display: block; }
+.tab .ti { display: grid; place-items: center; }
+.tab .ti .ic { width: 22px; height: 22px; }
+.tab.on .ti { color: var(--gold); }
+.tile-ico .ic { width: 22px; height: 22px; color: var(--sea-700); }
+.goal-ico .ic { width: 26px; height: 26px; color: var(--gold-dark); }
+.sheet-x .ic { width: 18px; height: 18px; }
+.world-bell .ic { width: 22px; height: 22px; }
+.kingdom-seg .seg .ic { width: 18px; height: 18px; margin-right: 4px; }
+
+/* HUD: tiga pil kaca; ikon emas di label */
+.stat {
+  background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .14);
+  min-height: var(--touch);
+}
+.stat span { display: flex; align-items: center; gap: 4px; justify-content: flex-end; font-size: 11px; letter-spacing: .3px; text-transform: uppercase; opacity: .85; }
+.stat span .ic { width: 13px; height: 13px; color: var(--gold); }
+.stat b { color: #fff; }
+.term-stat:hover { background: rgba(255, 255, 255, .12); }
+@media (max-width: 479px) { .stat span { font-size: 10px; } .stat span .ic { width: 12px; height: 12px; } }
+
+/* Tombol: tiga jenis, satu tinggi */
+.btn { min-height: var(--touch); padding: 0 var(--sp-3); font-size: var(--fs-m); border-radius: 12px; gap: 6px; }
+.btn .ic { width: 1.15em; height: 1.15em; }
+.btn:not(.primary):not(.danger) { background: #fff; border: 1.5px solid var(--sea-700); color: var(--sea-800); }
+.btn:not(.primary):not(.danger):hover:not(:disabled) { background: #eef6f7; }
+.btn.ghost { background: transparent !important; border-color: transparent !important; box-shadow: none; }
+.btn-sub {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; padding-left: 8px;
+  border-left: 1px solid rgba(58, 38, 5, .3); font-size: 12px; font-weight: 700; opacity: .85;
+}
+.btn-sub .ic { width: 12px; height: 12px; }
+.btn.primary:disabled .btn-sub { border-left-color: rgba(107, 84, 32, .35); }
+
+/* Area sentuh >= 44 px untuk kontrol utama */
+.chip { min-height: var(--touch); }
+.seg { min-height: var(--touch); }
+.tab { min-height: var(--touch); }
+button.term-tag { min-height: 28px; }
+.actbar .btn { min-height: 48px; }
+
+/* Kartu bangunan: nama + level, satu bar, satu baris info; tombol di kanan */
+.row-main .meta { font-variant-numeric: tabular-nums; line-height: 1.3; }
+.row-main .bar { margin: 2px 0 1px; height: 6px; }
+.row-main > small { font-size: var(--fs-s); }
+.row-actions .btn { padding-left: var(--sp-2); padding-right: var(--sp-2); }
+.row-actions .btn:not(.primary) { min-height: var(--touch); }
+@media (min-width: 521px) { .row-actions { width: 176px; } }
+.guide-head { min-height: var(--touch); }
+.pop-need > span[data-action="term"] { display: inline-flex; align-items: center; min-height: var(--touch); }
+.goods-toggle { width: var(--touch); height: var(--touch); border-radius: 12px; }
+.goods-actions .btn { min-height: var(--touch); }
+.fold-head { min-height: var(--touch); }
+
 </style>
 </head>
 <body>
@@ -1143,16 +1210,16 @@ body.guide-on .guide { margin-bottom: 0; }
           </div>
         </div>
         <div class="stats">
-          <div class="stat stat-cash term-stat" data-action="info-cash" role="button" tabindex="0" aria-label="Rincian keuangan"><span>Kas</span><b id="stat-cash">Rp 0</b><small class="stat-sub" id="stat-income" title="Perkiraan pemasukan per menit">&nbsp;</small></div>
-          <div class="stat stat-pop term-stat" data-action="info-pop" role="button" tabindex="0" aria-label="Rincian penduduk"><span>Penduduk</span><b id="stat-pop">0</b><small class="stat-sub" id="stat-popsub">&nbsp;</small></div>
-          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span>Peradaban</span><b id="stat-score">0</b><small class="stat-sub" id="stat-rankpct">&nbsp;</small></div>
+          <div class="stat stat-cash term-stat" data-action="info-cash" role="button" tabindex="0" aria-label="Rincian keuangan"><span><i class="ic" data-icon="coin"></i>Kas</span><b id="stat-cash">Rp 0</b><small class="stat-sub" id="stat-income" title="Perkiraan pemasukan per menit">&nbsp;</small></div>
+          <div class="stat stat-pop term-stat" data-action="info-pop" role="button" tabindex="0" aria-label="Rincian penduduk"><span><i class="ic" data-icon="people"></i>Penduduk</span><b id="stat-pop">0</b><small class="stat-sub" id="stat-popsub">&nbsp;</small></div>
+          <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span><i class="ic" data-icon="star"></i>Peradaban</span><b id="stat-score">0</b><small class="stat-sub" id="stat-rankpct">&nbsp;</small></div>
         </div>
       </div>
 
       <nav class="tabs" role="tablist" aria-label="Menu utama">
-        <button class="tab" data-action="tab" data-id="map" role="tab"><span class="ti" aria-hidden="true">🗺️</span><span class="tl">Peta</span></button>
-        <button class="tab" data-action="tab" data-id="market" role="tab"><span class="ti" aria-hidden="true">⚖️</span><span class="tl">Pasar</span></button>
-        <button class="tab" data-action="tab" data-id="kingdom" role="tab"><span class="ti" aria-hidden="true">🏛️</span><span class="tl">Kerajaan</span></button>
+        <button class="tab" data-action="tab" data-id="map" role="tab"><span class="ti" aria-hidden="true"><i class="ic" data-icon="map"></i></span><span class="tl">Peta</span></button>
+        <button class="tab" data-action="tab" data-id="market" role="tab"><span class="ti" aria-hidden="true"><i class="ic" data-icon="scale"></i></span><span class="tl">Pasar</span></button>
+        <button class="tab" data-action="tab" data-id="kingdom" role="tab"><span class="ti" aria-hidden="true"><i class="ic" data-icon="kingdom"></i></span><span class="tl">Kerajaan</span></button>
       </nav>
     </div>
   </header>
@@ -1166,7 +1233,7 @@ body.guide-on .guide { margin-bottom: 0; }
           <div class="info-row">
           <div class="goal" id="goal">
             <div class="goal-top">
-              <span class="goal-ico" id="goal-ico">🎯</span>
+              <span class="goal-ico" id="goal-ico"><i class="ic" data-icon="star"></i></span>
               <div class="goal-text"><small>Target berikutnya</small><b id="goal-title">…</b></div>
               <div class="builders" id="builders" title="Tukang yang sedang bekerja"></div>
             </div>
@@ -1175,7 +1242,7 @@ body.guide-on .guide { margin-bottom: 0; }
           </div>
         </div>
             <div class="map-card">
-              <button id="world-bell" class="world-bell" data-action="banner-toggle" aria-label="Kabar dunia" aria-expanded="false"><span aria-hidden="true">🔔</span><i class="dot" aria-hidden="true"></i></button>
+              <button id="world-bell" class="world-bell" data-action="banner-toggle" aria-label="Kabar dunia" aria-expanded="false"><i class="ic" data-icon="bell"></i><i class="dot" aria-hidden="true"></i></button>
               <div id="world-banner" class="world-banner" data-action="banner-toggle" role="button" tabindex="0" aria-label="Kabar dunia, ketuk untuk menutup"></div>
               <div class="map-scroll"><div id="map"></div></div>
               <div id="region-chips" class="region-chips"></div>
@@ -1183,15 +1250,15 @@ body.guide-on .guide { margin-bottom: 0; }
           </div>
           <div class="side-col">
             <div class="actbar" id="actbar">
-              <button class="btn primary wide collect-all" data-action="collect-all"><span data-live="collect-label">📦 Kumpulkan<span class="lg"> semua hasil</span></span></button>
-              <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label">⬆ Upgrade termurah</span></button>
+              <button class="btn primary wide collect-all" data-action="collect-all"><span data-live="collect-label"><i class="ic" data-icon="box"></i> Kumpulkan<span class="lg"> semua hasil</span></span></button>
+              <button class="btn wide cheapest" data-action="cheapest" data-cost="0"><span data-live="cheapest-label"><i class="ic" data-icon="up"></i> Upgrade termurah</span></button>
             </div>
             <div id="sheet" class="sheet">
               <div class="sheet-box" id="sheet-box">
                 <div class="sheet-grab" id="sheet-grab" data-action="sheet-close" role="button" tabindex="0" aria-label="Tutup panel wilayah">
                   <i class="sheet-bar" aria-hidden="true"></i>
                   <span class="sheet-title" id="sheet-title"></span>
-                  <b class="sheet-x" aria-hidden="true">✕</b>
+                  <b class="sheet-x" aria-hidden="true"><i class="ic" data-icon="close"></i></b>
                 </div>
                 <div id="region-panel"></div>
               </div>
@@ -1201,9 +1268,9 @@ body.guide-on .guide { margin-bottom: 0; }
       </section>
       <section id="tab-market" class="tab-panel"></section>
       <div id="kingdom-seg" class="segs kingdom-seg" role="tablist" aria-label="Kerajaan">
-        <button class="seg" data-action="kingdom-sub" data-id="stats" role="tab">🏆 Capaian</button>
-        <button class="seg" data-action="kingdom-sub" data-id="about" role="tab">ℹ️ Info</button>
-        <button class="seg" data-action="kingdom-sub" data-id="settings" role="tab">⚙️ Atur</button>
+        <button class="seg" data-action="kingdom-sub" data-id="stats" role="tab"><i class="ic" data-icon="trophy"></i> Capaian</button>
+        <button class="seg" data-action="kingdom-sub" data-id="about" role="tab"><i class="ic" data-icon="info"></i> Info</button>
+        <button class="seg" data-action="kingdom-sub" data-id="settings" role="tab"><i class="ic" data-icon="sliders"></i> Atur</button>
       </div>
       <section id="tab-stats" class="tab-panel"></section>
       <section id="tab-about" class="tab-panel"></section>
@@ -3644,6 +3711,53 @@ body.guide-on .guide { margin-bottom: 0; }
 
 </script>
   <script>
+/* Set ikon garis seragam (SVG inline, warna mengikuti teks). Pengganti emoji untuk elemen antarmuka,
+   supaya tampilannya sama di semua perangkat. Pakai: NT.ui.ic('coin') di JS, atau <i class="ic" data-icon="coin"></i> di HTML. */
+(function (NT) {
+  NT.ui = NT.ui || {};
+
+  const P = {
+    map: 'M9 4 3 6.5v13L9 17l6 3 6-2.5v-13L15 7 9 4z M9 4v13 M15 7v13',
+    scale: 'M12 4v16 M7 20h10 M5 7h14 M5 7l-3 7a3 3 0 0 0 6 0L5 7z M19 7l-3 7a3 3 0 0 0 6 0l-3-7z',
+    kingdom: 'M3 10l9-6 9 6H3z M5 10v8 M9.5 10v8 M14.5 10v8 M19 10v8 M3 20.5h18',
+    bell: 'M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7z M10 20a2 2 0 0 0 4 0',
+    coin: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7.5v9 M9.5 10c0-1.1 1.1-1.7 2.5-1.7s2.5.6 2.5 1.7-1.1 1.6-2.5 2-2.5.9-2.5 2 1.1 1.7 2.5 1.7 2.5-.6 2.5-1.7',
+    people: 'M16 20v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1 M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M20 20v-1a4 4 0 0 0-3-3.9 M15 4.2a3.5 3.5 0 0 1 0 6.6',
+    star: 'M12 3l2.8 5.9 6.2.8-4.5 4.4 1.1 6.2L12 17.3 6.4 20.3l1.1-6.2L3 9.7l6.2-.8L12 3z',
+    trophy: 'M8 4h8v6a4 4 0 0 1-8 0V4z M8 6H4v1a4 4 0 0 0 4 4 M16 6h4v1a4 4 0 0 1-4 4 M12 14v4 M8 20h8',
+    info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 11v6 M12 7.5v.01',
+    sliders: 'M4 7h10 M18 7h2 M4 17h2 M10 17h10 M16 5v4 M8 15v4',
+    box: 'M3 7.5l9-4.5 9 4.5v9l-9 4.5-9-4.5v-9z M3 7.5l9 4.5 9-4.5 M12 12v9',
+    up: 'M12 19V5 M5 12l7-7 7 7',
+    clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2',
+    hammer: 'M4 20l9-9 M12 5l3-3 7 7-3 3-7-7z',
+    bolt: 'M13 2L4 14h7l-1 8 9-12h-7l1-8z',
+    close: 'M6 6l12 12 M18 6L6 18',
+    handshake: 'M3 12l4-4 4 2 4-2 6 5-3 3-3-1-3 3-3-1-4-4z',
+    gem: 'M6 4h12l3 5-9 11L3 9l3-5z M3 9h18',
+    calendar: 'M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4'
+  };
+
+  function svg(name) {
+    const d = P[name];
+    if (!d) return '';
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="' + d + '"/></svg>';
+  }
+
+  // Ikon sebagai potongan HTML
+  NT.ui.ic = function (name) { return '<i class="ic" aria-hidden="true">' + svg(name) + '</i>'; };
+
+  // Isi semua <i class="ic" data-icon="..."> yang ada di halaman
+  NT.ui.hydrateIcons = function (root) {
+    (root || document).querySelectorAll('i.ic[data-icon]').forEach(function (el) {
+      if (!el.firstChild) el.innerHTML = svg(el.getAttribute('data-icon'));
+    });
+  };
+  NT.ui.hydrateIcons();
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
 /* Notifikasi kecil di layar. kind: ok | warn | info. Teks panjang tampil lebih lama. */
 (function (NT) {
   NT.ui = NT.ui || {};
@@ -5255,12 +5369,12 @@ body.guide-on .guide { margin-bottom: 0; }
 
   function jobBox(job, note) {
     return '<div class="bar job"><i data-live="jobbar" data-key="' + job.key + '"></i></div>' +
-      '<small>🔨 <b data-live="jobtime" data-key="' + job.key + '"></b> · ' + note + '</small>';
+      '<small>' + NT.ui.ic('hammer') + ' <b data-live="jobtime" data-key="' + job.key + '"></b> · ' + note + '</small>';
   }
 
   function speedBtn(job, now) {
     const cost = E.speedupCost(job, now);
-    return '<button class="btn primary" data-action="speedup" data-key="' + job.key + '" data-cost="' + cost + '">⚡ Percepat · ' +
+    return '<button class="btn primary" data-action="speedup" data-key="' + job.key + '" data-cost="' + cost + '">' + NT.ui.ic('bolt') + ' Percepat · ' +
       '<span data-live="speedcost" data-key="' + job.key + '">' + F.money(cost) + '</span></button>';
   }
 
@@ -5272,7 +5386,7 @@ body.guide-on .guide { margin-bottom: 0; }
     const rate = E.productionRate(state, id, now);
     const job = E.jobFor(state, 'b:' + id);
     const dur = E.buildDuration(id, lvl);
-    const time = dur ? ' · ⏱ ' + F.short(dur) : '';
+    const time = dur ? ' <span class="btn-sub">' + NT.ui.ic('clock') + F.short(dur) + '</span>' : '';
 
     if (!lvl) {
       if (job) {
@@ -5287,9 +5401,9 @@ body.guide-on .guide { margin-bottom: 0; }
       '<div class="row">' +
         '<div class="row-icon">' + (NT.ui.art.sprite(b.id) || b.icon) + '</div>' +
         '<div class="row-main"><b>' + b.name + '</b>' +
-          '<small>Menghasilkan ' + c.name + ' (' + F.num(b.baseRate, 1) + '/menit pada Lv 1)</small></div>' +
+          '<small>' + c.name + ' · ' + F.num(b.baseRate, 1) + '/menit</small></div>' +
         '<div class="row-actions">' +
-          '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">Bangun · ' + F.money(cost) + time + '</button>' +
+          '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">Bangun ' + F.money(cost) + time + '</button>' +
         '</div>' +
       '</div>';
     }
@@ -5300,15 +5414,14 @@ body.guide-on .guide { margin-bottom: 0; }
       '<div class="row-icon working">' + (NT.ui.art.sprite(b.id) || b.icon) + '</div>' +
       '<div class="row-main">' +
         '<b>' + b.name + ' <span class="lvl">Lv ' + lvl + '</span>' + (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
-        '<small>' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/menit <span data-live="bmult" data-id="' + id + '"></span></small>' +
         '<div class="bar"><i data-live="bar" data-id="' + id + '"></i></div>' +
-        '<small><span data-live="pending" data-id="' + id + '">0</span> / ' + F.num(cap) + ' siap dikumpulkan</small>' +
+        '<small class="meta"><span data-live="pending" data-id="' + id + '">0</span> / ' + F.num(cap) + ' · ' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/mnt <span data-live="bmult" data-id="' + id + '"></span></small>' +
         (job ? jobBox(job, 'naik ke Lv ' + job.to) : '') +
       '</div>' +
       '<div class="row-actions">' +
-        '<button class="btn" data-action="collect" data-id="' + id + '">Kumpulkan</button>' +
+        '<button class="btn" data-action="collect" data-id="' + id + '">' + NT.ui.ic('box') + ' Kumpulkan</button>' +
         (job ? speedBtn(job, now)
-             : '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">⬆ ' + F.money(cost) + time + '</button>') +
+             : '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">' + NT.ui.ic('up') + ' ' + F.money(cost) + time + '</button>') +
       '</div>' +
     '</div>';
   }
@@ -5330,8 +5443,8 @@ body.guide-on .guide { margin-bottom: 0; }
         (maxed
           ? '<span class="maxed">MAKS</span>'
           : (job ? speedBtn(job, now)
-                 : '<button class="btn primary" data-action="upgrade-infra" data-region="' + regionId + '" data-id="' + infraId + '" data-cost="' + cost + '">⬆ ' + F.money(cost) +
-                   (dur ? ' · ⏱ ' + F.short(dur) : '') + '</button>')) +
+                 : '<button class="btn primary" data-action="upgrade-infra" data-region="' + regionId + '" data-id="' + infraId + '" data-cost="' + cost + '">' + NT.ui.ic('up') + ' ' + F.money(cost) +
+                   (dur ? ' <span class="btn-sub">' + NT.ui.ic('clock') + F.short(dur) + '</span>' : '') + '</button>')) +
       '</div>' +
     '</div>';
   }
@@ -5528,7 +5641,7 @@ body.guide-on .guide { margin-bottom: 0; }
     $('tab-market').innerHTML = shipmentsHtml(state) +
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
-      '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
+      '<button class="btn primary wide sell-everything" data-action="sell-everything">' + NT.ui.ic('coin') + ' Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<details class="how"><summary>Cara kerja harga dan ongkir</summary><p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
       'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goods + exportHtml(state, now);
@@ -5596,16 +5709,16 @@ body.guide-on .guide { margin-bottom: 0; }
     const opened = Object.keys(state.regions).filter(function (id) { return state.regions[id].unlocked; }).length;
     const total = Object.keys(state.regions).length;
     const tiles = [
-      ['💰', 'Total pendapatan', F.money(state.totalEarned)],
-      ['📦', 'Hasil dikumpulkan', F.num(st.produced || 0)],
-      ['🤝', 'Barang terjual', F.num(st.sold || 0)],
-      ['💎', 'Penjualan terbesar', F.money(st.bestSale || 0)],
-      ['🔨', 'Pembangunan', F.num((st.builds || 0) + (st.upgrades || 0))],
-      ['🗺️', 'Wilayah terbuka', opened + ' dari ' + total],
-      ['⏱️', 'Waktu bermain', '<span data-live="playtime"></span>'],
-      ['📅', 'Mulai bermain', new Date(state.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })]
+      ['coin', 'Total pendapatan', F.money(state.totalEarned)],
+      ['box', 'Hasil dikumpulkan', F.num(st.produced || 0)],
+      ['handshake', 'Barang terjual', F.num(st.sold || 0)],
+      ['gem', 'Penjualan terbesar', F.money(st.bestSale || 0)],
+      ['hammer', 'Pembangunan', F.num((st.builds || 0) + (st.upgrades || 0))],
+      ['map', 'Wilayah terbuka', opened + ' dari ' + total],
+      ['clock', 'Waktu bermain', '<span data-live="playtime"></span>'],
+      ['calendar', 'Mulai bermain', new Date(state.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })]
     ].map(function (t) {
-      return '<div class="tile"><span class="tile-ico">' + t[0] + '</span><small>' + t[1] + '</small><b>' + t[2] + '</b></div>';
+      return '<div class="tile"><span class="tile-ico">' + NT.ui.ic(t[0]) + '</span><small>' + t[1] + '</small><b>' + t[2] + '</b></div>';
     }).join('');
 
     const got = A.list.filter(function (a) { return state.achievements[a.id]; });
@@ -5887,7 +6000,7 @@ body.guide-on .guide { margin-bottom: 0; }
     // Kartu target berikutnya dan jumlah tukang
     const goal = E.nextGoal(state);
     if (goal) {
-      $('goal-ico').innerHTML = (goal.kind === 'building' || goal.kind === 'infra') ? (NT.ui.art.sprite(goal.id, 'sm') || goal.icon) : goal.icon;
+      $('goal-ico').innerHTML = (goal.kind === 'building' || goal.kind === 'infra') ? (NT.ui.art.sprite(goal.id, 'sm') || goal.icon) : NT.ui.ic('star');
       $('goal-title').textContent = goal.label + ' · ' + F.money(goal.cost);
       $('goal-bar').style.width = Math.min(100, state.cash / goal.cost * 100) + '%';
       const inc = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
@@ -5897,7 +6010,7 @@ body.guide-on .guide { margin-bottom: 0; }
       $('goal-title').textContent = 'Semua target tercapai';
     }
     const busy = (state.jobs || []).length;
-    $('builders').textContent = '🔨 ' + busy + '/' + NT.config.maxBuilders;
+    $('builders').innerHTML = NT.ui.ic('hammer') + ' ' + busy + '/' + NT.config.maxBuilders;
     $('builders').classList.toggle('busy', busy >= NT.config.maxBuilders);
 
     // Tombol Kumpulkan berdenyut bila gudang sudah separuh penuh
@@ -5921,7 +6034,7 @@ body.guide-on .guide { margin-bottom: 0; }
       const cl = all.querySelector('[data-live="collect-label"]');
       if (cl && cl.getAttribute('data-n') !== String(nReady)) {
         cl.setAttribute('data-n', String(nReady));
-        cl.innerHTML = nReady ? '📦 Kumpulkan<span class="lg"> semua hasil</span> <b class="cnt">' + nReady + '</b>' : '📦 Belum ada hasil';
+        cl.innerHTML = nReady ? NT.ui.ic('box') + ' Kumpulkan<span class="lg"> semua hasil</span> <b class="cnt">' + nReady + '</b>' : NT.ui.ic('box') + ' Belum ada hasil';
       }
     }
     NT.ui.map.tickJobs(state, now);
@@ -6035,7 +6148,7 @@ body.guide-on .guide { margin-bottom: 0; }
         lab.textContent = '';
         if (cu) {
           const cap = document.createElement('span'), val = document.createElement('span');
-          cap.className = 'cap'; cap.textContent = '⬆ Upgrade termurah';
+          cap.className = 'cap'; cap.innerHTML = NT.ui.ic('up') + ' Upgrade termurah';
           val.className = 'val'; val.textContent = txt;
           lab.appendChild(cap); lab.appendChild(val);
         } else lab.textContent = 'Semua upgrade sudah maksimal';

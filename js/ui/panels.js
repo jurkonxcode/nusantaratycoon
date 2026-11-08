@@ -33,12 +33,12 @@
 
   function jobBox(job, note) {
     return '<div class="bar job"><i data-live="jobbar" data-key="' + job.key + '"></i></div>' +
-      '<small>🔨 <b data-live="jobtime" data-key="' + job.key + '"></b> · ' + note + '</small>';
+      '<small>' + NT.ui.ic('hammer') + ' <b data-live="jobtime" data-key="' + job.key + '"></b> · ' + note + '</small>';
   }
 
   function speedBtn(job, now) {
     const cost = E.speedupCost(job, now);
-    return '<button class="btn primary" data-action="speedup" data-key="' + job.key + '" data-cost="' + cost + '">⚡ Percepat · ' +
+    return '<button class="btn primary" data-action="speedup" data-key="' + job.key + '" data-cost="' + cost + '">' + NT.ui.ic('bolt') + ' Percepat · ' +
       '<span data-live="speedcost" data-key="' + job.key + '">' + F.money(cost) + '</span></button>';
   }
 
@@ -50,7 +50,7 @@
     const rate = E.productionRate(state, id, now);
     const job = E.jobFor(state, 'b:' + id);
     const dur = E.buildDuration(id, lvl);
-    const time = dur ? ' · ⏱ ' + F.short(dur) : '';
+    const time = dur ? ' <span class="btn-sub">' + NT.ui.ic('clock') + F.short(dur) + '</span>' : '';
 
     if (!lvl) {
       if (job) {
@@ -65,9 +65,9 @@
       '<div class="row">' +
         '<div class="row-icon">' + (NT.ui.art.sprite(b.id) || b.icon) + '</div>' +
         '<div class="row-main"><b>' + b.name + '</b>' +
-          '<small>Menghasilkan ' + c.name + ' (' + F.num(b.baseRate, 1) + '/menit pada Lv 1)</small></div>' +
+          '<small>' + c.name + ' · ' + F.num(b.baseRate, 1) + '/menit</small></div>' +
         '<div class="row-actions">' +
-          '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">Bangun · ' + F.money(cost) + time + '</button>' +
+          '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">Bangun ' + F.money(cost) + time + '</button>' +
         '</div>' +
       '</div>';
     }
@@ -78,15 +78,14 @@
       '<div class="row-icon working">' + (NT.ui.art.sprite(b.id) || b.icon) + '</div>' +
       '<div class="row-main">' +
         '<b>' + b.name + ' <span class="lvl">Lv ' + lvl + '</span>' + (job ? ' <span class="lvl next">→ Lv ' + job.to + '</span>' : '') + '</b>' +
-        '<small>' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/menit <span data-live="bmult" data-id="' + id + '"></span></small>' +
         '<div class="bar"><i data-live="bar" data-id="' + id + '"></i></div>' +
-        '<small><span data-live="pending" data-id="' + id + '">0</span> / ' + F.num(cap) + ' siap dikumpulkan</small>' +
+        '<small class="meta"><span data-live="pending" data-id="' + id + '">0</span> / ' + F.num(cap) + ' · ' + F.num(rate, 2) + ' ' + c.name.toLowerCase() + '/mnt <span data-live="bmult" data-id="' + id + '"></span></small>' +
         (job ? jobBox(job, 'naik ke Lv ' + job.to) : '') +
       '</div>' +
       '<div class="row-actions">' +
-        '<button class="btn" data-action="collect" data-id="' + id + '">Kumpulkan</button>' +
+        '<button class="btn" data-action="collect" data-id="' + id + '">' + NT.ui.ic('box') + ' Kumpulkan</button>' +
         (job ? speedBtn(job, now)
-             : '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">⬆ ' + F.money(cost) + time + '</button>') +
+             : '<button class="btn primary" data-action="upgrade-building" data-id="' + id + '" data-cost="' + cost + '">' + NT.ui.ic('up') + ' ' + F.money(cost) + time + '</button>') +
       '</div>' +
     '</div>';
   }
@@ -108,8 +107,8 @@
         (maxed
           ? '<span class="maxed">MAKS</span>'
           : (job ? speedBtn(job, now)
-                 : '<button class="btn primary" data-action="upgrade-infra" data-region="' + regionId + '" data-id="' + infraId + '" data-cost="' + cost + '">⬆ ' + F.money(cost) +
-                   (dur ? ' · ⏱ ' + F.short(dur) : '') + '</button>')) +
+                 : '<button class="btn primary" data-action="upgrade-infra" data-region="' + regionId + '" data-id="' + infraId + '" data-cost="' + cost + '">' + NT.ui.ic('up') + ' ' + F.money(cost) +
+                   (dur ? ' <span class="btn-sub">' + NT.ui.ic('clock') + F.short(dur) + '</span>' : '') + '</button>')) +
       '</div>' +
     '</div>';
   }
@@ -306,7 +305,7 @@
     $('tab-market').innerHTML = shipmentsHtml(state) +
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
-      '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
+      '<button class="btn primary wide sell-everything" data-action="sell-everything">' + NT.ui.ic('coin') + ' Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<details class="how"><summary>Cara kerja harga dan ongkir</summary><p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
       'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
       'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></details></div>' + goods + exportHtml(state, now);
@@ -374,16 +373,16 @@
     const opened = Object.keys(state.regions).filter(function (id) { return state.regions[id].unlocked; }).length;
     const total = Object.keys(state.regions).length;
     const tiles = [
-      ['💰', 'Total pendapatan', F.money(state.totalEarned)],
-      ['📦', 'Hasil dikumpulkan', F.num(st.produced || 0)],
-      ['🤝', 'Barang terjual', F.num(st.sold || 0)],
-      ['💎', 'Penjualan terbesar', F.money(st.bestSale || 0)],
-      ['🔨', 'Pembangunan', F.num((st.builds || 0) + (st.upgrades || 0))],
-      ['🗺️', 'Wilayah terbuka', opened + ' dari ' + total],
-      ['⏱️', 'Waktu bermain', '<span data-live="playtime"></span>'],
-      ['📅', 'Mulai bermain', new Date(state.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })]
+      ['coin', 'Total pendapatan', F.money(state.totalEarned)],
+      ['box', 'Hasil dikumpulkan', F.num(st.produced || 0)],
+      ['handshake', 'Barang terjual', F.num(st.sold || 0)],
+      ['gem', 'Penjualan terbesar', F.money(st.bestSale || 0)],
+      ['hammer', 'Pembangunan', F.num((st.builds || 0) + (st.upgrades || 0))],
+      ['map', 'Wilayah terbuka', opened + ' dari ' + total],
+      ['clock', 'Waktu bermain', '<span data-live="playtime"></span>'],
+      ['calendar', 'Mulai bermain', new Date(state.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })]
     ].map(function (t) {
-      return '<div class="tile"><span class="tile-ico">' + t[0] + '</span><small>' + t[1] + '</small><b>' + t[2] + '</b></div>';
+      return '<div class="tile"><span class="tile-ico">' + NT.ui.ic(t[0]) + '</span><small>' + t[1] + '</small><b>' + t[2] + '</b></div>';
     }).join('');
 
     const got = A.list.filter(function (a) { return state.achievements[a.id]; });
@@ -665,7 +664,7 @@
     // Kartu target berikutnya dan jumlah tukang
     const goal = E.nextGoal(state);
     if (goal) {
-      $('goal-ico').innerHTML = (goal.kind === 'building' || goal.kind === 'infra') ? (NT.ui.art.sprite(goal.id, 'sm') || goal.icon) : goal.icon;
+      $('goal-ico').innerHTML = (goal.kind === 'building' || goal.kind === 'infra') ? (NT.ui.art.sprite(goal.id, 'sm') || goal.icon) : NT.ui.ic('star');
       $('goal-title').textContent = goal.label + ' · ' + F.money(goal.cost);
       $('goal-bar').style.width = Math.min(100, state.cash / goal.cost * 100) + '%';
       const inc = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
@@ -675,7 +674,7 @@
       $('goal-title').textContent = 'Semua target tercapai';
     }
     const busy = (state.jobs || []).length;
-    $('builders').textContent = '🔨 ' + busy + '/' + NT.config.maxBuilders;
+    $('builders').innerHTML = NT.ui.ic('hammer') + ' ' + busy + '/' + NT.config.maxBuilders;
     $('builders').classList.toggle('busy', busy >= NT.config.maxBuilders);
 
     // Tombol Kumpulkan berdenyut bila gudang sudah separuh penuh
@@ -699,7 +698,7 @@
       const cl = all.querySelector('[data-live="collect-label"]');
       if (cl && cl.getAttribute('data-n') !== String(nReady)) {
         cl.setAttribute('data-n', String(nReady));
-        cl.innerHTML = nReady ? '📦 Kumpulkan<span class="lg"> semua hasil</span> <b class="cnt">' + nReady + '</b>' : '📦 Belum ada hasil';
+        cl.innerHTML = nReady ? NT.ui.ic('box') + ' Kumpulkan<span class="lg"> semua hasil</span> <b class="cnt">' + nReady + '</b>' : NT.ui.ic('box') + ' Belum ada hasil';
       }
     }
     NT.ui.map.tickJobs(state, now);
@@ -813,7 +812,7 @@
         lab.textContent = '';
         if (cu) {
           const cap = document.createElement('span'), val = document.createElement('span');
-          cap.className = 'cap'; cap.textContent = '⬆ Upgrade termurah';
+          cap.className = 'cap'; cap.innerHTML = NT.ui.ic('up') + ' Upgrade termurah';
           val.className = 'val'; val.textContent = txt;
           lab.appendChild(cap); lab.appendChild(val);
         } else lab.textContent = 'Semua upgrade sudah maksimal';

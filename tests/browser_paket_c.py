@@ -82,7 +82,7 @@ with sync_playwright() as p:
     check('Panduan 3/5 setelah upgrade', '3/5' in pg.locator('.guide-head').inner_text())
 
     # Istilah
-    pg.locator('.term-stat').click(); pg.wait_for_timeout(300)
+    pg.locator('.term-stat[data-term="peradaban"]').click(); pg.wait_for_timeout(300)
     check('Ketuk Peradaban menampilkan penjelasan', 'Skor peradaban' in pg.locator('#toasts').inner_text())
     pg.locator('.tab[data-id="market"]').click(); pg.wait_for_timeout(300)
     pg.locator('button.term[data-term="ongkir"]').first.click(); pg.wait_for_timeout(300)

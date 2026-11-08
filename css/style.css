@@ -1107,3 +1107,70 @@ body.guide-on .guide { margin-bottom: 0; }
     body.guide-on .map-scroll { height: max(320px, calc(100dvh - var(--head-h) - var(--nav-h) - var(--act-h) - 132px - env(safe-area-inset-bottom))); }
   }
 }
+
+/* =====================================================================================================
+   Sesi 25 (Sprint 2): sistem desain, ikon seragam, HUD, tombol, kartu bangunan
+   Aturan: 3 ukuran teks (12 / 14 / 17), 4 langkah jarak (4 / 8 / 16 / 24), 3 jenis tombol
+   (utama = emas, sekunder = putih bergaris, kecil/ghost = tanpa latar). Area sentuh minimal 44 px.
+   ===================================================================================================== */
+:root {
+  --fs-s: 12px; --fs-m: 14px; --fs-l: 17px;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 16px; --sp-4: 24px;
+  --touch: 44px;
+}
+
+/* Ikon garis */
+.ic { display: inline-block; width: 1.2em; height: 1.2em; flex: none; vertical-align: -.2em; line-height: 0; font-style: normal; }
+.ic svg { width: 100%; height: 100%; display: block; }
+.tab .ti { display: grid; place-items: center; }
+.tab .ti .ic { width: 22px; height: 22px; }
+.tab.on .ti { color: var(--gold); }
+.tile-ico .ic { width: 22px; height: 22px; color: var(--sea-700); }
+.goal-ico .ic { width: 26px; height: 26px; color: var(--gold-dark); }
+.sheet-x .ic { width: 18px; height: 18px; }
+.world-bell .ic { width: 22px; height: 22px; }
+.kingdom-seg .seg .ic { width: 18px; height: 18px; margin-right: 4px; }
+
+/* HUD: tiga pil kaca; ikon emas di label */
+.stat {
+  background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .14);
+  min-height: var(--touch);
+}
+.stat span { display: flex; align-items: center; gap: 4px; justify-content: flex-end; font-size: 11px; letter-spacing: .3px; text-transform: uppercase; opacity: .85; }
+.stat span .ic { width: 13px; height: 13px; color: var(--gold); }
+.stat b { color: #fff; }
+.term-stat:hover { background: rgba(255, 255, 255, .12); }
+@media (max-width: 479px) { .stat span { font-size: 10px; } .stat span .ic { width: 12px; height: 12px; } }
+
+/* Tombol: tiga jenis, satu tinggi */
+.btn { min-height: var(--touch); padding: 0 var(--sp-3); font-size: var(--fs-m); border-radius: 12px; gap: 6px; }
+.btn .ic { width: 1.15em; height: 1.15em; }
+.btn:not(.primary):not(.danger) { background: #fff; border: 1.5px solid var(--sea-700); color: var(--sea-800); }
+.btn:not(.primary):not(.danger):hover:not(:disabled) { background: #eef6f7; }
+.btn.ghost { background: transparent !important; border-color: transparent !important; box-shadow: none; }
+.btn-sub {
+  display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; padding-left: 8px;
+  border-left: 1px solid rgba(58, 38, 5, .3); font-size: 12px; font-weight: 700; opacity: .85;
+}
+.btn-sub .ic { width: 12px; height: 12px; }
+.btn.primary:disabled .btn-sub { border-left-color: rgba(107, 84, 32, .35); }
+
+/* Area sentuh >= 44 px untuk kontrol utama */
+.chip { min-height: var(--touch); }
+.seg { min-height: var(--touch); }
+.tab { min-height: var(--touch); }
+button.term-tag { min-height: 28px; }
+.actbar .btn { min-height: 48px; }
+
+/* Kartu bangunan: nama + level, satu bar, satu baris info; tombol di kanan */
+.row-main .meta { font-variant-numeric: tabular-nums; line-height: 1.3; }
+.row-main .bar { margin: 2px 0 1px; height: 6px; }
+.row-main > small { font-size: var(--fs-s); }
+.row-actions .btn { padding-left: var(--sp-2); padding-right: var(--sp-2); }
+.row-actions .btn:not(.primary) { min-height: var(--touch); }
+@media (min-width: 521px) { .row-actions { width: 176px; } }
+.guide-head { min-height: var(--touch); }
+.pop-need > span[data-action="term"] { display: inline-flex; align-items: center; min-height: var(--touch); }
+.goods-toggle { width: var(--touch); height: var(--touch); border-radius: 12px; }
+.goods-actions .btn { min-height: var(--touch); }
+.fold-head { min-height: var(--touch); }
