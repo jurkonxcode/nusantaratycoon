@@ -20,6 +20,7 @@ const E = NT.economy;
 NT.config.seasonsEnabled = false;
 NT.config.eventsEnabled = false;
 NT.config.buildTimeEnabled = false; // timer pembangunan dites di tests/jobs.test.js
+NT.config.saleTimeEnabled = false; // pengiriman berwaktu dites di tests/timing.test.js
 const MIN = 60000;
 const t0 = 1_700_000_000_000;
 let passed = 0;

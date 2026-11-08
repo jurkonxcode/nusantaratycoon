@@ -6,7 +6,7 @@
   const D = NT.data;
   const VERSION = 1;
 
-  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs'];
+  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs', 'exports'];
   const LOG_MAX = 40;
 
   function freshStats() {
@@ -25,6 +25,7 @@
       buildings: {},   // id -> { level, lastCollected }
       inventory: {},   // komoditas -> jumlah
       market: {},      // wilayah -> komoditas -> { stock, updatedAt }
+      shipments: [],   // pengiriman berjalan: { id, kind ('sale'|'export'), commodity, qty, market, revenue, shipping, net, startedAt, endsAt }
       jobs: [],        // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
       stats: freshStats(),  // penghitung untuk statistik, panduan, dan pencapaian
       achievements: {},     // id pencapaian -> waktu terbuka (ms)
@@ -38,6 +39,7 @@
       s.regions[id] = { unlocked: !!r.start, infra: { tol: 0, pelabuhan: 0 } };
       s.market[id] = {};
     });
+    Object.keys(D.exportMarkets || {}).forEach(function (id) { s.market['export:' + id] = {}; });
     Object.keys(D.commodities).forEach(function (id) { s.inventory[id] = 0; });
 
     // Pemain mulai dengan satu sawah di Jawa.
@@ -81,6 +83,11 @@
     base.jobs = (Array.isArray(saved.jobs) ? saved.jobs : []).filter(function (j) {
       if (!j || !(j.endsAt > 0) || !(j.startedAt > 0) || !j.region || !base.regions[j.region]) return false;
       return j.kind === 'building' ? !!D.buildings[j.id] : (j.kind === 'infra' && !!D.infra[j.id]);
+    });
+
+    base.shipments = (Array.isArray(saved.shipments) ? saved.shipments : []).filter(function (x) {
+      if (!x || !(x.endsAt > 0) || !(x.startedAt > 0) || !(x.net >= 0) || !(x.qty > 0) || !D.commodities[x.commodity]) return false;
+      return x.kind === 'export' ? !!(D.exportMarkets && D.exportMarkets[x.market]) : !!base.regions[x.market];
     });
 
     STAT_KEYS.forEach(function (k) {

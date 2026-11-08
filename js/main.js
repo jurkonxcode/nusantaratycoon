@@ -172,9 +172,28 @@
       const market = P.view.market;
       const res = E.sell(state, cid, market, qty, now());
       if (res.ok) {
-        res.message = 'Terjual ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name +
-          ' di ' + NT.data.regions[market].name + ': +' + F.money(res.net);
-        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        if (res.queued) {
+          res.message = '🚚 ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name + ' dikirim ke ' + NT.data.regions[market].name +
+            ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')';
+          res.sfx = 'click';
+        } else {
+          res.message = 'Terjual ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name +
+            ' di ' + NT.data.regions[market].name + ': +' + F.money(res.net);
+          res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        }
+      }
+      return res;
+    },
+
+    'ship-export': function (el) {
+      const cid = el.getAttribute('data-c'), mid = el.getAttribute('data-x');
+      const have = Math.floor(state.inventory[cid] || 0);
+      const qty = Math.min(have, Math.max(1, E.exportMaxQty(state, cid)));
+      const res = E.exportGoods(state, cid, mid, qty, now());
+      if (res.ok) {
+        res.message = '🚢 ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name + ' berlayar ke ' + NT.data.exportMarkets[mid].name +
+          ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')';
+        res.sfx = 'click';
       }
       return res;
     },
@@ -188,9 +207,15 @@
       const market = P.view.market;
       const res = E.sellAll(state, market, now());
       if (res.ok) {
-        res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) +
-          (res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati karena rugi)' : '');
-        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        const tail = res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati: rugi atau kapal penuh)' : '';
+        if (res.queued) {
+          res.message = '🚚 ' + F.num(res.qty) + ' barang dikirim ke ' + NT.data.regions[market].name + ' · tiba dalam ' + F.short(res.durationMs) +
+            ' (+' + F.money(res.net) + ')' + tail;
+          res.sfx = 'click';
+        } else {
+          res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) + tail;
+          res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        }
       }
       return res;
     },
@@ -373,6 +398,7 @@
       hiddenAt = 0;
       if (away < AWAY_MS) return;
       const done = E.settle(state, t);
+      E.settleShipments(state, t);
       if (!NT.ui.welcome.show(state, away, done, t) && done.length) celebrate(done, true);
       P.renderAll(state, t);
     });
@@ -396,6 +422,7 @@
     const t = now();
     state = NT.state.normalize(saved, t);
     const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
+    E.settleShipments(state, t);              // kiriman yang tiba saat pemain pergi
 
     NT.ui.settings.apply();
     NT.ui.map.mount();
@@ -414,8 +441,15 @@
       const t2 = now();
       if (!document.hidden) state.stats.playMs += 1000;
       const done = E.settle(state, t2);
+      const arrived = E.settleShipments(state, t2);
+      if (arrived.length) {
+        const sum = arrived.reduce(function (a, x) { return a + x.net; }, 0);
+        toast((arrived[0].kind === 'export' ? '🚢 ' : '🚚 ') + arrived.length + ' kiriman tiba: +' + F.money(sum), 'ok');
+        if (NT.ui.fx && NT.ui.fx.sfx) NT.ui.fx.sfx('coin');
+        persistSoon();
+      }
       const gained = checkProgress(false);
-      if (done.length || gained) { if (done.length) celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
+      if (done.length || gained || arrived.length) { if (done.length) celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
     }, 1000);
     setInterval(persist, NT.config.autosaveMs);
   }

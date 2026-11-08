@@ -140,6 +140,47 @@
 
   /* ---------- Tab pasar ---------- */
 
+
+  // Daftar pengiriman yang sedang berjalan (penjualan antar pulau dan ekspor).
+  function shipmentsHtml(state) {
+    const list = state.shipments || [];
+    if (!list.length) return '';
+    const rows = list.slice().sort(function (a, b) { return a.endsAt - b.endsAt; }).map(function (x) {
+      const c = D.commodities[x.commodity];
+      const dest = x.kind === 'export' ? D.exportMarkets[x.market].icon + ' ' + D.exportMarkets[x.market].name : D.regions[x.market].name;
+      return '<div class="row"><div class="row-main"><b>' + (x.kind === 'export' ? '🚢' : (x.local ? '🚚' : '⛴️')) + ' ' + F.num(x.qty) + ' ' + c.name + ' → ' + dest + '</b>' +
+        '<div class="bar job"><i data-live="shipbar" data-id="' + x.id + '"></i></div>' +
+        '<small>Tiba dalam <b data-live="shiptime" data-id="' + x.id + '"></b> · bayaran <b>' + F.money(x.net) + '</b></small></div></div>';
+    }).join('');
+    return '<div class="card"><h2>Pengiriman <small class="muted">kapal ' + E.slotsUsed(state) + '/' + E.shipSlots(state) + '</small></h2>' + rows + '</div>';
+  }
+
+  // Ekspor ke luar negeri: makin jauh makin lama, tetapi harga lebih tinggi.
+  function exportHtml(state, now) {
+    const markets = Object.keys(D.exportMarkets || {}).map(function (mid) {
+      const m = D.exportMarkets[mid];
+      const rows = Object.keys(D.commodities).filter(function (cid) {
+        return Math.floor(state.inventory[cid] || 0) >= 1;
+      }).map(function (cid) {
+        const c = D.commodities[cid];
+        const have = Math.floor(state.inventory[cid]);
+        const port = state.regions[c.region] ? state.regions[c.region].infra.pelabuhan : 0;
+        const ok = port >= m.minPort;
+        const qty = Math.min(have, Math.max(1, E.exportMaxQty(state, cid)));
+        const q = ok ? E.quoteExport(state, cid, mid, qty, now) : null;
+        return '<div class="row"><div class="row-main"><b>' + c.name + '</b>' +
+          '<small>' + (ok ? 'kirim ' + F.num(qty) + ' · bersih ' + F.money(q.net) + ' · tiba ' + F.short(q.durationMs)
+            : '🔒 butuh Pelabuhan ' + D.regions[c.region].name + ' level ' + m.minPort) + '</small></div>' +
+          '<button class="btn' + (ok ? ' primary' : '') + '" data-action="ship-export" data-c="' + cid + '" data-x="' + mid + '"' + (ok ? '' : ' disabled') + '>🚢 Ekspor</button></div>';
+      }).join('');
+      return '<div class="goods"><div class="goods-head"><div class="row-icon">' + m.icon + '</div>' +
+        '<div class="row-main"><b>' + m.name + '</b><small>±' + F.short(m.baseHours * 3600000) + ' di laut · butuh Pelabuhan level ' + m.minPort + '</small></div></div>' +
+        (rows || '<small class="muted">Gudang kosong.</small>') + '</div>';
+    }).join('');
+    return '<div class="card"><h2>Ekspor luar negeri</h2>' +
+      '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' + markets + '</div>';
+  }
+
   function renderMarket(state, now) {
     if (!state.regions[view.market] || !state.regions[view.market].unlocked) view.market = 'jawa';
 
@@ -177,12 +218,13 @@
       '</div>';
     }).join('');
 
-    $('tab-market').innerHTML =
+    $('tab-market').innerHTML = shipmentsHtml(state) +
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
       '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
-      'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya.</p></div>' + goods;
+      'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
+      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></div>' + goods + exportHtml(state, now);
   }
 
   // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
@@ -499,6 +541,16 @@
       const c = E.speedupCost(j, now);
       el.textContent = F.money(c);
       el.parentNode.setAttribute('data-cost', c);
+    });
+
+    // Timer pengiriman
+    each('[data-live="shipbar"]', function (el) {
+      const x = (state.shipments || []).filter(function (y) { return y.id === el.getAttribute('data-id'); })[0];
+      if (x) el.style.width = Math.max(0, Math.min(100, (now - x.startedAt) / (x.endsAt - x.startedAt) * 100)) + '%';
+    });
+    each('[data-live="shiptime"]', function (el) {
+      const x = (state.shipments || []).filter(function (y) { return y.id === el.getAttribute('data-id'); })[0];
+      if (x) el.textContent = F.clock(x.endsAt - now);
     });
 
     // Kartu target berikutnya dan jumlah tukang

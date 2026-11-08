@@ -597,7 +597,6 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 .calm .id-shadow, .calm .id-foam { filter: none; }
 .row-icon .art-ico { width: 36px; height: 36px; }
 
-
 </style>
 </head>
 <body>
@@ -697,13 +696,32 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     // Waktu pembangunan: makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama.
     buildTimeEnabled: true,
     buildBaseSec: 10,         // detik untuk upgrade pertama bangunan termurah
-    buildGrowth: 1.9,         // durasi x1,9 tiap level
+    buildGrowth: 1.9,         // durasi x1,9 tiap level (sampai level 'lateFromLevel')
+    buildGrowthLate: 2.4,     // setelah level 2, durasi x2,4 tiap level (makin lama makin terasa)
+    lateFromLevel: 2,         // level mulai berlaku pertumbuhan 'Late'
+    maxDurationHours: 72,     // batas atas durasi satu pembangunan
     buildTierExp: 0.25,       // pengali tier = (biayaDasar / 60) ^ eksponen
     infraBaseSec: 30,
     infraGrowth: 2.3,
+    infraGrowthLate: 3.0,
     infraRegionExp: 0.3,
     maxBuilders: 2,           // jumlah pembangunan yang bisa berjalan bersamaan
     speedupCostShare: 0.4,    // biaya percepat = 40% biaya upgrade x sisa waktu / total waktu
+
+    // Pengiriman: penjualan juga butuh waktu. Harga dikunci saat dikirim, kas masuk saat barang tiba.
+    saleTimeEnabled: true,
+    saleLocalSec: 15,         // jual di wilayah asal komoditas (truk), detik
+    saleSeaBaseMin: 2,        // antar pulau: menit dasar + menit per km
+    saleMinPerKm: 0.02,
+    saleTolSpeedup: 0.08,     // tol wilayah asal: -8% waktu kirim lokal per level (maks 50%)
+    salePortSpeedup: 0.06,    // pelabuhan asal+tujuan: -6% waktu kirim laut per level (maks 50%)
+    shipSlotsBase: 4,         // slot kapal bersamaan (laut dan ekspor); +1 per level pelabuhan di semua wilayah
+
+    // Ekspor ke luar negeri (data di js/data/exports.js)
+    exportFreightFactor: 0.35,   // peti kemas lebih murah per kg daripada kapal antar-pulau kecil
+    exportDepthMult: 3,          // pasar luar negeri menyerap 3x lebih banyak sebelum harga jatuh
+    exportBatchPerPort: 120,     // maksimum satuan per pengiriman = ini x level pelabuhan wilayah asal
+    exportPortSpeedup: 0.06,     // pelabuhan wilayah asal: -6% durasi ekspor per level (maks 30%)
 
     // Biaya
     upgradeGrowth: 1.55,      // kenaikan biaya tiap level
@@ -991,6 +1009,31 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     { min: 20000,  name: 'Negara Maritim' },
     { min: 100000, name: 'Peradaban Nusantara' }
   ];
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Pasar luar negeri (ekspor). Seperti Sim Companies: makin jauh makin lama di jalan, tetapi harga jual lebih tinggi.
+ *   km         = jarak pelayaran dari Indonesia (untuk ongkir)
+ *   baseHours  = durasi dasar pengiriman (dikurangi oleh level pelabuhan wilayah asal)
+ *   minPort    = level pelabuhan minimum di wilayah asal komoditas
+ *   mult       = pengali harga default; demand = pengali khusus per komoditas
+ */
+(function (NT) {
+  NT.data = NT.data || {};
+  NT.data.exportMarkets = {
+    singapura: { id: 'singapura', name: 'Singapura',    icon: '🇸🇬', km: 900,   baseHours: 1,  minPort: 1, mult: 1.2,
+      demand: { sawit: 1.35, karet: 1.3, padi: 1.1 } },
+    tiongkok:  { id: 'tiongkok',  name: 'Tiongkok',     icon: '🇨🇳', km: 4500,  baseHours: 6,  minPort: 2, mult: 1.3,
+      demand: { batubara: 1.5, karet: 1.45, sawit: 1.4 } },
+    jepang:    { id: 'jepang',    name: 'Jepang',       icon: '🇯🇵', km: 5800,  baseHours: 10, minPort: 2, mult: 1.35,
+      demand: { kopi: 1.6, kakao: 1.5, batik: 1.7 } },
+    india:     { id: 'india',     name: 'India',        icon: '🇮🇳', km: 4800,  baseHours: 14, minPort: 3, mult: 1.3,
+      demand: { sawit: 1.55, cengkeh: 1.5, batubara: 1.45 } },
+    belanda:   { id: 'belanda',   name: 'Belanda (Eropa)', icon: '🇳🇱', km: 11500, baseHours: 36, minPort: 4, mult: 1.5,
+      demand: { kakao: 1.8, kopi: 1.7, cengkeh: 1.7, batik: 1.9 } }
+  };
 })((window.NT = window.NT || {}));
 
 </script>
@@ -1359,7 +1402,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
   const D = NT.data;
   const VERSION = 1;
 
-  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs'];
+  const STAT_KEYS = ['collects', 'produced', 'sales', 'sold', 'upgrades', 'builds', 'unlocks', 'bestSale', 'playMs', 'exports'];
   const LOG_MAX = 40;
 
   function freshStats() {
@@ -1378,6 +1421,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       buildings: {},   // id -> { level, lastCollected }
       inventory: {},   // komoditas -> jumlah
       market: {},      // wilayah -> komoditas -> { stock, updatedAt }
+      shipments: [],   // pengiriman berjalan: { id, kind ('sale'|'export'), commodity, qty, market, revenue, shipping, net, startedAt, endsAt }
       jobs: [],        // pembangunan berjalan: { key, kind, id, region, from, to, startedAt, endsAt, cost }
       stats: freshStats(),  // penghitung untuk statistik, panduan, dan pencapaian
       achievements: {},     // id pencapaian -> waktu terbuka (ms)
@@ -1391,6 +1435,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       s.regions[id] = { unlocked: !!r.start, infra: { tol: 0, pelabuhan: 0 } };
       s.market[id] = {};
     });
+    Object.keys(D.exportMarkets || {}).forEach(function (id) { s.market['export:' + id] = {}; });
     Object.keys(D.commodities).forEach(function (id) { s.inventory[id] = 0; });
 
     // Pemain mulai dengan satu sawah di Jawa.
@@ -1434,6 +1479,11 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     base.jobs = (Array.isArray(saved.jobs) ? saved.jobs : []).filter(function (j) {
       if (!j || !(j.endsAt > 0) || !(j.startedAt > 0) || !j.region || !base.regions[j.region]) return false;
       return j.kind === 'building' ? !!D.buildings[j.id] : (j.kind === 'infra' && !!D.infra[j.id]);
+    });
+
+    base.shipments = (Array.isArray(saved.shipments) ? saved.shipments : []).filter(function (x) {
+      if (!x || !(x.endsAt > 0) || !(x.startedAt > 0) || !(x.net >= 0) || !(x.qty > 0) || !D.commodities[x.commodity]) return false;
+      return x.kind === 'export' ? !!(D.exportMarkets && D.exportMarkets[x.market]) : !!base.regions[x.market];
     });
 
     STAT_KEYS.forEach(function (k) {
@@ -1598,17 +1648,24 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     return jobsOf(state).filter(function (j) { return j.key === key; })[0] || null;
   }
 
-  // Makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama. Hasil dalam milidetik.
+  // Pertumbuhan durasi: x`early` tiap level sampai level `lateFromLevel`, sesudah itu x`late` tiap level.
+  function growth(level, early, late) {
+    const a = Math.min(level, C.lateFromLevel), b = Math.max(0, level - C.lateFromLevel);
+    return Math.pow(early, a) * Math.pow(late, b);
+  }
+  function capDuration(sec) { return Math.min(sec, C.maxDurationHours * 3600); }
+
+  // Makin tinggi level makin lama (dan makin curam setelah level 2). Bangunan mahal dan wilayah mahal ikut lebih lama. Hasil dalam milidetik.
   function buildDuration(buildingId, level) {
     if (!C.buildTimeEnabled) return 0;
     const tier = Math.pow(D.buildings[buildingId].baseCost / 60, C.buildTierExp);
-    return Math.round(C.buildBaseSec * tier * Math.pow(C.buildGrowth, level)) * 1000;
+    return Math.round(capDuration(C.buildBaseSec * tier * growth(level, C.buildGrowth, C.buildGrowthLate))) * 1000;
   }
 
   function infraDuration(regionId, level) {
     if (!C.buildTimeEnabled) return 0;
     const f = Math.pow(D.regions[regionId].infraCostFactor || 1, C.infraRegionExp);
-    return Math.round(C.infraBaseSec * f * Math.pow(C.infraGrowth, level)) * 1000;
+    return Math.round(capDuration(C.infraBaseSec * f * growth(level, C.infraGrowth, C.infraGrowthLate))) * 1000;
   }
 
   // Pindahkan hasil tertunda bangunan `ids` ke gudang pada waktu `at`, jalankan `change` (mengubah laju
@@ -1867,6 +1924,143 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     return { qty: qty, revenue: revenue, shipping: shipping, net: revenue - shipping };
   }
 
+
+  /* ---------- Pengiriman (penjualan dan ekspor berwaktu) ---------- */
+
+  function shipmentsOf(state) { return state.shipments || (state.shipments = []); }
+
+  function shipSlots(state) {
+    let n = C.shipSlotsBase;
+    Object.keys(state.regions).forEach(function (rid) { n += infraLevel(state, rid, 'pelabuhan'); });
+    return n;
+  }
+
+  // Slot kapal terpakai (penjualan lokal lewat truk tidak memakai slot).
+  function slotsUsed(state) {
+    return shipmentsOf(state).filter(function (x) { return !x.local; }).length;
+  }
+
+  // Lama kirim ke pasar dalam negeri, milidetik. 0 bila fitur dimatikan.
+  function saleDuration(state, commodityId, marketId) {
+    if (!C.saleTimeEnabled) return 0;
+    const origin = D.commodities[commodityId].region;
+    if (origin === marketId) {
+      const cut = Math.min(0.5, C.saleTolSpeedup * infraLevel(state, origin, 'tol'));
+      return Math.round(C.saleLocalSec * (1 - cut)) * 1000;
+    }
+    const ports = infraLevel(state, origin, 'pelabuhan') + infraLevel(state, marketId, 'pelabuhan');
+    const cut = Math.min(0.5, C.salePortSpeedup * ports);
+    const minutes = (C.saleSeaBaseMin + distanceKm(origin, marketId) * C.saleMinPerKm) * (1 - cut);
+    return Math.round(minutes * 60) * 1000;
+  }
+
+  function enqueueShipment(state, x) {
+    shipmentsOf(state).push(x);
+    return x;
+  }
+
+  // Dipanggil dari sell(): barang sudah keluar gudang, kas menyusul saat tiba.
+  function queueSale(state, commodityId, marketId, qty, q, dur, now) {
+    const local = D.commodities[commodityId].region === marketId;
+    if (!local && slotsUsed(state) >= shipSlots(state)) return null;
+    return enqueueShipment(state, {
+      id: 's' + now.toString(36) + shipmentsOf(state).length, kind: 'sale', local: local,
+      commodity: commodityId, qty: qty, market: marketId,
+      revenue: q.revenue, shipping: q.shipping, net: q.net, startedAt: now, endsAt: now + dur
+    });
+  }
+
+  // Terima semua pengiriman yang waktunya habis (aman dipanggil belakangan, mis. setelah offline).
+  function settleShipments(state, now) {
+    const list = shipmentsOf(state);
+    const done = list.filter(function (x) { return x.endsAt <= now; }).sort(function (a, b) { return a.endsAt - b.endsAt; });
+    if (!done.length) return [];
+    state.shipments = list.filter(function (x) { return x.endsAt > now; });
+    done.forEach(function (x) {
+      state.cash += x.net;
+      state.totalEarned += x.net;
+      if (x.kind === 'export') stat(state, 'exports', 1);
+      if (x.net > (state.stats.bestSale || 0)) state.stats.bestSale = x.net;
+    });
+    return done;
+  }
+
+  /* ---------- Ekspor ---------- */
+
+  function exportKey(id) { return 'export:' + id; }
+
+  function exportDuration(state, commodityId, exportId) {
+    const m = D.exportMarkets[exportId];
+    const port = infraLevel(state, D.commodities[commodityId].region, 'pelabuhan');
+    const cut = Math.min(0.3, C.exportPortSpeedup * port);
+    return Math.round(m.baseHours * 3600 * (1 - cut)) * 1000;
+  }
+
+  function exportMaxQty(state, commodityId) {
+    return C.exportBatchPerPort * infraLevel(state, D.commodities[commodityId].region, 'pelabuhan');
+  }
+
+  function exportShippingPerUnit(state, commodityId, exportId) {
+    const c = D.commodities[commodityId], m = D.exportMarkets[exportId];
+    const port = infraLevel(state, c.region, 'pelabuhan');
+    const discount = Math.min(C.maxShippingDiscount, port * C.portDiscountPerLevel);
+    const realRp = c.unitKg * m.km * C.seaFreightRpPerKgKm * (c.freightFactor || 1) * C.exportFreightFactor;
+    return realRp / C.priceScale * (1 - discount);
+  }
+
+  function exportNormalPrice(commodityId, exportId) {
+    const m = D.exportMarkets[exportId];
+    return D.commodities[commodityId].basePrice * ((m.demand && m.demand[commodityId]) || m.mult);
+  }
+
+  function exportUnitPrice(commodityId, exportId, stock, now) {
+    const depth = D.commodities[commodityId].marketDepth * C.exportDepthMult;
+    const pressure = stock / (stock + depth);
+    return exportNormalPrice(commodityId, exportId) * wave(exportKey(exportId), commodityId, now) *
+      worldPriceMult(commodityId, now) * (1 - C.maxMarketDrop * pressure);
+  }
+
+  function quoteExport(state, commodityId, exportId, qty, now) {
+    let stock = marketStock(state, exportKey(exportId), commodityId, now);
+    let revenue = 0;
+    for (let i = 0; i < qty; i++) {
+      revenue += exportUnitPrice(commodityId, exportId, stock, now);
+      stock += 1;
+    }
+    const shipping = exportShippingPerUnit(state, commodityId, exportId) * qty;
+    return { qty: qty, revenue: revenue, shipping: shipping, net: revenue - shipping,
+      durationMs: exportDuration(state, commodityId, exportId), maxQty: exportMaxQty(state, commodityId) };
+  }
+
+  function exportGoods(state, commodityId, exportId, qty, now) {
+    qty = Math.floor(qty);
+    const c = D.commodities[commodityId], m = D.exportMarkets && D.exportMarkets[exportId];
+    if (!c || !m) return fail('Tujuan ekspor tidak dikenal.');
+    const port = infraLevel(state, c.region, 'pelabuhan');
+    if (port < m.minPort) return fail('Ekspor ke ' + m.name + ' butuh Pelabuhan level ' + m.minPort + ' di ' + D.regions[c.region].name + '.');
+    if (qty < 1) return fail('Tidak ada barang untuk diekspor.');
+    if ((state.inventory[commodityId] || 0) < qty) return fail('Stok di gudang tidak cukup.');
+    const max = exportMaxQty(state, commodityId);
+    if (qty > max) return fail('Satu kapal hanya muat ' + max + ' satuan. Naikkan level pelabuhan untuk muatan lebih besar.');
+    if (slotsUsed(state) >= shipSlots(state)) return fail('Semua kapal sedang berlayar (' + shipSlots(state) + '). Tunggu salah satu tiba atau naikkan pelabuhan.');
+
+    const q = quoteExport(state, commodityId, exportId, qty, now);
+    if (q.net <= 0) return fail('Ongkir lebih mahal dari hasil jual. Naikkan pelabuhan atau coba tujuan lain.');
+
+    const key = exportKey(exportId);
+    state.market[key] = state.market[key] || {};
+    const stock = marketStock(state, key, commodityId, now);
+    state.market[key][commodityId] = { stock: stock + qty, updatedAt: now };
+    state.inventory[commodityId] -= qty;
+    enqueueShipment(state, {
+      id: 'x' + now.toString(36) + shipmentsOf(state).length, kind: 'export', local: false,
+      commodity: commodityId, qty: qty, market: exportId,
+      revenue: q.revenue, shipping: q.shipping, net: q.net, startedAt: now, endsAt: now + q.durationMs
+    });
+    stat(state, 'sold', qty);
+    return { ok: true, qty: qty, net: q.net, revenue: q.revenue, shipping: q.shipping, queued: true, durationMs: q.durationMs };
+  }
+
   function sell(state, commodityId, marketId, qty, now) {
     qty = Math.floor(qty);
     const ms = state.regions[marketId];
@@ -1878,13 +2072,23 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     const q = quoteSale(state, commodityId, marketId, qty, now);
     if (q.net <= 0) return fail('Harga terlalu rendah, penjualan akan rugi. Coba pasar lain.');
 
+    const dur = saleDuration(state, commodityId, marketId);
+    let shipment = null;
+    if (dur > 0) {
+      shipment = queueSale(state, commodityId, marketId, qty, q, dur, now);
+      if (!shipment) return { ok: false, slots: true, reason: 'Semua kapal sedang berlayar (' + shipSlots(state) + '). Tunggu salah satu tiba atau naikkan pelabuhan.' };
+    }
+
     const stock = marketStock(state, marketId, commodityId, now);
     state.market[marketId][commodityId] = { stock: stock + qty, updatedAt: now };
     state.inventory[commodityId] -= qty;
-    state.cash += q.net;
-    state.totalEarned += q.net;
     stat(state, 'sales', 1);
     stat(state, 'sold', qty);
+    if (shipment) {
+      return { ok: true, qty: qty, revenue: q.revenue, shipping: q.shipping, net: q.net, queued: true, durationMs: dur };
+    }
+    state.cash += q.net;
+    state.totalEarned += q.net;
     if (q.net > (state.stats.bestSale || 0)) state.stats.bestSale = q.net;
     return { ok: true, qty: qty, revenue: q.revenue, shipping: q.shipping, net: q.net };
   }
@@ -1896,19 +2100,20 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     if (!ms) return fail('Pasar tidak dikenal.');
     if (!ms.unlocked) return fail('Buka wilayah ini dulu untuk berdagang di sana.');
     const items = [], skipped = [];
-    let net = 0, qty = 0;
+    let net = 0, qty = 0, slotFull = null;
     Object.keys(D.commodities).forEach(function (cid) {
       const have = Math.floor(state.inventory[cid] || 0);
       if (have < 1) return;
       const r = sell(state, cid, marketId, have, now);
-      if (r.ok) { items.push({ commodity: cid, qty: r.qty, net: r.net }); net += r.net; qty += r.qty; }
-      else skipped.push(cid);
+      if (r.ok) { items.push({ commodity: cid, qty: r.qty, net: r.net, queued: !!r.queued, durationMs: r.durationMs }); net += r.net; qty += r.qty; }
+      else { skipped.push(cid); if (r.slots) slotFull = r.reason; }
     });
+    if (!items.length && slotFull) return fail(slotFull);
     if (!items.length) {
       return fail(skipped.length ? 'Harga di pasar ini terlalu rendah, semua penjualan akan rugi. Coba pasar lain.'
         : 'Gudang kosong, tidak ada yang bisa dijual.');
     }
-    return { ok: true, items: items, skipped: skipped, net: net, qty: qty };
+    return { ok: true, items: items, skipped: skipped, net: net, qty: qty, queued: items.some(function (i) { return i.queued; }), durationMs: items.reduce(function (m, i) { return Math.max(m, i.durationMs || 0); }, 0) };
   }
 
   // Perkiraan hasil bersih bila seluruh gudang dijual ke satu pasar (tanpa mengubah state).
@@ -2016,6 +2221,14 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     netUnitPrice: netUnitPrice,
     quoteSale: quoteSale,
     sell: sell,
+    saleDuration: saleDuration,
+    settleShipments: settleShipments,
+    shipSlots: shipSlots,
+    slotsUsed: slotsUsed,
+    exportGoods: exportGoods,
+    quoteExport: quoteExport,
+    exportDuration: exportDuration,
+    exportMaxQty: exportMaxQty,
     sellAll: sellAll,
     quoteSellAll: quoteSellAll,
     priceSeries: priceSeries,
@@ -3456,6 +3669,47 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
 
   /* ---------- Tab pasar ---------- */
 
+
+  // Daftar pengiriman yang sedang berjalan (penjualan antar pulau dan ekspor).
+  function shipmentsHtml(state) {
+    const list = state.shipments || [];
+    if (!list.length) return '';
+    const rows = list.slice().sort(function (a, b) { return a.endsAt - b.endsAt; }).map(function (x) {
+      const c = D.commodities[x.commodity];
+      const dest = x.kind === 'export' ? D.exportMarkets[x.market].icon + ' ' + D.exportMarkets[x.market].name : D.regions[x.market].name;
+      return '<div class="row"><div class="row-main"><b>' + (x.kind === 'export' ? '🚢' : (x.local ? '🚚' : '⛴️')) + ' ' + F.num(x.qty) + ' ' + c.name + ' → ' + dest + '</b>' +
+        '<div class="bar job"><i data-live="shipbar" data-id="' + x.id + '"></i></div>' +
+        '<small>Tiba dalam <b data-live="shiptime" data-id="' + x.id + '"></b> · bayaran <b>' + F.money(x.net) + '</b></small></div></div>';
+    }).join('');
+    return '<div class="card"><h2>Pengiriman <small class="muted">kapal ' + E.slotsUsed(state) + '/' + E.shipSlots(state) + '</small></h2>' + rows + '</div>';
+  }
+
+  // Ekspor ke luar negeri: makin jauh makin lama, tetapi harga lebih tinggi.
+  function exportHtml(state, now) {
+    const markets = Object.keys(D.exportMarkets || {}).map(function (mid) {
+      const m = D.exportMarkets[mid];
+      const rows = Object.keys(D.commodities).filter(function (cid) {
+        return Math.floor(state.inventory[cid] || 0) >= 1;
+      }).map(function (cid) {
+        const c = D.commodities[cid];
+        const have = Math.floor(state.inventory[cid]);
+        const port = state.regions[c.region] ? state.regions[c.region].infra.pelabuhan : 0;
+        const ok = port >= m.minPort;
+        const qty = Math.min(have, Math.max(1, E.exportMaxQty(state, cid)));
+        const q = ok ? E.quoteExport(state, cid, mid, qty, now) : null;
+        return '<div class="row"><div class="row-main"><b>' + c.name + '</b>' +
+          '<small>' + (ok ? 'kirim ' + F.num(qty) + ' · bersih ' + F.money(q.net) + ' · tiba ' + F.short(q.durationMs)
+            : '🔒 butuh Pelabuhan ' + D.regions[c.region].name + ' level ' + m.minPort) + '</small></div>' +
+          '<button class="btn' + (ok ? ' primary' : '') + '" data-action="ship-export" data-c="' + cid + '" data-x="' + mid + '"' + (ok ? '' : ' disabled') + '>🚢 Ekspor</button></div>';
+      }).join('');
+      return '<div class="goods"><div class="goods-head"><div class="row-icon">' + m.icon + '</div>' +
+        '<div class="row-main"><b>' + m.name + '</b><small>±' + F.short(m.baseHours * 3600000) + ' di laut · butuh Pelabuhan level ' + m.minPort + '</small></div></div>' +
+        (rows || '<small class="muted">Gudang kosong.</small>') + '</div>';
+    }).join('');
+    return '<div class="card"><h2>Ekspor luar negeri</h2>' +
+      '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' + markets + '</div>';
+  }
+
   function renderMarket(state, now) {
     if (!state.regions[view.market] || !state.regions[view.market].unlocked) view.market = 'jawa';
 
@@ -3493,12 +3747,13 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       '</div>';
     }).join('');
 
-    $('tab-market').innerHTML =
+    $('tab-market').innerHTML = shipmentsHtml(state) +
       '<div class="card"><h2>Pasar tujuan</h2>' +
       '<div class="segs">' + seg + '</div>' +
       '<button class="btn primary wide sell-everything" data-action="sell-everything">💰 Jual semua isi gudang <span data-live="sellall-est"></span></button>' +
       '<p class="muted small">Harga mengikuti musim panen dan peristiwa dunia, naik turun sendiri, dan jatuh bila kamu menjual terlalu banyak di satu pasar. ' +
-      'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya.</p></div>' + goods;
+      'Ongkir dihitung dari berat dan jarak laut sebenarnya: barang curah murah (padi) paling terasa ongkirnya; pelabuhan menurunkannya. ' +
+      'Penjualan butuh waktu kirim: harga dikunci saat berangkat dan uang masuk saat barang tiba.</p></div>' + goods + exportHtml(state, now);
   }
 
   // Grafik mini harga: 30 menit lalu sampai 30 menit ke depan (garis putus-putus = perkiraan).
@@ -3815,6 +4070,16 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       const c = E.speedupCost(j, now);
       el.textContent = F.money(c);
       el.parentNode.setAttribute('data-cost', c);
+    });
+
+    // Timer pengiriman
+    each('[data-live="shipbar"]', function (el) {
+      const x = (state.shipments || []).filter(function (y) { return y.id === el.getAttribute('data-id'); })[0];
+      if (x) el.style.width = Math.max(0, Math.min(100, (now - x.startedAt) / (x.endsAt - x.startedAt) * 100)) + '%';
+    });
+    each('[data-live="shiptime"]', function (el) {
+      const x = (state.shipments || []).filter(function (y) { return y.id === el.getAttribute('data-id'); })[0];
+      if (x) el.textContent = F.clock(x.endsAt - now);
     });
 
     // Kartu target berikutnya dan jumlah tukang
@@ -4231,9 +4496,28 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       const market = P.view.market;
       const res = E.sell(state, cid, market, qty, now());
       if (res.ok) {
-        res.message = 'Terjual ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name +
-          ' di ' + NT.data.regions[market].name + ': +' + F.money(res.net);
-        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        if (res.queued) {
+          res.message = '🚚 ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name + ' dikirim ke ' + NT.data.regions[market].name +
+            ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')';
+          res.sfx = 'click';
+        } else {
+          res.message = 'Terjual ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name +
+            ' di ' + NT.data.regions[market].name + ': +' + F.money(res.net);
+          res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        }
+      }
+      return res;
+    },
+
+    'ship-export': function (el) {
+      const cid = el.getAttribute('data-c'), mid = el.getAttribute('data-x');
+      const have = Math.floor(state.inventory[cid] || 0);
+      const qty = Math.min(have, Math.max(1, E.exportMaxQty(state, cid)));
+      const res = E.exportGoods(state, cid, mid, qty, now());
+      if (res.ok) {
+        res.message = '🚢 ' + F.num(res.qty) + ' ' + NT.data.commodities[cid].name + ' berlayar ke ' + NT.data.exportMarkets[mid].name +
+          ' · tiba dalam ' + F.short(res.durationMs) + ' (+' + F.money(res.net) + ')';
+        res.sfx = 'click';
       }
       return res;
     },
@@ -4247,9 +4531,15 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       const market = P.view.market;
       const res = E.sellAll(state, market, now());
       if (res.ok) {
-        res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) +
-          (res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati karena rugi)' : '');
-        res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        const tail = res.skipped.length ? ' (' + res.skipped.length + ' jenis dilewati: rugi atau kapal penuh)' : '';
+        if (res.queued) {
+          res.message = '🚚 ' + F.num(res.qty) + ' barang dikirim ke ' + NT.data.regions[market].name + ' · tiba dalam ' + F.short(res.durationMs) +
+            ' (+' + F.money(res.net) + ')' + tail;
+          res.sfx = 'click';
+        } else {
+          res.message = 'Terjual ' + F.num(res.qty) + ' barang di ' + NT.data.regions[market].name + ': +' + F.money(res.net) + tail;
+          res.fx = '+' + F.money(res.net); res.fxClass = 'gold'; res.sfx = 'coin';
+        }
       }
       return res;
     },
@@ -4432,6 +4722,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       hiddenAt = 0;
       if (away < AWAY_MS) return;
       const done = E.settle(state, t);
+      E.settleShipments(state, t);
       if (!NT.ui.welcome.show(state, away, done, t) && done.length) celebrate(done, true);
       P.renderAll(state, t);
     });
@@ -4455,6 +4746,7 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
     const t = now();
     state = NT.state.normalize(saved, t);
     const finishedAway = E.settle(state, t); // pembangunan yang selesai saat pemain pergi
+    E.settleShipments(state, t);              // kiriman yang tiba saat pemain pergi
 
     NT.ui.settings.apply();
     NT.ui.map.mount();
@@ -4473,8 +4765,15 @@ img.art-ico.sm { display: inline-block; width: 1.5em; height: 1.5em; vertical-al
       const t2 = now();
       if (!document.hidden) state.stats.playMs += 1000;
       const done = E.settle(state, t2);
+      const arrived = E.settleShipments(state, t2);
+      if (arrived.length) {
+        const sum = arrived.reduce(function (a, x) { return a + x.net; }, 0);
+        toast((arrived[0].kind === 'export' ? '🚢 ' : '🚚 ') + arrived.length + ' kiriman tiba: +' + F.money(sum), 'ok');
+        if (NT.ui.fx && NT.ui.fx.sfx) NT.ui.fx.sfx('coin');
+        persistSoon();
+      }
       const gained = checkProgress(false);
-      if (done.length || gained) { if (done.length) celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
+      if (done.length || gained || arrived.length) { if (done.length) celebrate(done); P.renderAll(state, t2); persistSoon(); } else { P.tick(state, t2); }
     }, 1000);
     setInterval(persist, NT.config.autosaveMs);
   }

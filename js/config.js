@@ -15,13 +15,32 @@
     // Waktu pembangunan: makin tinggi level makin lama. Bangunan mahal dan wilayah mahal ikut lebih lama.
     buildTimeEnabled: true,
     buildBaseSec: 10,         // detik untuk upgrade pertama bangunan termurah
-    buildGrowth: 1.9,         // durasi x1,9 tiap level
+    buildGrowth: 1.9,         // durasi x1,9 tiap level (sampai level 'lateFromLevel')
+    buildGrowthLate: 2.4,     // setelah level 2, durasi x2,4 tiap level (makin lama makin terasa)
+    lateFromLevel: 2,         // level mulai berlaku pertumbuhan 'Late'
+    maxDurationHours: 72,     // batas atas durasi satu pembangunan
     buildTierExp: 0.25,       // pengali tier = (biayaDasar / 60) ^ eksponen
     infraBaseSec: 30,
     infraGrowth: 2.3,
+    infraGrowthLate: 3.0,
     infraRegionExp: 0.3,
     maxBuilders: 2,           // jumlah pembangunan yang bisa berjalan bersamaan
     speedupCostShare: 0.4,    // biaya percepat = 40% biaya upgrade x sisa waktu / total waktu
+
+    // Pengiriman: penjualan juga butuh waktu. Harga dikunci saat dikirim, kas masuk saat barang tiba.
+    saleTimeEnabled: true,
+    saleLocalSec: 15,         // jual di wilayah asal komoditas (truk), detik
+    saleSeaBaseMin: 2,        // antar pulau: menit dasar + menit per km
+    saleMinPerKm: 0.02,
+    saleTolSpeedup: 0.08,     // tol wilayah asal: -8% waktu kirim lokal per level (maks 50%)
+    salePortSpeedup: 0.06,    // pelabuhan asal+tujuan: -6% waktu kirim laut per level (maks 50%)
+    shipSlotsBase: 4,         // slot kapal bersamaan (laut dan ekspor); +1 per level pelabuhan di semua wilayah
+
+    // Ekspor ke luar negeri (data di js/data/exports.js)
+    exportFreightFactor: 0.35,   // peti kemas lebih murah per kg daripada kapal antar-pulau kecil
+    exportDepthMult: 3,          // pasar luar negeri menyerap 3x lebih banyak sebelum harga jatuh
+    exportBatchPerPort: 120,     // maksimum satuan per pengiriman = ini x level pelabuhan wilayah asal
+    exportPortSpeedup: 0.06,     // pelabuhan wilayah asal: -6% durasi ekspor per level (maks 30%)
 
     // Biaya
     upgradeGrowth: 1.55,      // kenaikan biaya tiap level

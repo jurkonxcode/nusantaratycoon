@@ -604,3 +604,19 @@ git add -A && git commit -m "Peta lebih realistis: Kalimantan, relief, danau, su
 | Sesi | File yang berubah |
 |---|---|
 | 13 | `js/data/geo.js`, `js/ui/terrain.js`, `js/ui/map.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+
+## 28. Sesi 14: durasi level tinggi, penjualan berwaktu, ekspor (8 November 2026)
+
+**Durasi upgrade** (`core/economy.js`, `growth()`): level 0-2 tetap x`buildGrowth` (1,9) per level; mulai level 2 x`buildGrowthLate` (2,4); infra x`infraGrowthLate` (3,0).
+Batas atas `maxDurationHours` (72). Contoh Sawah: 10 dtk, 19 dtk, 36 dtk, 1,4 mnt, 3,3 mnt, 7,9 mnt ... level 8 sekitar 1,9 jam, level 10 sekitar 11 jam.
+
+**Penjualan berwaktu** (`saleTimeEnabled`): `sell()` mengeluarkan barang dari gudang dan membuat `state.shipments[]`; **harga dikunci saat berangkat, kas masuk saat tiba** (`settleShipments`).
+Lokal (pasar = wilayah asal komoditas) 15 dtk, lewat truk, tanpa slot, dipercepat tol. Antar pulau 2 mnt + 0,02 mnt/km, dipercepat pelabuhan asal+tujuan, memakai **slot kapal** (`shipSlotsBase` 4 + 1 per level pelabuhan di semua wilayah).
+
+**Ekspor** (`data/exports.js`, `exportGoods`): Singapura 1 jam, Tiongkok 6, Jepang 10, India 14, Belanda 36 jam (dikurangi sampai 30% oleh pelabuhan asal). Syarat level pelabuhan wilayah asal (`minPort`),
+muatan maks `exportBatchPerPort` x level pelabuhan, harga lebih tinggi per komoditas, ongkir `exportFreightFactor`, tekanan pasar terpisah (`market['export:<id>']`).
+
+**State baru:** `shipments[]`, `stats.exports`, `market['export:*']` (save lama otomatis kosong lewat `normalize`).
+**UI:** kartu Pengiriman (timer) dan kartu Ekspor di tab Pasar (`panels.js`), aksi `ship-export` di `main.js`. **Server nanti:** `settleShipments`, `exportGoods` ikut jadi RPC memakai `now()` server.
+**Tes:** `tests/timing.test.js` (11). Total 25 + 10 + 11 + 20 lolos. **Belum:** diuji di browser, keseimbangan angka lewat bermain, percepat kiriman dengan uang, `tools/simulate.js` belum memodelkan waktu kirim.
