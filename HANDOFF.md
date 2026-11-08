@@ -56,6 +56,8 @@ ongkos kirim. Tujuan jangka panjang: "membangun peradaban baru", dengan proyek n
 Kalau toast itu muncul, penyebab tersering: login anonim belum menyala, SQL belum sukses, atau
 tag script `supabase-js` di `index.html` masih dikomentari.
 
+**Sesi 18:** panel Kas dan Penduduk di header bisa diketuk (`js/ui/infobox.js`): rincian pemasukan per bangunan, pajak per wilayah, uang yang belum masuk kas, target berikutnya; dan penduduk, kesejahteraan, kebutuhan, pekerja, tren per wilayah. Tab Pasar dipersingkat: barang berstok kosong jadi baris tipis, grafik/saran per barang dilipat (tombol ▾), kartu Ekspor dilipat.
+
 ## 3. Keputusan desain dan alasannya
 
 1. **Script klasik dengan namespace `window.NT`, bukan ES modules.** Supaya `index.html` bisa dibuka

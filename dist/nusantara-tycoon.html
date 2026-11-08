@@ -847,6 +847,58 @@ details.how > p { margin: 0 0 6px; }
 .pop-need .bar.low i { background: #e0813d; }
 .pop-warn { margin: 6px 0 2px; color: #e0813d; font-size: .88em; }
 
+/* ===== Pasar ringkas: kartu barang lebih pendek, bagian rinci bisa dibuka ===== */
+.goods { padding: 12px 14px; }
+.goods-price { margin: 8px 0 2px; }
+.goods-actions { margin-top: 8px; }
+.goods-toggle {
+  flex: none; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--sand-dark);
+  background: #fff; color: var(--sea-800); font-size: 14px; cursor: pointer; align-self: center;
+}
+.goods-toggle:focus-visible { outline: 3px solid var(--sea-500); outline-offset: 2px; }
+.goods.slim { padding: 8px 12px; box-shadow: none; background: transparent; }
+.goods.slim .goods-head { gap: 8px; }
+.goods.slim .row-icon { transform: scale(.85); transform-origin: left center; }
+.goods.slim .row-main small { display: none; }
+.goods-mini { text-align: right; line-height: 1.2; }
+.goods-mini b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
+.goods-quote { min-height: 0; }
+.goods-quote:empty { display: none; }
+@media (max-width: 759px) {
+  #tab-market.on > .goods { margin-top: 8px; }
+  #tab-market.on > .card + .goods { margin-top: 12px; }
+}
+
+/* Kartu ekspor yang bisa dilipat */
+.fold-head {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; margin: 0; background: none; border: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer; min-height: 44px; flex-wrap: wrap;
+}
+.fold-head h2 { margin: 0; flex: 1 1 auto; }
+.fold-sum { flex: 1 1 100%; order: 3; margin-top: -6px; }
+.fold-caret { flex: none; font-size: 16px; color: var(--sea-700); }
+.fold:not(.open) { padding-top: 10px; padding-bottom: 10px; }
+
+/* ===== Jendela Kas dan Penduduk ===== */
+.stat.term-stat:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.stat.term-stat:hover { background: rgba(255, 255, 255, .14); }
+.ib-modal { max-width: 480px; position: relative; padding-top: 20px; }
+.ib-x {
+  position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%;
+  border: 0; background: var(--sand); color: var(--sea-800); font-size: 16px; cursor: pointer;
+}
+.ib-hero { margin: 6px 0 4px; padding: 12px 14px; border-radius: 12px; background: var(--sea-800); color: #fff; }
+.ib-hero small { display: block; opacity: .75; font-size: 12px; }
+.ib-hero b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.25; }
+.ib-hero-sub { display: block; margin-top: 2px; font-size: 13px; color: var(--gold); font-weight: 700; }
+.ib-list li { align-items: flex-start; }
+.ib-list li > b { flex: none; text-align: right; }
+.ib-sub { display: block; font-size: 12px; font-weight: 400; margin-top: 1px; }
+.ib-tips { margin-top: 4px; }
+.ib-region { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ib-region .pop-need { margin-top: 6px; }
+.ib-region .pop-need { grid-template-columns: minmax(124px, 40%) 1fr 44px; }
+
 </style>
 </head>
 <body>
@@ -863,7 +915,8 @@ details.how > p { margin: 0 0 6px; }
           </div>
         </div>
         <div class="stats">
-          <div class="stat stat-cash"><span>Kas</span><b id="stat-cash">Rp 0</b><small class="stat-sub" id="stat-income" title="Perkiraan pemasukan per menit">&nbsp;</small></div>
+          <div class="stat stat-cash term-stat" data-action="info-cash" role="button" tabindex="0" aria-label="Rincian keuangan"><span>Kas</span><b id="stat-cash">Rp 0</b><small class="stat-sub" id="stat-income" title="Perkiraan pemasukan per menit">&nbsp;</small></div>
+          <div class="stat stat-pop term-stat" data-action="info-pop" role="button" tabindex="0" aria-label="Rincian penduduk"><span>Penduduk</span><b id="stat-pop">0</b><small class="stat-sub" id="stat-popsub">&nbsp;</small></div>
           <div class="stat term-stat" data-action="term" data-term="peradaban" role="button" tabindex="0"><span>Peradaban</span><b id="stat-score">0</b><small class="stat-sub" id="stat-rankpct">&nbsp;</small></div>
         </div>
       </div>
@@ -4940,7 +4993,7 @@ details.how > p { margin: 0 0 6px; }
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -5175,7 +5228,15 @@ details.how > p { margin: 0 0 6px; }
       const txt = E.exportClassOf(cid) === 'domestik' ? 'tidak bisa diekspor; jual ke pasar pulau lain.' : exportRuleText(cid) + '.';
       return '<li><b>' + c.name + '</b>' + exportBadge(cid) + ' ' + txt + '</li>';
     }).join('');
-    return '<div class="card"><h2>Ekspor luar negeri</h2>' +
+    const nExp = Object.keys(D.commodities).filter(function (cid) {
+      return Math.floor(state.inventory[cid] || 0) >= 1 && E.exportClassOf(cid) !== 'domestik';
+    }).length;
+    const eo = view.exportOpen;
+    const head = '<button class="fold-head" data-action="export-toggle" aria-expanded="' + eo + '"><h2>Ekspor luar negeri</h2>' +
+      '<span class="fold-sum muted small">' + (nExp ? nExp + ' barang siap diekspor' : 'gudang belum ada barang ekspor') + '</span>' +
+      '<span class="fold-caret" aria-hidden="true">' + (eo ? '▴' : '▾') + '</span></button>';
+    if (!eo) return '<div class="card fold">' + head + '</div>';
+    return '<div class="card fold open">' + head +
       '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' +
       '<p class="muted small">🌍 Ekspor = bebas · 🔒 Terbatas = ada syarat · 🏠 Domestik = kebutuhan dalam negeri. Aturan ini penyederhanaan untuk game.</p>' +
       (notes ? '<ul class="xc-notes small muted">' + notes + '</ul>' : '') + markets + '</div>';
@@ -5193,23 +5254,32 @@ details.how > p { margin: 0 0 6px; }
       return state.regions[D.commodities[cid].region].unlocked || state.inventory[cid] > 0;
     }).map(function (cid) {
       const c = D.commodities[cid];
-      return '' +
-      '<div class="goods">' +
-        '<div class="goods-head">' +
+      const have = Math.floor(state.inventory[cid] || 0);
+      const open = !!view.goodsOpen[cid];
+      // Barang yang gudangnya kosong tidak bisa dijual: tampil sebagai baris tipis agar daftar tidak panjang.
+      const slim = have < 1 && !open;
+      const toggle = '<button class="goods-toggle" data-action="goods-toggle" data-c="' + cid + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Ringkas' : 'Rincian') + ' ' + c.name + '">' + (open ? '▴' : '▾') + '</button>';
+      const head = '<div class="goods-head">' +
           '<div class="row-icon">' + (NT.ui.art.comm(c.id) || c.icon) + '</div>' +
           '<div class="row-main"><b>' + c.name + exportBadge(cid) + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
-          '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>' +
-        '</div>' +
+          (slim
+            ? '<div class="goods-mini"><b data-live="unit" data-c="' + cid + '"></b><span class="trend" data-live="trend" data-c="' + cid + '"></span></div>'
+            : '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>') +
+          toggle +
+        '</div>';
+      if (slim) return '<div class="goods slim">' + head + '</div>';
+      return '' +
+      '<div class="goods">' + head +
         '<div class="goods-price">' +
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
           '<span class="muted">' + term('ongkir', 'ongkir') + ' <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
           '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
           '<span data-live="signal" data-c="' + cid + '"></span>' +
         '</div>' +
-        '<div class="spark" data-live="spark" data-c="' + cid + '"></div>' +
-        '<div class="spark-axis"><span>30 mnt lalu</span><span>sekarang</span><span>30 mnt lagi</span></div>' +
-        '<div class="goods-hint" data-live="hint" data-c="' + cid + '"></div>' +
-        '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' +
+        (open ? '<div class="spark" data-live="spark" data-c="' + cid + '"></div>' +
+          '<div class="spark-axis"><span>30 mnt lalu</span><span>sekarang</span><span>30 mnt lagi</span></div>' +
+          '<div class="goods-hint" data-live="hint" data-c="' + cid + '"></div>' +
+          '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' : '') +
         '<div class="goods-actions">' +
           '<button class="btn" data-action="sell" data-c="' + cid + '" data-qty="10">Jual 10</button>' +
           '<button class="btn primary" data-action="sell" data-c="' + cid + '" data-qty="all">Jual semua</button>' +
@@ -5519,6 +5589,17 @@ details.how > p { margin: 0 0 6px; }
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
     const inc0 = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
+    if ($('stat-pop')) {
+      let tm = 0, tw = 0, ti = 0;
+      Object.keys(D.regions).forEach(function (rid) {
+        if (!state.regions[rid] || !state.regions[rid].unlocked) return;
+        const pi = NT.population.info(state, rid);
+        if (!pi) return;
+        tm += pi.millions; tw += pi.welfare * pi.pop; ti += pi.pop;
+      });
+      $('stat-pop').textContent = F.num(tm, tm < 20 ? 1 : 0) + ' jt';
+      $('stat-popsub').textContent = ti > 0 ? '😊 ' + Math.round(tw / ti) + ' kesejahteraan' : '\u00a0';
+    }
     $('stat-income').textContent = inc0 > 0 ? '≈ +' + F.money(inc0) + '/mnt' : '\u00a0';
     $('stat-rankpct').textContent = rk.next ? Math.round(Math.max(0, Math.min(1, (sc - rk.current.min) / (rk.next.min - rk.current.min))) * 100) + '% ke ' + rk.next.name : 'Gelar tertinggi';
 
@@ -5706,7 +5787,7 @@ details.how > p { margin: 0 0 6px; }
     });
   }
 
-  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick, glossary: GLOSSARY };
+  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick, glossary: GLOSSARY, needHint: needHint };
 })((window.NT = window.NT || {}));
 
 </script>
@@ -5801,6 +5882,261 @@ details.how > p { margin: 0 0 6px; }
   }
 
   NT.ui.welcome = { show: show, close: close };
+})((window.NT = window.NT || {}));
+
+</script>
+  <script>
+/*
+ * Jendela info yang muncul saat panel Kas atau Penduduk di header diketuk.
+ * Isinya dihitung dari logika game yang sama (produksi, pajak, kesejahteraan, kebutuhan), bukan teks tetap.
+ * Hanya baca state; tidak mengubah apa pun.
+ */
+(function (NT) {
+  NT.ui = NT.ui || {};
+  const D = NT.data;
+  const E = NT.economy;
+  const F = NT.fmt;
+  let open = null;   // { el, prevFocus, onKey }
+
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function unlockedRegions(state) {
+    return Object.keys(D.regions).filter(function (rid) {
+      return !D.regions[rid].comingSoon && state.regions[rid] && state.regions[rid].unlocked;
+    });
+  }
+
+  function bar(v, cls) {
+    return '<span class="bar mini ' + (cls || '') + '"><i style="width:' + Math.round(Math.max(0, Math.min(1, v)) * 100) + '%"></i></span>';
+  }
+
+  function row(label, value, sub) {
+    return '<li><span class="wb-name">' + label + (sub ? '<small class="muted ib-sub">' + sub + '</small>' : '') + '</span><b>' + value + '</b></li>';
+  }
+
+  /* ---------- Data turunan dari logika game ---------- */
+
+  function production(state, now) {
+    const rows = [];
+    let total = 0;
+    Object.keys(state.buildings).forEach(function (bid) {
+      const sb = state.buildings[bid];
+      if (!sb || !sb.level) return;
+      const b = D.buildings[bid], c = D.commodities[b.produces];
+      const rate = E.productionRate(state, bid, now);
+      const value = rate * c.basePrice;
+      total += value;
+      rows.push({ b: b, c: c, level: sb.level, rate: rate, value: value, labor: NT.population ? NT.population.laborFactor(state, b.region) : 1 });
+    });
+    rows.sort(function (a, b) { return b.value - a.value; });
+    return { rows: rows, total: total };
+  }
+
+  function taxRows(state) {
+    const rows = [];
+    let total = 0;
+    unlockedRegions(state).forEach(function (rid) {
+      const i = NT.population.info(state, rid);
+      if (!i) return;
+      rows.push({ rid: rid, tax: i.taxPerMin, info: i });
+      total += i.taxPerMin;
+    });
+    rows.sort(function (a, b) { return b.tax - a.tax; });
+    return { rows: rows, total: total };
+  }
+
+  // Hasil yang sudah diproduksi tetapi belum dikumpulkan, dan nilai dasarnya.
+  function pendingValue(state, now) {
+    let v = 0, full = 0;
+    Object.keys(state.buildings).forEach(function (bid) {
+      const sb = state.buildings[bid];
+      if (!sb || !sb.level) return;
+      const p = E.pending(state, bid, now);
+      v += p * D.commodities[D.buildings[bid].produces].basePrice;
+      if (p >= E.capacity(state, bid, now) - 0.001) full++;
+    });
+    return { value: v, full: full };
+  }
+
+  // Isi gudang bila dijual di pasar terbaik (per pasar, ambil yang terbesar).
+  function stockValue(state, now) {
+    let best = null;
+    unlockedRegions(state).forEach(function (rid) {
+      const q = E.quoteSellAll(state, rid, now);
+      if (q.qty > 0 && (!best || q.net > best.net)) best = { rid: rid, net: q.net, qty: q.qty };
+    });
+    return best;
+  }
+
+  function shippingValue(state) {
+    let v = 0;
+    (state.shipments || []).forEach(function (x) { v += x.net || 0; });
+    return { value: v, count: (state.shipments || []).length };
+  }
+
+  /* ---------- Isi jendela Kas ---------- */
+
+  function cashBody(state, now) {
+    const pr = production(state, now);
+    const tx = taxRows(state);
+    const income = pr.total + tx.total;
+    const pend = pendingValue(state, now);
+    const stock = stockValue(state, now);
+    const ship = shippingValue(state);
+    const goal = E.nextGoal(state);
+    const st = state.stats || {};
+    let html = '';
+
+    html += '<div class="ib-hero"><small>Kas sekarang</small><b>' + F.money(state.cash) + '</b>' +
+      '<span class="ib-hero-sub">≈ +' + F.money(income) + ' per menit · ≈ +' + F.money(income * 60) + ' per jam</span></div>';
+
+    // Dari mana pemasukan berasal
+    html += '<h3>Sumber pemasukan per menit</h3><ul class="wb-list ib-list">';
+    if (pr.rows.length) {
+      pr.rows.forEach(function (r) {
+        const lab = r.labor < 0.999 ? ' · pekerja ' + Math.round(r.labor * 100) + '%' : '';
+        html += row((NT.ui.art.sprite(r.b.id, 'sm') || r.b.icon) + ' ' + esc(r.b.name) + ' Lv ' + r.level,
+          '+' + F.money(r.value), F.num(r.rate, 1) + ' ' + esc(r.c.name) + '/mnt × ' + F.price(r.c.basePrice) + lab);
+      });
+    } else {
+      html += '<li><span class="wb-name muted">Belum ada bangunan penghasil.</span></li>';
+    }
+    html += '</ul>';
+    html += '<p class="muted small">Nilai produksi memakai harga dasar. Uangnya baru masuk saat hasil dikumpulkan lalu dijual; harga asli bisa lebih tinggi atau rendah, dikurangi ongkir, dan turun bila menjual terlalu banyak sekaligus.</p>';
+
+    html += '<h3>Pajak penduduk per menit</h3><ul class="wb-list ib-list">';
+    if (tx.rows.length) {
+      tx.rows.forEach(function (r) {
+        html += row('👥 ' + esc(D.regions[r.rid].name), '+' + F.money(r.tax),
+          F.num(r.info.millions, r.info.millions < 20 ? 1 : 0) + ' jt jiwa × kesejahteraan ' + Math.round(r.info.welfare) + '%');
+      });
+    } else {
+      html += '<li><span class="wb-name muted">Belum ada wilayah berpenduduk.</span></li>';
+    }
+    html += '</ul>';
+    html += '<p class="muted small">Pajak masuk otomatis ke kas, tanpa perlu menjual. Makin banyak penduduk dan makin sejahtera, makin besar.</p>';
+
+    // Uang yang sedang "menggantung"
+    html += '<h3>Uang yang belum masuk kas</h3><ul class="wb-list ib-list">' +
+      row('📦 Hasil belum dikumpulkan', '≈ ' + F.money(pend.value), pend.full ? pend.full + ' gudang sudah penuh, produksinya berhenti' : 'nilai dasar') +
+      row('🏪 Isi gudang siap jual', stock ? '≈ ' + F.money(stock.net) : 'Rp 0', stock ? 'bersih, jika dijual di ' + esc(D.regions[stock.rid].name) : 'gudang kosong') +
+      row('⛴️ Kiriman di perjalanan', ship.count ? F.money(ship.value) : 'Rp 0', ship.count ? ship.count + ' kiriman, cair saat tiba' : 'tidak ada kiriman') +
+      '</ul>';
+
+    // Tujuan berikutnya
+    if (goal) {
+      const wait = state.cash >= goal.cost ? 'Kas sudah cukup, ayo bangun!'
+        : (income > 0 ? '≈ ' + F.duration((goal.cost - state.cash) / income * 60000) + ' lagi dari pemasukan saja' : 'Belum ada pemasukan');
+      html += '<h3>Target berikutnya</h3><ul class="wb-list ib-list">' +
+        row(goal.icon + ' ' + esc(goal.label), F.money(goal.cost), wait) + '</ul>';
+    }
+
+    // Catatan sepanjang permainan
+    html += '<h3>Catatan sepanjang permainan</h3><ul class="wb-list ib-list">' +
+      row('💰 Total pendapatan dagang', F.money(state.totalEarned || 0)) +
+      row('🏛️ Total pajak terkumpul', F.money(st.tax || 0)) +
+      row('💎 Penjualan terbesar', F.money(st.bestSale || 0)) + '</ul>';
+
+    // Saran dari kondisi nyata
+    const tips = [];
+    if (pend.full) tips.push('Ada gudang yang penuh. Kumpulkan hasilnya supaya produksi jalan lagi.');
+    if (stock && stock.net > Math.max(1, state.cash) * 0.5) tips.push('Isi gudangmu bernilai besar dibanding kas. Jual dulu, lalu belanja upgrade.');
+    if (tx.total > 0 && pr.total > 0 && tx.total < pr.total * 0.1) tips.push('Pajak masih kecil. Penuhi pangan, sandang, dan energi supaya penduduk makin sejahtera.');
+    if (!tips.length) tips.push('Kondisi kas sehat. Sebar penjualan ke beberapa pasar agar harga tidak jatuh.');
+    html += '<h3>Saran</h3><ul class="plain ib-tips">' + tips.map(function (t) { return '<li>💡 ' + t + '</li>'; }).join('') + '</ul>';
+    return html;
+  }
+
+  /* ---------- Isi jendela Penduduk ---------- */
+
+  function popBody(state, now) {
+    const P = NT.population;
+    const regs = unlockedRegions(state);
+    let totalM = 0, totalIdx = 0, wSum = 0, tax = 0, n = 0;
+    const infos = regs.map(function (rid) {
+      const i = P.info(state, rid);
+      if (!i) return null;
+      totalM += i.millions; totalIdx += i.pop; wSum += i.welfare * i.pop; tax += i.taxPerMin; n++;
+      return { rid: rid, i: i };
+    }).filter(Boolean);
+    const avgW = totalIdx > 0 ? wSum / totalIdx : 0;
+    let html = '';
+
+    html += '<div class="ib-hero"><small>Total penduduk</small><b>≈ ' + F.num(totalM, totalM < 20 ? 1 : 0) + ' juta jiwa</b>' +
+      '<span class="ib-hero-sub">kesejahteraan rata-rata ' + Math.round(avgW) + ' · pajak ≈ +' + F.money(tax) + '/mnt</span></div>';
+
+    html += '<p class="muted small">Penduduk tumbuh bila kesejahteraan di atas 50 dan menyusut bila di bawahnya. Kesejahteraan datang dari pangan (50%), sandang (25%), dan energi (25%) yang tercukupi, ditambah bonus tol dan pelabuhan. Pertumbuhan dibatasi daya tampung (Perumahan).</p>';
+
+    infos.forEach(function (x) {
+      const i = x.i, r = D.regions[x.rid];
+      const perHour = (i.trend * 100);
+      const full = i.pop >= i.cap - 1e-6 && i.trend > 0;
+      let trend;
+      if (full) trend = 'penuh, naikkan Perumahan';
+      else if (i.trend > 0.0005) {
+        const eta = Math.log(i.cap / i.pop) / Math.log(1 + i.trend);
+        trend = '▲ +' + F.num(perHour, 1) + '%/jam · penuh dalam ≈ ' + F.duration(eta * 3600000);
+      } else if (i.trend < -0.0005) trend = '▼ ' + F.num(perHour, 1) + '%/jam' + (i.pop <= i.floor + 1e-6 ? ' (sudah di batas bawah)' : '');
+      else trend = 'stabil';
+
+      const needs = P.CATS.map(function (c) {
+        const lbl = { pangan: '🍚 Pangan', sandang: '👘 Sandang', energi: '⚡ Energi' }[c];
+        return '<div class="pop-need"><span>' + lbl + '</span>' + bar(i.sat[c], i.sat[c] < 0.5 ? 'low' : '') + '<b>' + Math.round(i.sat[c] * 100) + '%</b></div>';
+      }).join('');
+
+      const hint = i.worst && NT.ui.panels && NT.ui.panels.needHint
+        ? '<p class="muted small">Yang paling kurang: ' + { pangan: 'pangan', sandang: 'sandang', energi: 'energi' }[i.worst] + '. ' + NT.ui.panels.needHint(x.rid, i.worst) + '</p>' : '';
+      const labor = i.labor < 0.999
+        ? '<p class="pop-warn">👷 Kekurangan pekerja: produksi ' + Math.round(i.labor * 100) + '% (butuh ' + F.num(i.workersNeed, 1) + ', ada ' + F.num(i.workersHave, 1) + ').</p>'
+        : '<p class="muted small">👷 Pekerja cukup (' + F.num(i.workersHave, 1) + ' tersedia, ' + F.num(i.workersNeed, 1) + ' dipakai).</p>';
+
+      html += '<div class="ib-region">' +
+        '<div class="pop-top"><b>' + ((r.artIcon && NT.ui.art.comm(r.artIcon, 'sm')) || r.icon) + ' ' + esc(r.name) + ' · ' + F.num(i.millions, i.millions < 20 ? 1 : 0) + ' jt jiwa</b></div>' +
+        '<small class="muted">indeks ' + F.num(i.pop, 2) + ' dari daya tampung ' + F.num(i.cap, 2) + ' · ' + trend + '</small>' +
+        '<div class="pop-need"><span>😊 Kesejahteraan</span>' + bar(i.welfare / 100, i.welfare < 40 ? 'low' : '') + '<b>' + Math.round(i.welfare) + '</b></div>' +
+        needs + labor + hint +
+        '<p class="muted small">Pajak ≈ +' + F.money(i.taxPerMin) + '/mnt · harga jual di pasar ×' + F.num(i.priceMult, 2) + ' · kedalaman pasar ×' + F.num(i.depthMult, 2) + '</p>' +
+        '</div>';
+    });
+
+    if (!infos.length) html += '<p class="muted">Belum ada wilayah berpenduduk.</p>';
+    html += '<p class="muted small">Jumlah jiwa nyata hanya perkiraan kasar untuk game.</p>';
+    return html;
+  }
+
+  /* ---------- Buka dan tutup ---------- */
+
+  function close() {
+    if (!open) return;
+    document.removeEventListener('keydown', open.onKey);
+    if (open.el.parentNode) open.el.parentNode.removeChild(open.el);
+    if (open.prevFocus && open.prevFocus.focus) open.prevFocus.focus();
+    open = null;
+  }
+
+  function show(kind, state, now) {
+    close();
+    const cash = kind === 'cash';
+    const el = document.createElement('div');
+    el.className = 'modal-backdrop';
+    el.innerHTML = '<div class="modal ib-modal" role="dialog" aria-modal="true" aria-labelledby="ib-title">' +
+      '<button class="ib-x" data-close aria-label="Tutup">✕</button>' +
+      '<h2 id="ib-title">' + (cash ? '💰 Keuangan' : '👥 Penduduk') + '</h2>' +
+      (cash ? cashBody(state, now) : popBody(state, now)) +
+      '<div class="modal-actions"><button class="btn wide" data-close>Tutup</button></div></div>';
+    document.body.appendChild(el);
+    const onKey = function (e) { if (e.key === 'Escape') close(); };
+    open = { el: el, prevFocus: document.activeElement, onKey: onKey };
+    document.addEventListener('keydown', onKey);
+    el.addEventListener('click', function (e) {
+      if (e.target === el || e.target.closest('[data-close]')) close();
+    });
+    const btn = el.querySelector('.modal-actions .btn');
+    if (btn) btn.focus();
+    return true;
+  }
+
+  NT.ui.infobox = { show: show, close: close };
 })((window.NT = window.NT || {}));
 
 </script>
@@ -6055,6 +6391,16 @@ details.how > p { margin: 0 0 6px; }
       return { silent: true };
     },
 
+    'info-cash': function () { NT.ui.infobox.show('cash', state, now()); return { silent: true, skipRender: true }; },
+    'info-pop': function () { NT.ui.infobox.show('pop', state, now()); return { silent: true, skipRender: true }; },
+
+    'goods-toggle': function (el) {
+      const cid = el.getAttribute('data-c');
+      P.view.goodsOpen[cid] = !P.view.goodsOpen[cid];
+      return { silent: true };
+    },
+    'export-toggle': function () { P.view.exportOpen = !P.view.exportOpen; return { silent: true }; },
+
     'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
 
     'market-region': function (el) {
@@ -6190,7 +6536,7 @@ details.how > p { margin: 0 0 6px; }
       const island = e.target.closest && e.target.closest('.island');
       if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); return; }
       const ts = e.target.closest && e.target.closest('.term-stat');
-      if (ts) { e.preventDefault(); handle('term', ts); }
+      if (ts) { e.preventDefault(); handle(ts.getAttribute('data-action') || 'term', ts); }
     });
 
     document.addEventListener('change', function (e) {

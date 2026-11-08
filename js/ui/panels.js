@@ -8,7 +8,7 @@
   const E = NT.economy;
   const F = NT.fmt;
 
-  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false };
+  const view = { tab: 'map', region: 'jawa', market: 'jawa', resetArmed: false, sheet: false, guideOpen: false, goodsOpen: {}, exportOpen: false };
 
   function $(id) { return document.getElementById(id); }
 
@@ -243,7 +243,15 @@
       const txt = E.exportClassOf(cid) === 'domestik' ? 'tidak bisa diekspor; jual ke pasar pulau lain.' : exportRuleText(cid) + '.';
       return '<li><b>' + c.name + '</b>' + exportBadge(cid) + ' ' + txt + '</li>';
     }).join('');
-    return '<div class="card"><h2>Ekspor luar negeri</h2>' +
+    const nExp = Object.keys(D.commodities).filter(function (cid) {
+      return Math.floor(state.inventory[cid] || 0) >= 1 && E.exportClassOf(cid) !== 'domestik';
+    }).length;
+    const eo = view.exportOpen;
+    const head = '<button class="fold-head" data-action="export-toggle" aria-expanded="' + eo + '"><h2>Ekspor luar negeri</h2>' +
+      '<span class="fold-sum muted small">' + (nExp ? nExp + ' barang siap diekspor' : 'gudang belum ada barang ekspor') + '</span>' +
+      '<span class="fold-caret" aria-hidden="true">' + (eo ? '▴' : '▾') + '</span></button>';
+    if (!eo) return '<div class="card fold">' + head + '</div>';
+    return '<div class="card fold open">' + head +
       '<p class="muted small">Harga jual lebih tinggi daripada di dalam negeri, tetapi barang butuh waktu di laut dan hanya bisa dikirim sebanyak muatan kapal (naik bersama level pelabuhan). Uang masuk saat barang tiba.</p>' +
       '<p class="muted small">🌍 Ekspor = bebas · 🔒 Terbatas = ada syarat · 🏠 Domestik = kebutuhan dalam negeri. Aturan ini penyederhanaan untuk game.</p>' +
       (notes ? '<ul class="xc-notes small muted">' + notes + '</ul>' : '') + markets + '</div>';
@@ -261,23 +269,32 @@
       return state.regions[D.commodities[cid].region].unlocked || state.inventory[cid] > 0;
     }).map(function (cid) {
       const c = D.commodities[cid];
-      return '' +
-      '<div class="goods">' +
-        '<div class="goods-head">' +
+      const have = Math.floor(state.inventory[cid] || 0);
+      const open = !!view.goodsOpen[cid];
+      // Barang yang gudangnya kosong tidak bisa dijual: tampil sebagai baris tipis agar daftar tidak panjang.
+      const slim = have < 1 && !open;
+      const toggle = '<button class="goods-toggle" data-action="goods-toggle" data-c="' + cid + '" aria-expanded="' + open + '" aria-label="' + (open ? 'Ringkas' : 'Rincian') + ' ' + c.name + '">' + (open ? '▴' : '▾') + '</button>';
+      const head = '<div class="goods-head">' +
           '<div class="row-icon">' + (NT.ui.art.comm(c.id) || c.icon) + '</div>' +
           '<div class="row-main"><b>' + c.name + exportBadge(cid) + '<span data-live="season" data-c="' + cid + '"></span></b><small>dari ' + D.regions[c.region].name + ' · 1 satuan = ' + c.unitKg + ' kg</small></div>' +
-          '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>' +
-        '</div>' +
+          (slim
+            ? '<div class="goods-mini"><b data-live="unit" data-c="' + cid + '"></b><span class="trend" data-live="trend" data-c="' + cid + '"></span></div>'
+            : '<div class="goods-stock"><b data-live="stock" data-c="' + cid + '">0</b><small>di gudang</small></div>') +
+          toggle +
+        '</div>';
+      if (slim) return '<div class="goods slim">' + head + '</div>';
+      return '' +
+      '<div class="goods">' + head +
         '<div class="goods-price">' +
           '<span>Harga <b data-live="unit" data-c="' + cid + '"></b></span>' +
           '<span class="muted">' + term('ongkir', 'ongkir') + ' <span data-live="ship" data-c="' + cid + '"></span> <span data-live="km" data-c="' + cid + '"></span></span>' +
           '<span class="trend" data-live="trend" data-c="' + cid + '"></span>' +
           '<span data-live="signal" data-c="' + cid + '"></span>' +
         '</div>' +
-        '<div class="spark" data-live="spark" data-c="' + cid + '"></div>' +
-        '<div class="spark-axis"><span>30 mnt lalu</span><span>sekarang</span><span>30 mnt lagi</span></div>' +
-        '<div class="goods-hint" data-live="hint" data-c="' + cid + '"></div>' +
-        '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' +
+        (open ? '<div class="spark" data-live="spark" data-c="' + cid + '"></div>' +
+          '<div class="spark-axis"><span>30 mnt lalu</span><span>sekarang</span><span>30 mnt lagi</span></div>' +
+          '<div class="goods-hint" data-live="hint" data-c="' + cid + '"></div>' +
+          '<div class="goods-best" data-live="best" data-c="' + cid + '"></div>' : '') +
         '<div class="goods-actions">' +
           '<button class="btn" data-action="sell" data-c="' + cid + '" data-qty="10">Jual 10</button>' +
           '<button class="btn primary" data-action="sell" data-c="' + cid + '" data-qty="all">Jual semua</button>' +
@@ -587,6 +604,17 @@
     $('stat-score').textContent = F.num(sc);
     $('rank-name').textContent = rk.current.name;
     const inc0 = E.incomePerMin(state, now) + NT.population.taxPerMin(state);
+    if ($('stat-pop')) {
+      let tm = 0, tw = 0, ti = 0;
+      Object.keys(D.regions).forEach(function (rid) {
+        if (!state.regions[rid] || !state.regions[rid].unlocked) return;
+        const pi = NT.population.info(state, rid);
+        if (!pi) return;
+        tm += pi.millions; tw += pi.welfare * pi.pop; ti += pi.pop;
+      });
+      $('stat-pop').textContent = F.num(tm, tm < 20 ? 1 : 0) + ' jt';
+      $('stat-popsub').textContent = ti > 0 ? '😊 ' + Math.round(tw / ti) + ' kesejahteraan' : '\u00a0';
+    }
     $('stat-income').textContent = inc0 > 0 ? '≈ +' + F.money(inc0) + '/mnt' : '\u00a0';
     $('stat-rankpct').textContent = rk.next ? Math.round(Math.max(0, Math.min(1, (sc - rk.current.min) / (rk.next.min - rk.current.min))) * 100) + '% ke ' + rk.next.name : 'Gelar tertinggi';
 
@@ -774,5 +802,5 @@
     });
   }
 
-  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick, glossary: GLOSSARY };
+  NT.ui.panels = { view: view, renderAll: renderAll, tick: tick, glossary: GLOSSARY, needHint: needHint };
 })((window.NT = window.NT || {}));

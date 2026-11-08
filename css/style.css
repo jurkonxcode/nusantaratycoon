@@ -827,3 +827,55 @@ details.how > p { margin: 0 0 6px; }
 .pop-need .bar { display: block; height: 8px; margin: 0; }
 .pop-need .bar.low i { background: #e0813d; }
 .pop-warn { margin: 6px 0 2px; color: #e0813d; font-size: .88em; }
+
+/* ===== Pasar ringkas: kartu barang lebih pendek, bagian rinci bisa dibuka ===== */
+.goods { padding: 12px 14px; }
+.goods-price { margin: 8px 0 2px; }
+.goods-actions { margin-top: 8px; }
+.goods-toggle {
+  flex: none; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--sand-dark);
+  background: #fff; color: var(--sea-800); font-size: 14px; cursor: pointer; align-self: center;
+}
+.goods-toggle:focus-visible { outline: 3px solid var(--sea-500); outline-offset: 2px; }
+.goods.slim { padding: 8px 12px; box-shadow: none; background: transparent; }
+.goods.slim .goods-head { gap: 8px; }
+.goods.slim .row-icon { transform: scale(.85); transform-origin: left center; }
+.goods.slim .row-main small { display: none; }
+.goods-mini { text-align: right; line-height: 1.2; }
+.goods-mini b { display: block; font-size: 14px; font-variant-numeric: tabular-nums; }
+.goods-quote { min-height: 0; }
+.goods-quote:empty { display: none; }
+@media (max-width: 759px) {
+  #tab-market.on > .goods { margin-top: 8px; }
+  #tab-market.on > .card + .goods { margin-top: 12px; }
+}
+
+/* Kartu ekspor yang bisa dilipat */
+.fold-head {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; margin: 0; background: none; border: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer; min-height: 44px; flex-wrap: wrap;
+}
+.fold-head h2 { margin: 0; flex: 1 1 auto; }
+.fold-sum { flex: 1 1 100%; order: 3; margin-top: -6px; }
+.fold-caret { flex: none; font-size: 16px; color: var(--sea-700); }
+.fold:not(.open) { padding-top: 10px; padding-bottom: 10px; }
+
+/* ===== Jendela Kas dan Penduduk ===== */
+.stat.term-stat:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+.stat.term-stat:hover { background: rgba(255, 255, 255, .14); }
+.ib-modal { max-width: 480px; position: relative; padding-top: 20px; }
+.ib-x {
+  position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 50%;
+  border: 0; background: var(--sand); color: var(--sea-800); font-size: 16px; cursor: pointer;
+}
+.ib-hero { margin: 6px 0 4px; padding: 12px 14px; border-radius: 12px; background: var(--sea-800); color: #fff; }
+.ib-hero small { display: block; opacity: .75; font-size: 12px; }
+.ib-hero b { display: block; font-size: 24px; font-variant-numeric: tabular-nums; line-height: 1.25; }
+.ib-hero-sub { display: block; margin-top: 2px; font-size: 13px; color: var(--gold); font-weight: 700; }
+.ib-list li { align-items: flex-start; }
+.ib-list li > b { flex: none; text-align: right; }
+.ib-sub { display: block; font-size: 12px; font-weight: 400; margin-top: 1px; }
+.ib-tips { margin-top: 4px; }
+.ib-region { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.ib-region .pop-need { margin-top: 6px; }
+.ib-region .pop-need { grid-template-columns: minmax(124px, 40%) 1fr 44px; }

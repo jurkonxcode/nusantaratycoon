@@ -248,6 +248,16 @@
       return { silent: true };
     },
 
+    'info-cash': function () { NT.ui.infobox.show('cash', state, now()); return { silent: true, skipRender: true }; },
+    'info-pop': function () { NT.ui.infobox.show('pop', state, now()); return { silent: true, skipRender: true }; },
+
+    'goods-toggle': function (el) {
+      const cid = el.getAttribute('data-c');
+      P.view.goodsOpen[cid] = !P.view.goodsOpen[cid];
+      return { silent: true };
+    },
+    'export-toggle': function () { P.view.exportOpen = !P.view.exportOpen; return { silent: true }; },
+
     'sheet-close': function () { P.view.sheet = false; return { silent: true }; },
 
     'market-region': function (el) {
@@ -383,7 +393,7 @@
       const island = e.target.closest && e.target.closest('.island');
       if (island) { e.preventDefault(); selectRegion(island.getAttribute('data-region')); return; }
       const ts = e.target.closest && e.target.closest('.term-stat');
-      if (ts) { e.preventDefault(); handle('term', ts); }
+      if (ts) { e.preventDefault(); handle(ts.getAttribute('data-action') || 'term', ts); }
     });
 
     document.addEventListener('change', function (e) {
