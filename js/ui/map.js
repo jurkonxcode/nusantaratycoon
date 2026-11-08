@@ -399,12 +399,35 @@
     if (T && T.cancel) T.cancel();
   }
 
+  // Selama peta bergerak (geser, pinch, luncur, animasi zoom) efek bayangan dan animasi dijeda lewat kelas .moving (lihat CSS):
+  // tanpa itu 45 sprite berfilter dan puluhan animasi digambar ulang di tiap bingkai.
+  function setMoving(on) { if (view.stage) view.stage.classList.toggle('moving', !!on); }
+
+  // Luncur setelah jari dilepas: kecepatan (px/ms) meluruh eksponensial, berhenti di tepi peta atau saat hampir diam.
+  function glide(vx, vy) {
+    cancelAnim();
+    setMoving(true);
+    let last = performance.now();
+    function step(now) {
+      const dt = Math.min(now - last, 40); last = now;
+      const decay = Math.exp(-dt / 325);
+      vx *= decay; vy *= decay;
+      const next = VP.panBy(view.cur, vx * dt, vy * dt, view.ctx);
+      const moved = next.x !== view.cur.x || next.y !== view.cur.y;
+      if (moved) setView(next, false);
+      if (moved && Math.hypot(vx, vy) > 0.02) view.anim = requestAnimationFrame(step);
+      else { view.anim = 0; setMoving(false); setView(view.cur, true); queueRefine(); }
+    }
+    view.anim = requestAnimationFrame(step);
+  }
+
   // Pindah halus ke view target (pusat dan skala diinterpolasi); tanpa animasi bila "Hemat animasi" menyala.
   function animateTo(target) {
     cancelAnim();
     interrupt();
     if (!view.cur) return;
     if (reducedMotion()) { setView(target, true); return; }
+    setMoving(true);
     const c = view.ctx, from = view.cur;
     const c0 = VP.toWorld(from, c.box.w / 2, c.box.h / 2), c1 = VP.toWorld(target, c.box.w / 2, c.box.h / 2);
     const t0 = performance.now(), dur = 300;
@@ -412,7 +435,7 @@
       const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
       const scale = from.scale * Math.pow(target.scale / from.scale, e);
       setView(VP.centerOn(from, c0.x + (c1.x - c0.x) * e, c0.y + (c1.y - c0.y) * e, c, scale), false);
-      if (k < 1) view.anim = requestAnimationFrame(step); else { view.anim = 0; setView(target, true); }
+      if (k < 1) view.anim = requestAnimationFrame(step); else { view.anim = 0; setMoving(false); setView(target, true); queueRefine(); }
     }
     view.anim = requestAnimationFrame(step);
   }
@@ -453,6 +476,7 @@
     const pts = new Map();          // pointerId -> posisi terakhir (relatif terhadap kotak peta)
     let down = null;                // ketukan yang sedang dipantau: { x, y, moved }
     let lastTap = null, suppressClick = false;
+    let samples = [];               // jejak jari terakhir (untuk kecepatan luncur)
 
     stage.addEventListener('pointerdown', function (e) {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -460,8 +484,8 @@
       interrupt();
       if (!pts.size) view.rect = null;
       pts.set(e.pointerId, relPoint(e));
-      if (pts.size === 1) { down = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId }; suppressClick = false; }
-      else { if (down) down.moved = true; suppressClick = true; }   // jari kedua = pinch, bukan ketukan
+      if (pts.size === 1) { down = { x: e.clientX, y: e.clientY, moved: false, id: e.pointerId, pinch: false }; suppressClick = false; samples = []; }
+      else { if (down) { down.moved = true; down.pinch = true; } suppressClick = true; setMoving(true); stage.classList.add('dragging'); }   // jari kedua = pinch, bukan ketukan
     });
 
     stage.addEventListener('pointermove', function (e) {
@@ -478,13 +502,17 @@
         if (Math.hypot(e.clientX - down.x, e.clientY - down.y) < slop) return;   // masih ketukan
         down.moved = true; suppressClick = true;
         try { stage.setPointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
-        stage.classList.add('dragging');
+        stage.classList.add('dragging'); setMoving(true);
         // Selisih dihitung dari titik sentuh awal supaya tidak ada lompatan sebesar ambang.
         const sr = stageRect();
         prev.x = down.x - sr.left; prev.y = down.y - sr.top;
       }
       pts.set(e.pointerId, cur);
-      if (down && down.moved) setView(VP.panBy(view.cur, cur.x - prev.x, cur.y - prev.y, view.ctx), true);
+      if (down && down.moved) {
+        setView(VP.panBy(view.cur, cur.x - prev.x, cur.y - prev.y, view.ctx), true);
+        const t = e.timeStamp; samples.push({ t: t, x: cur.x, y: cur.y });
+        while (samples.length > 2 && t - samples[0].t > 100) samples.shift();
+      }
     });
 
     function release(e) {
@@ -493,9 +521,20 @@
       if (pts.size >= 1) { if (down) down.moved = true; return; }   // satu jari lepas: sisa jari lanjut menggeser
       try { stage.releasePointerCapture(e.pointerId); } catch (err) { /* abaikan */ }
       stage.classList.remove('dragging');
-      queueRefine();                       // render tajam yang tadi dibatalkan dilanjutkan setelah jari lepas
       const wasTap = down && !down.moved && e.type === 'pointerup';
+      // Luncur: hanya untuk geseran satu jari yang berakhir dengan jari masih bergerak.
+      let fling = null;
+      if (down && down.moved && !down.pinch && e.type === 'pointerup' && samples.length > 1 && !reducedMotion()) {
+        const a = samples[0], z = samples[samples.length - 1], dt = z.t - a.t;
+        if (dt > 8 && e.timeStamp - z.t < 80) {
+          const vx = (z.x - a.x) / dt, vy = (z.y - a.y) / dt;
+          if (Math.hypot(vx, vy) > 0.15) fling = { vx: Math.max(-4, Math.min(4, vx)), vy: Math.max(-4, Math.min(4, vy)) };
+        }
+      }
+      samples = [];
       down = null;
+      if (fling) glide(fling.vx, fling.vy);
+      else { setMoving(false); queueRefine(); }   // render tajam yang tadi dibatalkan dilanjutkan setelah jari lepas
       if (!wasTap) { lastTap = null; return; }
       // Ketuk dua kali di laut atau daratan kosong: zoom 2x (atau kembali ke tampilan awal bila sudah mentok).
       if (e.target.closest && e.target.closest('.island, .bubble')) { lastTap = null; return; }

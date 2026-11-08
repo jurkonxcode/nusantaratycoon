@@ -119,10 +119,19 @@ with sync_playwright() as p:
     sel_before = selected(pg)
     pg.mouse.move(jx, jy); pg.mouse.down()
     for i in range(1, 11): pg.mouse.move(jx - 8 * i, jy + 3 * i); pg.wait_for_timeout(10)
+    pg.wait_for_timeout(150)   # jari berhenti dulu: tanpa ini geseran dilanjutkan sebagai luncur (sesi 23)
     pg.mouse.up(); pg.wait_for_timeout(250)
     vp_ = vb(pg); wj_after = world(pg, jx - 80, jy + 30)
     check('desktop: geser mouse memindahkan peta', abs(vp_[0] - vs[0]) > 5, (vs, vp_))
     check('desktop: titik yang diseret ikut bergerak bersama kursor', abs(wj_before[0] - wj_after[0]) < 2 and abs(wj_before[1] - wj_after[1]) < 2, (wj_before, wj_after))
+    # Luncur (sesi 23): dilepas saat masih bergerak, peta lanjut bergeser lalu berhenti; kelas .moving bersih kembali
+    pg.evaluate("NT.ui.map.focus('jawa')"); pg.wait_for_timeout(600)
+    jx, jy = island_center(pg, 'jawa')
+    pg.mouse.move(jx, jy); pg.mouse.down()
+    for i in range(1, 9): pg.mouse.move(jx - 14 * i, jy); pg.wait_for_timeout(16)
+    v_rel = vb(pg); pg.mouse.up(); pg.wait_for_timeout(120); v_mid = vb(pg); pg.wait_for_timeout(1500); v_end = vb(pg); pg.wait_for_timeout(200); v_fin = vb(pg)
+    check('desktop: peta meluncur setelah jari dilepas', abs(v_mid[0] - v_rel[0]) > 1 or abs(v_end[0] - v_rel[0]) > 5, (v_rel, v_mid, v_end))
+    check('desktop: luncuran berhenti sendiri dan kelas moving dilepas', abs(v_fin[0] - v_end[0]) < 0.5 and not pg.evaluate("document.querySelector('.map-scroll').classList.contains('moving')"), (v_end, v_fin))
     check('desktop: geseran di atas pulau tidak memilih pulau', selected(pg) == sel_before, selected(pg))
 
     # ketukan biasa tetap memilih pulau

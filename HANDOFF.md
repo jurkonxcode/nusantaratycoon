@@ -806,3 +806,12 @@ Pendekatan: CSS-first. Semua `id`, `data-action`, dan kelas yang dipakai JS dan 
 | Sesi | File yang berubah |
 |---|---|
 | 22 | `index.html`, `css/style.css`, `js/ui/panels.js`, `js/ui/map.js`, `tests/browser_paket_b.py`, `tests/browser_touch.py` (baru), `dist/nusantara-tycoon.html`, `HANDOFF.md` |
+
+## 37. Sesi 23: geser peta lebih mulus (8 November 2026)
+
+Keluhan pemilik: penarikan peta kurang smooth dan kurang stabil.
+**Penyebab terukur:** peta berisi 45 sprite `.art` berfilter `drop-shadow` dan sekitar 35 animasi CSS (gelembung 📦 `bob`, denyut pin) yang ikut digambar ulang di setiap bingkai geser; peta juga berhenti mendadak saat jari lepas.
+**Perubahan.** (1) `js/ui/map.js`: kelas `.moving` pada `.map-scroll` selama geser, pinch, luncur, dan animasi zoom; CSS (blok "Sesi 23" di akhir `css/style.css`) mematikan filter bayangan dan menjeda animasi selama kelas itu aktif. (2) Luncur (inertia) setelah geseran satu jari: kecepatan dari jejak 100 ms terakhir, meluruh eksponensial (konstanta 325 ms), berhenti di tepi peta; mati bila "Hemat animasi". Menyentuh peta menghentikan luncuran.
+**Dicoba dan dibuang:** `contain: layout paint` dan `will-change: contents` pada peta membuat bingkai lebih buruk (p50 16,7 menjadi 50 ms di HP); jangan dipakai lagi.
+**Tes.** `browser_zoom.py` 41 (tes geser disesuaikan: jari berhenti dulu sebelum lepas; tes luncur baru). Perf (CPU 4x, headless): HP zoom awal bingkai terburuk 117 menjadi 50 ms; HP diperbesar 100 menjadi 83 ms.
+**Belum diuji:** HP sungguhan (rasa luncuran: konstanta 325 ms dan ambang 0,15 px/ms di `glide`).

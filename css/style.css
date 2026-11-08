@@ -811,3 +811,8 @@ details.how > summary::before { content: "\25B8"; font-size: 14px; transition: t
 details.how[open] > summary::before { transform: rotate(90deg); }
 details.how > summary:focus-visible { outline: 3px solid var(--sea-500); outline-offset: 2px; border-radius: 8px; }
 details.how > p { margin: 0 0 6px; }
+
+/* Sesi 23: geser peta lebih mulus. Selama peta bergerak (.moving: geser, pinch, luncur, animasi zoom), efek bayangan sprite
+   dan animasi gelembung/pin dijeda supaya tiap bingkai tidak menggambar ulang puluhan elemen berfilter. Kembali normal saat diam. */
+.map-scroll.moving .art, .map-scroll.moving .pin-dot, .map-scroll.moving .island-land { filter: none; }
+.map-scroll.moving .map-svg * { animation-play-state: paused; }
