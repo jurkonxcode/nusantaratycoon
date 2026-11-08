@@ -163,4 +163,24 @@ test('viewBoxOf konsisten dengan ukuran kotak dan skala', function () {
   near(parts[0], v.x, 0.01); near(parts[1], v.y, 0.01);
 });
 
+test('uiScale: 1 sampai ambang, lalu mengecil mengikuti 1/skala, tidak di bawah batas', function () {
+  near(V.uiScale(0.8, 1, 1, 0.4), 1, 1e-9); near(V.uiScale(1, 1, 1, 0.4), 1, 1e-9);
+  near(V.uiScale(2, 1, 1, 0.4), 0.5, 1e-9); near(V.uiScale(5, 1, 1, 0.4), 0.4, 1e-9);
+  near(V.uiScale(2.4, 1, 0.45, 0.6), Math.pow(1 / 2.4, 0.45), 1e-9);
+  let prev = 2; for (let s = 0.3; s < 6; s += 0.1) { const f = V.uiScale(s, 1, 0.45, 0.6); assert.ok(f <= prev + 1e-12 && f >= 0.6 - 1e-12 && f <= 1); prev = f; }
+});
+
+test('scaleBar: panjang 1-2-5 yang muat, panjang layar <= batas, tak pernah nol untuk skala wajar', function () {
+  const kpu = 0.05 * 111.32;   // km per satuan peta
+  for (let s = 0.3; s <= 5; s += 0.07) {
+    const b = V.scaleBar(s, kpu, 110);
+    assert.ok(b.km > 0 && b.px <= 110 + 1e-9, 'skala ' + s);
+    const m = b.km / Math.pow(10, Math.floor(Math.log10(b.km)));
+    assert.ok([1, 2, 5].some(function (x) { return Math.abs(m - x) < 1e-9; }), 'bukan 1-2-5: ' + b.km);
+    assert.ok(b.px > 110 * 0.4, 'batang terlalu pendek di skala ' + s + ': ' + b.px);   // 1-2-5 selalu > 40% batas
+  }
+  near(V.scaleBar(1, 5.566, 110).km, 500, 1e-9);        // 110 px = 612 km -> 500 km
+  assert.strictEqual(V.scaleBar(0, 5.566, 110).km, 0);
+});
+
 console.log(passed + ' tes lolos');

@@ -92,11 +92,12 @@
         '<g class="island-tag"><rect class="label-bg" x="' + (label.x - lw / 2) + '" y="' + (label.y - 17) + '" width="' + lw + '" height="25" rx="7"/>' +
         '<text class="island-label" x="' + label.x + '" y="' + label.y + '" text-anchor="middle">' + text + '</text></g>' +
         '<g class="pin" transform="translate(' + pin.x + ',' + pin.y + ')">' +
+          '<g class="ui-s">' +
           '<circle class="pin-pulse" r="17"/>' +
           '<circle class="pin-dot" r="17"/>' +
           '<text class="pin-icon" text-anchor="middle" dy="7">' + r.icon + '</text>' +
           '<image class="pin-img" x="-14" y="-15" width="28" height="28" visibility="hidden"/>' +
-        '</g>' +
+          '</g></g>' +
       '</g>';
   }
 
@@ -179,9 +180,9 @@
 
   // Lencana pembangunan: palu bergoyang dan bar progres (lebar diisi tiap detik oleh tickJobs).
   function jobBadge(x, y, key) {
-    return '<g class="jobbadge" transform="translate(' + x + ',' + y + ')"><text class="hammer" text-anchor="middle" dy="-4">🔨</text>' +
+    return '<g class="jobbadge" transform="translate(' + x + ',' + y + ')"><g class="ui-b"><text class="hammer" text-anchor="middle" dy="-4">🔨</text>' +
       '<rect class="jb-bg" x="-14" y="2" width="28" height="5" rx="2"/>' +
-      '<rect class="jb-fill" data-job="' + key + '" x="-14" y="2" width="0" height="5" rx="2"/></g>';
+      '<rect class="jb-fill" data-job="' + key + '" x="-14" y="2" width="0" height="5" rx="2"/></g></g>';
   }
 
   function dynMarkup(r, rs, state) {
@@ -223,8 +224,8 @@
       const job = NT.economy.jobFor(state, 'b:' + bid);
       put(tierName(bid, lvl >= 6 ? 3 : (lvl >= 3 ? 2 : 1)), p, lvl >= 3 ? 46 : 40, lvl ? (job ? 0.7 : null) : (job ? 0.55 : 0.28));
       if (lvl) {
-        top.push('<g class=\"bubble\" data-id=\"' + bid + '\" transform=\"translate(' + p.x + ',' + (p.y - 38) + ')\"><g class=\"bob\">' +
-          '<circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g>');
+        top.push('<g class=\"bubble\" data-id=\"' + bid + '\" transform=\"translate(' + p.x + ',' + (p.y - 38) + ')\"><g class=\"ui-b\"><g class=\"bob\">' +
+          '<circle r=\"11\" class=\"bubble-bg\"/><text class=\"bubble-ico\" text-anchor=\"middle\" dy=\"5\">📦</text></g></g></g>');
       }
       if (job) top.push(jobBadge(p.x, p.y + 12, job.key));
     });
@@ -322,8 +323,46 @@
     view.raf = 0;
     if (!view.cur) return;
     view.svg.setAttribute('viewBox', VP.viewBoxOf(view.cur, view.ctx));
+    updateScaleUi();
+    queueRefine();
     const lim = VP.limits(view.ctx);
     if (view.btn.in) { view.btn.in.disabled = view.cur.scale >= lim.max * 0.999; view.btn.out.disabled = view.cur.scale <= lim.min * 1.001; }
+  }
+
+  /* ---------- Z2: ukuran elemen UI mengikuti zoom, penggaris km, tekstur tajam ---------- */
+
+  // Kilometer per satuan peta (di khatulistiwa; lintang peta hanya +-10 derajat, selisihnya < 2%).
+  function kmPerUnit() { return G.cellDeg / G.cellPx * 111.32; }
+
+  // Label, pin, dan nama laut dikecilkan (dalam satuan peta) saat zoom, supaya ukuran di layar tetap wajar;
+  // gelembung dan lencana hanya sedikit, agar tetap enak diketuk. Sprite bangunan sengaja ikut membesar (benda di peta).
+  function updateScaleUi() {
+    const s = view.cur.scale, c = mapCfg();
+    view.svg.style.setProperty('--ui-k', VP.uiScale(s, c.uiFromPx || 1, 1, c.uiMin || 0.3).toFixed(3));
+    view.svg.style.setProperty('--ui-kb', VP.uiScale(s, c.uiFromPx || 1, c.uiBubblePower || 0.45, 0.6).toFixed(3));
+    if (view.ruler) {
+      const bar = VP.scaleBar(s, kmPerUnit(), c.rulerMaxPx || 110);
+      view.ruler.bar.style.width = Math.round(bar.px) + 'px';
+      view.ruler.txt.textContent = bar.km >= 1 ? (bar.km + ' km') : '';
+    }
+  }
+
+  // Tekstur tajam: setelah zoom/geser berhenti sebentar, render ulang area yang terlihat dengan k lebih besar.
+  function queueRefine() {
+    clearTimeout(view.refT);
+    view.refT = setTimeout(doRefine, mapCfg().refineDelay || 350);
+  }
+
+  function doRefine() {
+    view.refT = 0;
+    const T = NT.ui.terrain;
+    if (!view.cur || !T || !T.refine) return;
+    if (view.anim || view.stage.classList.contains('dragging')) { queueRefine(); return; }
+    const c = view.ctx, dpr = Math.min(window.devicePixelRatio || 1, mapCfg().maxDpr || 2);
+    const need = view.cur.scale * dpr;
+    if (need <= T.K) { T.clearRefine(view.svg); return; }     // peta penuh sudah cukup tajam
+    const tl = VP.toWorld(view.cur, 0, 0), br = VP.toWorld(view.cur, c.box.w, c.box.h);
+    T.refine(view.svg, { x: tl.x, y: tl.y, w: br.x - tl.x, h: br.y - tl.y }, need, mapCfg().texMaxPx);
   }
 
   // Satu rAF per bingkai: gerakan jari boleh datang berkali-kali, viewBox hanya ditulis sekali.
@@ -483,6 +522,11 @@
       '<button type="button" class="mz-btn" data-mz="out" aria-label="Perkecil peta">\u2212</button>' +
       '<button type="button" class="mz-btn" data-mz="reset" aria-label="Kembalikan tampilan peta">\u2316</button>';
     card.appendChild(box);
+    const rl = document.createElement('div');
+    rl.className = 'map-ruler'; rl.setAttribute('aria-hidden', 'true');
+    rl.innerHTML = '<span class="mr-txt"></span><span class="mr-bar"></span>';
+    view.stage.appendChild(rl);
+    view.ruler = { bar: rl.querySelector('.mr-bar'), txt: rl.querySelector('.mr-txt') };
     view.btn.in = box.querySelector('[data-mz="in"]');
     view.btn.out = box.querySelector('[data-mz="out"]');
     box.addEventListener('click', function (e) {

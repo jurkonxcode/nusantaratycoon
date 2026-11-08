@@ -69,6 +69,13 @@
       fitMinPx: 0.5,          // bila "pas layar" membuat peta lebih kecil dari 0,5 piksel per satuan, tampilan awal di-zoom
       startPx: 0.81,          // ...ke sekitar 0,81 piksel per satuan (setara peta lebar 760 px) di sekitar wilayah awal
       tapSlop: 6,             // gerakan kurang dari 6 px dianggap ketukan, bukan geseran
+      uiFromPx: 1,            // Z2: label/pin mulai dikecilkan (dalam satuan peta) di atas 1 px layar per satuan
+      uiMin: 0.3,             // ...dan tidak lebih kecil dari 30%
+      uiBubblePower: 0.45,    // gelembung dan lencana mengecil lebih pelan (sasaran ketuk)
+      rulerMaxPx: 110,        // panjang maksimum batang penggaris km
+      refineDelay: 350,       // ms setelah zoom/geser berhenti sebelum tekstur tajam dirender
+      maxDpr: 2,              // rasio piksel layar yang dihitung untuk ketajaman
+      texMaxPx: 2400000,      // batas piksel kanvas satu render tajam (termasuk tepi); menjaga memori dan waktu di HP
       storeKey: 'nusantara-tycoon-mapview-v1'   // posisi zoom disimpan terpisah dari save game
     }
   };

@@ -212,10 +212,11 @@
 
   function canvas(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
 
-  function fillRings(ctx, rings) {
+  // o = jendela render { x, y, w, h, k } dalam satuan viewBox; k = piksel kanvas per satuan.
+  function fillRings(ctx, rings, o) {
     ctx.beginPath();
     rings.forEach(function (r) {
-      r.forEach(function (p, i) { if (i) ctx.lineTo(p.x * K, p.y * K); else ctx.moveTo(p.x * K, p.y * K); });
+      r.forEach(function (p, i) { const px = (p.x - o.x) * o.k, py = (p.y - o.y) * o.k; if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py); });
       ctx.closePath();
     });
     ctx.fill();
@@ -227,25 +228,30 @@
     return a;
   }
 
-  function compute() {
-    const w = W * K, h = H * K, N = w * h;
+  // Hitung tekstur laut dan darat untuk satu jendela (default: seluruh peta pada K). Derau memakai koordinat dunia,
+  // jadi jendela mana pun menghasilkan gambar yang sama dengan potongan peta penuh, hanya lebih tajam bila k lebih besar.
+  // Jarak ke pantai (dt) dihitung di dalam jendela: pemanggil harus memberi tepi >= EDGE satuan di luar area yang dipakai.
+  function compute(o) {
+    o = o || { x: 0, y: 0, w: W, h: H, k: K };
+    const k = o.k, ox = o.x, oy = o.y;
+    const w = Math.ceil(o.w * k), h = Math.ceil(o.h * k), N = w * h;
     const play = canvas(w, h), nbc = canvas(w, h);
     let ctx = play.getContext('2d'); ctx.fillStyle = '#fff';
-    Object.keys(G.polygons).forEach(function (id) { if (id !== 'neighbor') fillRings(ctx, shape(id)); });
-    ctx = nbc.getContext('2d'); ctx.fillStyle = '#fff'; fillRings(ctx, shape('neighbor'));
+    Object.keys(G.polygons).forEach(function (id) { if (id !== 'neighbor') fillRings(ctx, shape(id), o); });
+    ctx = nbc.getContext('2d'); ctx.fillStyle = '#fff'; fillRings(ctx, shape('neighbor'), o);
     const aP = alphaOf(play), aN = alphaOf(nbc), land = new Uint8Array(N);
     for (let i = 0; i < N; i++) land[i] = Math.max(aP[i], aN[i]);
 
     function seedFrom(c, stroke) { return alphaOf(c); }
     const shelfC = canvas(w, h); ctx = shelfC.getContext('2d'); ctx.fillStyle = '#fff';
-    fillRings(ctx, SHELVES.map(function (r) { return chaikin(chaikin(toPxRing(r))); }));
+    fillRings(ctx, SHELVES.map(function (r) { return chaikin(chaikin(toPxRing(r))); }), o);
     const aS = seedFrom(shelfC);
     function ridgeSeed(list) {
       const c = canvas(w, h), x = c.getContext('2d');
-      x.strokeStyle = '#fff'; x.lineWidth = 3 * K; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.strokeStyle = '#fff'; x.lineWidth = 3 * k; x.lineCap = 'round'; x.lineJoin = 'round';
       list.forEach(function (l) {
         x.beginPath();
-        l.forEach(function (q, i) { const p = NT.raster.toPx(q[0], q[1]); if (i) x.lineTo(p.x * K, p.y * K); else x.moveTo(p.x * K, p.y * K); });
+        l.forEach(function (q, i) { const p = NT.raster.toPx(q[0], q[1]), px = (p.x - ox) * k, py = (p.y - oy) * k; if (i) x.lineTo(px, py); else x.moveTo(px, py); });
         x.stroke();
       });
       return alphaOf(c);
@@ -263,16 +269,16 @@
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
       const i = y * w + x;
       if (land[i] < 128) continue;
-      const vx = x / K, vy = y / K;
-      const inl = Math.min(1, dIn[i] / (24 * K));
-      const rH = Math.exp(-Math.pow(dH[i] / (9 * K), 2)), rM = Math.exp(-Math.pow(dM[i] / (7 * K), 2));
+      const vx = ox + x / k, vy = oy + y / k;
+      const inl = Math.min(1, dIn[i] / (24 * k));
+      const rH = Math.exp(-Math.pow(dH[i] / (9 * k), 2)), rM = Math.exp(-Math.pow(dM[i] / (7 * k), 2));
       const n1 = fbm(vx, vy, 14, 4, 11), n2 = fbm(vx, vy, 5, 3, 21), n3 = fbm(vx, vy, 2.2, 2, 31);
       const v = (0.07 + 0.30 * n1) * (0.3 + 0.7 * inl) + rH * (0.55 + 0.45 * n2) + rM * (0.30 + 0.32 * n2) + 0.05 * (n3 - 0.5);
       hgt[i] = Math.max(0, Math.min(1, v));
     }
     // Kerucut gunung api: kenaikan mulus dengan kawah kecil di puncak.
     VOLCANOES.forEach(function (vc) {
-      const c = NT.raster.toPx(vc[0], vc[1]), r0 = 5.2 * K, px = c.x * K, py = c.y * K;
+      const c = NT.raster.toPx(vc[0], vc[1]), r0 = 5.2 * k, px = (c.x - ox) * k, py = (c.y - oy) * k;
       const y0 = Math.max(0, Math.floor(py - r0 * 2.2)), y1 = Math.min(h - 1, Math.ceil(py + r0 * 2.2));
       const x0 = Math.max(0, Math.floor(px - r0 * 2.2)), x1 = Math.min(w - 1, Math.ceil(px + r0 * 2.2));
       for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
@@ -286,9 +292,9 @@
     });
 
     const seaImg = new ImageData(w, h), landImg = new ImageData(w, h), sd = seaImg.data, ld = landImg.data;
-    const cx = w / 2, cy = h / 2, sh = 3;
+    const sh = Math.max(1, Math.round(1.5 * k)), hw = W / 2, hh2 = H / 2;
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const i = y * w + x, o = i * 4, vx = x / K, vy = y / K;
+      const i = y * w + x, oo = i * 4, vx = ox + x / k, vy = oy + y / k;
       if (land[i] >= 128 || (aP[i] > 0 || aN[i] > 0)) {
         // ----- Darat -----
         const hh = hgt[i];
@@ -304,7 +310,7 @@
         if (paddy) { const f = (1 - smooth(0.15, 0.42, hh)) * 0.8; r += (L_PADDY[li] - r) * f; g += (L_PADDY[li + 1] - g) * f; b += (L_PADDY[li + 2] - b) * f; }
         if (sav > 0) { const f = sav * (1 - smooth(0.3, 0.6, hh)) * 0.85; r += (L_SAVANA[li] - r) * f; g += (L_SAVANA[li + 1] - g) * f; b += (L_SAVANA[li + 2] - b) * f; }
         const ws = 0.35 + 0.9 * Math.pow(vn(vx / 8, vy / 8, 77), 2);
-        const sf = 1 - smooth(ws * 0.45, ws, dIn[i] / K);
+        const sf = 1 - smooth(ws * 0.45, ws, dIn[i] / k);
         r += (230 - r) * sf; g += (216 - g) * sf; b += (170 - b) * sf;
         // Tekstur kanopi: bintik halus frekuensi tinggi di dataran rendah (hutan), memudar di puncak.
         const can = (vn(vx * 1.7, vy * 1.7, 61) - 0.5) * 0.2 * (1 - smooth(0.55, 0.85, hh)) * (1 - sf);
@@ -324,12 +330,12 @@
         }
         let a = land[i];
         if (aN[i] > 0 && aP[i] === 0) { r += (118 - r) * 0.78; g += (134 - g) * 0.78; b += (120 - b) * 0.78; a *= 0.92; }
-        ld[o] = r; ld[o + 1] = g; ld[o + 2] = b; ld[o + 3] = a;
+        ld[oo] = r; ld[oo + 1] = g; ld[oo + 2] = b; ld[oo + 3] = a;
       }
       // ----- Laut (selalu digambar di bawah daratan) -----
-      const ds = dSea[i] / K;
+      const ds = dSea[i] / k;
       const coastS = land[i] >= 128 ? 1 : 1 - smooth(0, 13, ds);
-      const shelfS = smooth(0, 26, dShelf[i] / K) * 0.6;
+      const shelfS = smooth(0, 26, dShelf[i] / k) * 0.6;
       const s = Math.max(coastS * 0.95, shelfS);
       const si = Math.max(0, Math.min(255, (s * 255) | 0)) * 3;
       // Riak: derau lebar + guratan memanjang searah angin (anisotropik), lebih jelas di laut dalam.
@@ -337,42 +343,43 @@
       const wn = 0.95 + 0.1 * fbm(vx, vy, 6, 3, 200) + streak * 0.07 * (1 - s * 0.6);
       let r = L_SEA[si] * wn, g = L_SEA[si + 1] * wn, b = L_SEA[si + 2] * wn;
       // Garis kontur tipis di tepi paparan benua.
-      const brk = Math.exp(-Math.pow(dShelf[i] / K / 1.4, 2)) * 0.1;
+      const brk = Math.exp(-Math.pow(dShelf[i] / k / 1.4, 2)) * 0.1;
       r *= 1 - brk; g *= 1 - brk * 0.8; b *= 1 - brk * 0.5;
       if (ds < 0.8) { const f = 0.5 * (1 - ds / 0.8); r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
       const j = (y - sh) * w + (x - sh);
       if (y >= sh && x >= sh && land[j] > 127 && land[i] < 128) { r *= 0.72; g *= 0.74; b *= 0.78; }
-      const dx = (x - cx) / cx, dy = (y - cy) / cy, vg = 1 - 0.2 * smooth(0.55, 1.15, Math.sqrt(dx * dx + dy * dy));
-      sd[o] = r * vg; sd[o + 1] = g * vg; sd[o + 2] = b * vg; sd[o + 3] = 255;
+      const dx = (vx - hw) / hw, dy = (vy - hh2) / hh2, vg = 1 - 0.2 * smooth(0.55, 1.15, Math.sqrt(dx * dx + dy * dy));
+      sd[oo] = r * vg; sd[oo + 1] = g * vg; sd[oo + 2] = b * vg; sd[oo + 3] = 255;
     }
     const sea = canvas(w, h), lnd = canvas(w, h);
     sea.getContext('2d').putImageData(seaImg, 0, 0);
     const lc = lnd.getContext('2d');
     lc.putImageData(landImg, 0, 0);
-    drawRivers(lc);
+    drawRivers(lc, o);
     return { sea: sea, land: lnd };
   }
 
   // Sungai: garis berliku (derau tegak lurus arah aliran), melebar ke muara; hanya tampil di atas daratan.
-  function drawRivers(ctx) {
+  function drawRivers(ctx, o) {
+    const kk = o.k;
     ctx.save();
     ctx.globalCompositeOperation = 'source-atop';
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
     RIVERS.forEach(function (rv, ri) {
-      const pts = rv.map(function (q) { const p = NT.raster.toPx(q[0], q[1]); return { x: p.x * K, y: p.y * K }; });
+      const pts = rv.map(function (q) { const p = NT.raster.toPx(q[0], q[1]); return { x: (p.x - o.x) * kk, y: (p.y - o.y) * kk }; });
       const path = [];
       for (let k = 0; k < pts.length - 1; k++) {
-        const a = pts[k], b = pts[k + 1], len = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(2, Math.round(len / (3 * K)));
+        const a = pts[k], b = pts[k + 1], len = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(2, Math.round(len / (3 * kk)));
         const nx = -(b.y - a.y) / len, ny = (b.x - a.x) / len;
         for (let t = 0; t < n; t++) {
-          const f = t / n, o = (vn(ri * 7.3 + k * 3.1 + f * 4, k * 1.7, 91) - 0.5) * 3.2 * K * Math.sin(Math.PI * Math.min(1, f + 0.15));
+          const f = t / n, o = (vn(ri * 7.3 + k * 3.1 + f * 4, k * 1.7, 91) - 0.5) * 3.2 * kk * Math.sin(Math.PI * Math.min(1, f + 0.15));
           path.push({ x: a.x + (b.x - a.x) * f + nx * o, y: a.y + (b.y - a.y) * f + ny * o });
         }
       }
       path.push(pts[pts.length - 1]);
       const N = path.length;
       for (let k = 0; k < N - 1; k++) {
-        const wdt = (0.55 + 1.15 * (k / N)) * K;
+        const wdt = (0.55 + 1.15 * (k / N)) * kk;
         ctx.strokeStyle = 'rgba(70,138,170,0.88)'; ctx.lineWidth = wdt;
         ctx.beginPath(); ctx.moveTo(path[k].x, path[k].y); ctx.lineTo(path[k + 1].x, path[k + 1].y); ctx.stroke();
       }
@@ -406,5 +413,83 @@
     }, 30);
   }
 
-  NT.ui.terrain = { W: W, H: H, defs: defs, landMarkup: landMarkup, pathOf: pathOf, boxOf: boxOf, attach: attach, shape: shape };
+  /* ---------- Tekstur tajam untuk jendela yang terlihat (Z2) ---------- */
+
+  const EDGE = 30;         // satuan viewBox di luar area pakai; cukup untuk semua jarak di compute (paling jauh 26)
+  const NS = 'http://www.w3.org/2000/svg';
+  let hi = null;           // { x, y, w, h, k, urls: [] } area yang sedang tampil tajam
+  let gen = 0;             // naik tiap permintaan baru; hasil async yang basi dibuang
+
+  function clearRefine(svg) {
+    gen++;
+    if (hi) hi.urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* abaikan */ } });
+    hi = null;
+    if (svg) svg.querySelectorAll('image.hi').forEach(function (n) { n.remove(); });
+  }
+
+  // Rencana render: area pakai (terlihat + cadangan geser 20%) dibulatkan ke satuan utuh dan dijepit ke peta; k bulat
+  // supaya piksel kanvas jatuh tepat di kisi satuan. Kembalikan null bila kemajuannya tidak berarti.
+  function plan(rect, need, maxPx) {
+    const sx = rect.w * 0.2, sy = rect.h * 0.2;
+    const x0 = Math.max(0, Math.floor(rect.x - sx)), y0 = Math.max(0, Math.floor(rect.y - sy));
+    const x1 = Math.min(W, Math.ceil(rect.x + rect.w + sx)), y1 = Math.min(H, Math.ceil(rect.y + rect.h + sy));
+    const inner = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    if (inner.w < 1 || inner.h < 1) return null;
+    const ex = Math.max(0, inner.x - EDGE), ey = Math.max(0, inner.y - EDGE);
+    const ext = { x: ex, y: ey, w: Math.min(W, inner.x + inner.w + EDGE) - ex, h: Math.min(H, inner.y + inner.h + EDGE) - ey };
+    const kmax = Math.floor(Math.sqrt(maxPx / (ext.w * ext.h)));
+    const k = Math.min(8, need, kmax);
+    if (k <= K) return null;
+    ext.k = k;
+    return { inner: inner, ext: ext, k: k };
+  }
+
+  function crop(src, ext, inner, k, type) {
+    const c = canvas(Math.round(inner.w * k), Math.round(inner.h * k));
+    c.getContext('2d').drawImage(src, Math.round((inner.x - ext.x) * k), Math.round((inner.y - ext.y) * k), c.width, c.height, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  function covers(a, r) { return a.x <= r.x + 0.5 && a.y <= r.y + 0.5 && a.x + a.w >= r.x + r.w - 0.5 && a.y + a.h >= r.y + r.h - 0.5; }
+
+  // rect = bagian peta yang terlihat; need = piksel kanvas per satuan yang dibutuhkan layar (skala x rasio piksel).
+  // Mengembalikan true bila render dimulai. Sinkron saat menghitung (dibatasi maxPx piksel), async saat mengunggah gambar.
+  function refine(svg, rect, need, maxPx, done) {
+    const pl = plan(rect, Math.ceil(need), maxPx || 2400000);
+    if (!pl) { if (hi) clearRefine(svg); return false; }
+    // Sudah cukup: area terlihat tercakup dan ketajamannya tidak kalah dari yang dibutuhkan.
+    if (hi && covers(hi, rect) && hi.k >= pl.k) return false;
+    const my = ++gen;
+    const r = compute(pl.ext);
+    const seaC = crop(r.sea, pl.ext, pl.inner, pl.k), landC = crop(r.land, pl.ext, pl.inner, pl.k);
+    const urls = [];
+    let left = 2, seaUrl = null, landUrl = null;
+    function finish() {
+      if (my !== gen) { urls.forEach(function (u) { URL.revokeObjectURL(u); }); return; }
+      if (hi) hi.urls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) { /* abaikan */ } });
+      svg.querySelectorAll('image.hi').forEach(function (n) { n.remove(); });
+      function mk(base, url) {
+        const im = document.createElementNS(NS, 'image');
+        im.setAttribute('class', 'hi');
+        im.setAttribute('x', pl.inner.x); im.setAttribute('y', pl.inner.y);
+        im.setAttribute('width', pl.inner.w); im.setAttribute('height', pl.inner.h);
+        im.setAttribute('preserveAspectRatio', 'none');
+        const cp = base.getAttribute('clip-path'); if (cp) im.setAttribute('clip-path', cp);
+        im.setAttribute('href', url);
+        base.parentNode.insertBefore(im, base.nextSibling);
+      }
+      svg.querySelectorAll('image[data-tex]').forEach(function (base) { mk(base, base.getAttribute('data-tex') === 'sea' ? seaUrl : landUrl); });
+      hi = { x: pl.inner.x, y: pl.inner.y, w: pl.inner.w, h: pl.inner.h, k: pl.k, urls: urls };
+      if (done) done(hi);
+    }
+    toURL(seaC, 'image/jpeg', function (u) { seaUrl = u; urls.push(u); if (!--left) finish(); });
+    toURL(landC, 'image/png', function (u) { landUrl = u; urls.push(u); if (!--left) finish(); });
+    return true;
+  }
+
+  NT.ui.terrain = {
+    W: W, H: H, K: K, EDGE: EDGE, defs: defs, landMarkup: landMarkup, pathOf: pathOf, boxOf: boxOf, attach: attach, shape: shape,
+    render: compute, plan: plan, refine: refine, clearRefine: clearRefine,
+    state: function () { return hi ? { x: hi.x, y: hi.y, w: hi.w, h: hi.h, k: hi.k } : null; }
+  };
 })((window.NT = window.NT || {}));

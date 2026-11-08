@@ -117,6 +117,19 @@ body {
 .sprite, .road { shape-rendering: crispEdges; }
 @media (max-width: 759px) { .map-scroll { aspect-ratio: auto; height: clamp(280px, 44vh, 440px); } }
 
+/* Z2: ukuran elemen UI mengikuti zoom. --ui-k / --ui-kb ditulis js/ui/map.js di <svg>. Memakai properti `scale`
+   pada grup dalam (bukan pada grup yang punya atribut transform translate), berpusat di tengah kotak elemen. */
+.island-tag, .sea-label, .ui-s, .ui-b { transform-box: fill-box; transform-origin: center; }
+.island-tag, .sea-label, .ui-s { scale: var(--ui-k, 1); }
+.ui-b { scale: var(--ui-kb, 1); }
+/* Penggaris skala km (pojok kiri bawah kotak peta) */
+.map-ruler {
+  position: absolute; left: 10px; bottom: 8px; z-index: 2; pointer-events: none; display: flex; flex-direction: column; gap: 2px;
+  font: 700 11px/1 "Segoe UI", system-ui, sans-serif; color: #f4ecd6; text-shadow: 0 1px 2px rgba(3, 25, 35, .9);
+}
+.mr-bar { display: block; height: 5px; border: 2px solid #f4ecd6; border-top: 0; box-shadow: 0 1px 2px rgba(3, 25, 35, .7); }
+.mr-txt:empty, .mr-txt:empty + .mr-bar { display: none; }
+
 /* Tombol zoom peta */
 .map-zoom { position: absolute; top: 10px; right: 10px; z-index: 2; display: flex; flex-direction: column; gap: 6px; }
 .mz-btn {

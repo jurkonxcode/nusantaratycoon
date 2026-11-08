@@ -732,3 +732,34 @@ Pemilik meminta peta lama (poligon digambar dari ingatan) digantikan oleh `MapCh
 | Sesi | File yang berubah |
 |---|---|
 | 19 | `js/data/geo.js` (dibangun ulang), `js/data/regions.js` (2 slot), `tools/build_geo.py` (baru), `tools/geo_src/*` (baru), `dist/nusantara-tycoon.html`, `HANDOFF.md` |
+
+## 34. Sesi 20: Tahap Z2, tekstur tajam, ukuran UI mengikuti zoom, penggaris km (8 November 2026)
+
+Melanjutkan `HANDOFF-LANJUTAN-3.md` bagian 5 (Z2 dikerjakan sebelum 2c/2d karena peta makin padat). **Fase 2c/2d TIDAK dikerjakan**: isi komoditasnya ada di `HANDOFF-LANJUTAN.md` bagian 9 dan berkas itu tidak ada di unggahan sesi ini. Z3 sebagian sudah lewat sesi 19; `cellDeg` masih 0,3.
+
+**1. Tekstur tajam untuk jendela yang terlihat** (`js/ui/terrain.js`).
+- `compute(o)` kini menerima jendela `o = { x, y, w, h, k }` (satuan viewBox, `k` = piksel kanvas per satuan; tanpa argumen = seluruh peta pada `K = 2`, persis perilaku lama). Derau memakai koordinat dunia, jadi jendela mana pun sama dengan potongan peta penuh, hanya lebih tajam. Vinyet, bayangan pantai (`sh`), sungai, gunung api, punggung bukit ikut dikonversi.
+- Jarak ke pantai (`dt`) dihitung di dalam jendela, maka jendela diberi tepi `EDGE = 30` satuan (jarak terjauh yang dipakai 26) di luar area yang dipasang.
+- `refine(svg, rect, need, maxPx)`: area pakai = bagian terlihat + cadangan geser 20% (dibulatkan ke satuan utuh), `k = min(8, need, sqrt(maxPx / luas jendela dengan tepi))` dan harus > K. Hasilnya (laut JPEG, darat PNG) dipasang sebagai `<image class="hi">` tepat setelah gambar dasar (laut; tiap pulau dan tetangga dengan `clip-path` yang sama), jadi urutan lapisan sprite tidak berubah. `clearRefine` membuang dan mencabut URL blob. Hasil async yang basi dibuang lewat penghitung `gen`.
+- Pemicu di `js/ui/map.js` (`queueRefine` / `doRefine`): 350 ms setelah zoom atau geser berhenti (tidak saat menggeser atau animasi); `need = skala x min(devicePixelRatio, 2)`; bila `need <= 2` gambar tajam dibuang (peta dasar cukup). Biaya dibatasi oleh ukuran LAYAR, bukan peta: `texMaxPx = 2.400.000` piksel kanvas per render (termasuk tepi).
+- Angka di `NT.config.map`: `refineDelay`, `maxDpr`, `texMaxPx`.
+
+**2. Ukuran elemen UI mengikuti zoom.** `--ui-k` dan `--ui-kb` ditulis ke `<svg>` setiap bingkai (`updateScaleUi`, logika murni `NT.viewport.uiScale`). Label pulau, nama laut, dan pin mengecil (dalam satuan peta) di atas 1 px layar per satuan sehingga ukuran di layar kira-kira tetap (batas bawah 30%); gelembung 📦 dan lencana 🔨 mengecil lebih pelan (pangkat 0,45, batas 60%) supaya tetap enak diketuk. Diterapkan lewat properti CSS `scale` pada grup DALAM (`.ui-s`, `.ui-b`) karena grup luar punya atribut `transform="translate(...)"` yang ikut terskala bila `scale` dipasang di situ. **Sprite bangunan sengaja tidak diskalakan** (benda di peta, ikut membesar); kompas dekoratif juga tidak.
+
+**3. Penggaris km** (`.map-ruler`, pojok kiri bawah kotak peta, `aria-hidden`). `NT.viewport.scaleBar` memilih panjang 1-2-5 x 10^n km terbesar yang muat 110 px. Satu satuan peta = 0,05 derajat = 5,566 km di khatulistiwa (kesalahan < 2% di lintang peta).
+
+**Tes.** Node: `viewport.test.js` 14 (2 baru: `uiScale`, `scaleBar`); semua Node: 25, 10, 10, 10, 12, 11, 14, 20 lolos. Browser: `tests/browser_z2.py` (18 baru, Chromium desktop dan HP dpr 3 dengan sentuhan): potongan jendela identik dengan potongan peta penuh (maks selisih 8 dari 255, rata-rata 0,0002; sisa selisih kemungkinan pembulatan jumlah segmen sungai, tidak diselidiki), debounce, 9 gambar tajam terpasang, area tajam mengikuti geser, dibuang saat reset, label tidak membesar 4x, penggaris, tanpa galat JS. `browser_zoom` 39/0, `browser_paket_c` 33/0, `browser_paket_b` 21/1 (kegagalan lama "Pasar: kas bertambah").
+
+**BELUM diuji / risiko (jujur).**
+- Waktu render tajam di HP sungguhan. Di Chromium desktop headless sekitar 1,5 detik sampai gambar terpasang (termasuk jeda 350 ms), tetapi komputasinya berjalan di thread utama dan HP lama bisa beberapa kali lebih lambat; selama itu peta tersendat sebentar. Bila terasa, turunkan `texMaxPx` (mis. 1.200.000) atau `maxDpr` ke 1,5; solusi bersih = Web Worker + OffscreenCanvas (belum dikerjakan).
+- Memori: satu render memegang sekitar 24 byte per piksel kanvas untuk larik sementara (sampai ~58 MB pada 2,4 juta piksel) selain kanvas; belum diukur di HP.
+- Properti CSS `scale` pada elemen SVG: didukung Chrome 104+, Safari 14.1+, Firefox 72+; hanya diuji di Chromium. Safari/iOS belum.
+- Tepi area tajam: di luar area pakai tampak tekstur dasar (lebih buram) sampai render ulang selesai; tidak ada jahitan warna yang terlihat di tangkapan layar, tetapi belum diperiksa di semua pulau.
+- Sprite besar di zoom maksimum (sekitar 96 px pada 2,4 px/satuan) belum dinilai nyaman atau tidak.
+- Tombol zoom masih menutupi kompas dekoratif (catatan lama, belum diubah; pertanyaan 4 di bagian 8 HANDOFF-LANJUTAN-3).
+
+**Berikutnya (urutan usulan).** (a) Pemilik: jalankan di HP, laporkan tersendat atau tidak. (b) Beri `HANDOFF-LANJUTAN.md` (bagian 9) agar Fase 2c Sulawesi dan 2d Kalimantan bisa dikerjakan; keputusan kelas ekspor timah, lada, minyak (bagian 3.4) masih menunggu konfirmasi. (c) Z3 sisa: `cellDeg` 0,3 menjadi 0,15 bersama Fase 6.
+
+| Sesi | File yang berubah |
+|---|---|
+| 20 | `js/ui/terrain.js`, `js/ui/map.js`, `js/core/viewport.js`, `js/config.js`, `css/style.css`, `tests/viewport.test.js`, `tests/browser_z2.py` (baru), `dist/nusantara-tycoon.html`, `HANDOFF.md` |

@@ -94,7 +94,27 @@
     return panBy(zoomed, m1.x - m0.x, m1.y - m0.y, ctx);
   }
 
+  // Faktor ukuran elemen antarmuka di peta (label, pin, lencana) supaya ukuran di layar tidak ikut membesar saat zoom:
+  // 1 sampai skala `from` piksel per satuan, lalu mengecil mengikuti 1/skala (pangkat `power`), dengan batas bawah `min`.
+  // power 1 = ukuran layar tetap; power < 1 = masih sedikit membesar (dipakai untuk sasaran ketuk seperti gelembung).
+  function uiScale(scale, from, power, min) {
+    const f = scale <= from ? 1 : Math.pow(from / scale, power);
+    return clamp(f, min, 1);
+  }
+
+  // Penggaris skala: panjang "bulat" (1-2-5 x 10^n km) terbesar yang muat dalam maxPx piksel layar.
+  // kmPerUnit = kilometer per satuan peta; hasil { km, px } dengan px = panjang batang di layar.
+  function scaleBar(scale, kmPerUnit, maxPx) {
+    const kmMax = (maxPx / scale) * kmPerUnit;
+    if (!(kmMax > 0) || !isFinite(kmMax)) return { km: 0, px: 0 };
+    const p10 = Math.pow(10, Math.floor(Math.log10(kmMax)));
+    let km = p10;
+    [2, 5, 10].forEach(function (m) { if (p10 * m <= kmMax) km = p10 * m; });
+    return { km: km, px: km / kmPerUnit * scale };
+  }
+
   NT.viewport = {
+    uiScale: uiScale, scaleBar: scaleBar,
     fitScale: fitScale, limits: limits, clampView: clampView, toWorld: toWorld, zoomAt: zoomAt, panBy: panBy,
     centerOn: centerOn, fitView: fitView, viewBoxOf: viewBoxOf, serialize: serialize, restore: restore, pinch: pinch
   };
