@@ -66,6 +66,14 @@
   function checkProgress(quiet) {
     const fresh = NT.achievements.evaluate(state, now());
     let changed = fresh.length > 0;
+    if (NT.daily) {
+      if (NT.daily.sync(state, now())) changed = true;
+      const fm = NT.daily.fresh(state, now());
+      if (fm.length) {
+        changed = true;
+        if (!quiet && (state.guideHidden || NT.achievements.guide(state).complete)) toast('🎯 Misi selesai: ' + fm[0].text + '. Ambil hadiahnya di Misi harian.', 'ok');
+      }
+    }
     if (quiet && fresh.length > 1) {
       toast('🏆 ' + fresh.length + ' pencapaian terbuka dari kemajuanmu. Lihat di Kerajaan › Capaian.', 'info');
     } else {
@@ -262,6 +270,13 @@
       return { silent: true, skipRender: true };
     },
 
+    'daily-toggle': function () { P.view.dailyOpen = !P.view.dailyOpen; return { silent: true }; },
+    'daily-claim': function (el) {
+      const res = NT.daily.claim(state, el.getAttribute('data-id'), now());
+      if (!res.ok) return res;
+      logEvent('🎁', res.message.replace(/^\S+\s/, ''));
+      return { ok: true, message: res.message, sfx: 'coin', fx: '+' + F.money(res.amount), fxClass: 'gold' };
+    },
     'guide-toggle': function () { P.view.guideOpen = !P.view.guideOpen; return { silent: true }; },
     'guide-hide': function () { state.guideHidden = true; P.view.guideOpen = false; persistSoon(); return { silent: true }; },
     'guide-show': function () {
@@ -488,6 +503,10 @@
     const welcomed = saved && away > AWAY_MS && NT.ui.welcome.show(state, away, finishedAway, t);
     if (!welcomed && finishedAway.length) celebrate(finishedAway, true);
     if (checkProgress(true)) { persistSoon(); P.renderAll(state, t); }
+    if (NT.daily && NT.daily.view(state, t) && (state.guideHidden || NT.achievements.guide(state).complete)) {
+      const dv = NT.daily.view(state, t);
+      if (!dv.login.claimedToday) toast('🎁 Hadiah login hari ini siap diambil di Misi harian (tab Peta).', 'info');
+    }
     touchSeen();
     hideSplash();
 

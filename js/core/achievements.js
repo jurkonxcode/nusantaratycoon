@@ -19,6 +19,7 @@
     return Object.keys(state.regions).reduce(function (m, id) { return Math.max(m, state.regions[id].infra[infraId] || 0); }, 0);
   }
   function rankMin(name) { return D.ranks.filter(function (r) { return r.name === name; })[0].min; }
+  function dl(s) { return s.daily || {}; }
   function st(state, k) { return (state.stats && state.stats[k]) || 0; }
 
   /* ---------- Panduan awal: 5 langkah ---------- */
@@ -93,6 +94,12 @@
       test: function (s) { return E.rank(E.score(s)).current.min >= rankMin('Kota Dagang'); } },
     { id: 'provinsi', icon: '🏛️', name: 'Provinsi Makmur', desc: 'Capai gelar Provinsi Makmur.',
       test: function (s) { return E.rank(E.score(s)).current.min >= rankMin('Provinsi Makmur'); } },
+    { id: 'rutin', icon: '📅', name: 'Rutin', desc: 'Ambil hadiah login 3 hari berturut-turut.',
+      test: function (s) { return (dl(s).best || 0) >= 3; } },
+    { id: 'konsisten', icon: '🔥', name: 'Konsisten', desc: 'Ambil hadiah login 7 hari berturut-turut.',
+      test: function (s) { return (dl(s).best || 0) >= 7; } },
+    { id: 'misi', icon: '🎯', name: 'Pemburu Misi', desc: 'Selesaikan 10 misi harian.',
+      test: function (s) { return (dl(s).total || 0) >= 10; } },
     { id: 'setia', icon: '⏳', name: 'Pemain Setia', desc: 'Bermain selama 1 jam (waktu layar terbuka).',
       test: function (s) { return st(s, 'playMs') >= 3600000; } }
   ];

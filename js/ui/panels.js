@@ -374,6 +374,55 @@
       '</div>';
   }
 
+  /* ---------- Misi harian dan hadiah login ---------- */
+
+  function renderDaily(state, now) {
+    const host = $('daily');
+    if (!host) return;
+    const v = NT.daily && NT.config.daily.enabled ? NT.daily.view(state, now) : null;
+    if (!v) { host.innerHTML = ''; return; }
+    const open = !!view.dailyOpen;
+    const total = v.missions.length;
+    const claimedN = v.missions.filter(function (x) { return x.claimed; }).length;
+    const sub = v.ready > 0 ? '<b class="dy-ready">' + v.ready + ' hadiah siap diambil</b>'
+      : (claimedN === total && v.bonus.claimed && v.login.claimedToday ? 'Semua hadiah hari ini sudah diambil' : v.doneCount + '/' + total + ' misi selesai');
+    const rows = v.missions.map(function (x) {
+      return '<li class="dy-row' + (x.claimed ? ' got' : (x.done ? ' done' : '')) + '">' +
+        '<span class="dy-ico">' + x.icon + '</span>' +
+        '<span class="dy-txt"><b>' + x.text + '</b><span class="bar"><i style="width:' + x.pct + '%"></i></span>' +
+        '<small>' + F.num(x.have) + ' / ' + F.num(x.target) + '</small></span>' +
+        (x.claimed ? '<span class="dy-ok" aria-label="Sudah diambil">' + NT.ui.ic('star') + '</span>'
+          : '<button class="btn' + (x.done ? ' primary' : '') + '" data-action="daily-claim" data-id="' + x.id + '"' + (x.done ? '' : ' disabled') + '>' +
+            (x.done ? 'Ambil ' : '') + F.money(x.reward) + '</button>') +
+        '</li>';
+    }).join('');
+    const dots = [1, 2, 3, 4, 5, 6, 7].map(function (d) {
+      const cur = d === v.login.dayInCycle;
+      const past = v.login.claimedToday ? d <= v.login.dayInCycle : d < v.login.dayInCycle;
+      return '<i class="' + (past ? 'on' : '') + (cur ? ' cur' : '') + (d === 7 ? ' big' : '') + '">' + d + '</i>';
+    }).join('');
+    const login = '<li class="dy-row login' + (v.login.claimedToday ? ' got' : ' done') + '">' +
+      '<span class="dy-ico">🎁</span>' +
+      '<span class="dy-txt"><b>Hadiah login · rangkaian ' + v.login.streak + ' hari</b><span class="dy-days">' + dots + '</span>' +
+      '<small>Hari ke-7 hadiahnya terbesar. Bolos sehari, rangkaian mulai dari awal.</small></span>' +
+      (v.login.claimedToday ? '<span class="dy-ok" aria-label="Sudah diambil">' + NT.ui.ic('star') + '</span>'
+        : '<button class="btn primary" data-action="daily-claim" data-id="login">Ambil ' + F.money(v.login.reward) + '</button>') + '</li>';
+    const bonus = '<li class="dy-row bonus' + (v.bonus.claimed ? ' got' : (v.bonus.ready ? ' done' : '')) + '">' +
+      '<span class="dy-ico">🎉</span><span class="dy-txt"><b>Bonus semua misi</b><small>Ambil hadiah ketiga misi dulu.</small></span>' +
+      (v.bonus.claimed ? '<span class="dy-ok" aria-label="Sudah diambil">' + NT.ui.ic('star') + '</span>'
+        : '<button class="btn' + (v.bonus.ready ? ' primary' : '') + '" data-action="daily-claim" data-id="bonus"' + (v.bonus.ready ? '' : ' disabled') + '>' +
+          (v.bonus.ready ? 'Ambil ' : '') + F.money(v.bonus.reward) + '</button>') + '</li>';
+    host.innerHTML =
+      '<div class="daily' + (open ? ' open' : '') + (v.ready > 0 ? ' has-ready' : '') + '">' +
+        '<button class="daily-head" data-action="daily-toggle" aria-expanded="' + open + '">' +
+          '<span class="daily-ico">' + NT.ui.ic('calendar') + '</span>' +
+          '<span class="daily-text"><small>Misi harian</small><span>' + sub + '</span></span>' +
+          '<span class="guide-caret" aria-hidden="true">' + (open ? '▴' : '▾') + '</span>' +
+        '</button>' +
+        (open ? '<ul class="dy-list">' + login + rows + bonus + '</ul><p class="dy-foot">Misi dan hadiah berganti tiap pukul 00.00 WIB.</p>' : '') +
+      '</div>';
+  }
+
   /* ---------- Tab capaian: statistik, pencapaian, log ---------- */
 
   function ago(ms) {
@@ -609,6 +658,7 @@
     document.body.classList.toggle('sheet-open', !!view.sheet && view.tab === 'map');
     renderMarket(state, now);
     renderGuide(state);
+    renderDaily(state, now);
     renderStats(state, now);
     renderAbout(state);
     renderSettings();

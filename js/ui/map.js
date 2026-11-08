@@ -193,11 +193,22 @@
     let out = '';
 
     if (tol > 0) {
-      const c0 = NT.raster.toCell(m.pin[0], m.pin[1]);
-      const ends = Object.keys(m.slots || {}).map(function (bid) { return NT.raster.toCell(m.slots[bid][0], m.slots[bid][1]); });
-      if (m.port) ends.push(NT.raster.toCell(m.port[0], m.port[1]));
-      const width = tol >= 3 ? 2 : 1;
-      out += '<path class="road" d="' + ends.map(function (e) { return linePath(c0, e, width); }).join('') + '"/>';
+      // Jalan tol: aspal halus berkelok ringan dari pin ke tiap bangunan dan pelabuhan, tepi gelap + marka tengah putus-putus.
+      const c0 = pt(m.pin);
+      const ends = Object.keys(m.slots || {}).map(function (bid) { return pt(m.slots[bid]); });
+      if (m.port) ends.push(pt(m.port));
+      const d = ends.map(function (e, i) {
+        const mx = (c0.x + e.x) / 2, my = (c0.y + e.y) / 2, dx = e.x - c0.x, dy = e.y - c0.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        const bend = (i % 2 ? 1 : -1) * Math.min(14, len * 0.12);   // lengkung ringan, selang-seling
+        return 'M' + c0.x.toFixed(1) + ' ' + c0.y.toFixed(1) + 'Q' + (mx - dy / len * bend).toFixed(1) + ' ' + (my + dx / len * bend).toFixed(1) +
+          ' ' + e.x.toFixed(1) + ' ' + e.y.toFixed(1);
+      }).join('');
+      const w = tol >= 3 ? 6 : 4.4;
+      out += '<g class=\"road-g\" fill=\"none\" stroke-linecap=\"round\" stroke-linejoin=\"round\">' +
+        '<path class=\"road-edge\" d=\"' + d + '\" stroke-width=\"' + (w + 2.2) + '\"/>' +
+        '<path class=\"road-top\" d=\"' + d + '\" stroke-width=\"' + w + '\"/>' +
+        '<path class=\"road-mark\" d=\"' + d + '\" stroke-width=\"0.9\"/></g>';
     }
 
     // Semua objek diurutkan menurut posisi y (yang di utara digambar dulu), lencana dan gelembung selalu di atas.

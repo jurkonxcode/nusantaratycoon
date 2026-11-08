@@ -56,7 +56,10 @@ def base(rx=48, y=112):
 def mound(y=100, depth=18, spread=58, seed=1, grass=26):
     """Gundukan tanah berumput dengan rumput halus."""
     rnd = random.Random(seed)
-    s = (f'<path d="M{64 - spread} {y + 4}Q64 {y - depth} {64 + spread} {y + 4}Q64 {y + depth * .9:.0f} {64 - spread} {y + 4}Z" fill="url(#gr)"/>'
+    # Tepi alas memudar bertahap ke warna medan (cincin elips berlapis, tanpa filter blur supaya tetap ringan).
+    rings = ''.join(f'<ellipse cx="64" cy="{y + 3}" rx="{spread + k}" ry="{depth * .62 + k * .5:.1f}" fill="#2d6b3a" opacity="{o}"/>'
+                    for k, o in ((11, .10), (8, .16), (5, .24), (2.5, .34)))
+    s = (rings + f'<path d="M{64 - spread} {y + 4}Q64 {y - depth} {64 + spread} {y + 4}Q64 {y + depth * .9:.0f} {64 - spread} {y + 4}Z" fill="url(#gr)"/>'
          f'<path d="M{64 - spread} {y + 4}Q64 {y + depth * .9:.0f} {64 + spread} {y + 4}Q64 {y + depth * 1.15:.0f} {64 - spread} {y + 4}Z" fill="#4a3320" opacity=".25"/>')
     blades = ''
     for _ in range(grass):

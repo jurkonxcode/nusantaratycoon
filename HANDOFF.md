@@ -848,3 +848,48 @@ Mengikuti `HANDOFF-LANJUTAN.md` bagian 3 dengan "alternatif sederhana" (3.5): ke
 | Sesi | File yang berubah |
 |---|---|
 | 24 | `js/core/population.js` (baru), `js/core/state.js`, `js/core/economy.js`, `js/config.js`, `js/data/regions.js`, `js/data/buildings.js`, `js/main.js`, `js/ui/panels.js`, `css/style.css`, `index.html`, `tests/population.test.js` (baru), `tests/browser_population.py` (baru), `tests/economy.test.js`, `dist/nusantara-tycoon.html`, `HANDOFF.md` |
+
+
+## 40. Sesi 26: misi harian dan hadiah login (8 November 2026)
+
+Permintaan pemilik: game lebih berkualitas. Dari audit (bagian 35: pemain harian 100-200x lebih lambat dari pemain aktif, tidak ada alasan kembali tiap hari), pemilik memilih **misi harian + hadiah login** dulu. Keseimbangan ritme, wilayah baru, dan login email/Google belum dikerjakan.
+
+**Aturan (`js/core/daily.js`, murni, dites di Node; angka di `NT.config.daily`):**
+- Hari berganti pukul 00.00 WIB (`dayKey`). `sync(state, now)` dipanggil saat memuat, tiap detik, dan di `checkProgress`: mengosongkan klaim, memilih 3 misi dari 5 jenis (kumpulkan, jual, bangun/naikkan level, hasilkan Rp, ekspor; ekspor hanya bila ada pelabuhan) secara deterministik dari kunci hari, memotret statistik awal (`daily.base`), mengunci target (`daily.targets`) dan **satuan hadiah** (`daily.unit` = pemasukan 15 menit, minimal Rp 100).
+- Kemajuan misi = statistik sekarang dikurangi foto awal hari. Hadiah misi = 1 satuan; bonus semua misi = 2 satuan; hadiah login hari ke-1..7 = 1 / 1,4 / 1,8 / 2,2 / 2,6 / 3 / 6 satuan (siklus 7 hari, rangkaian terus dihitung). Bolos lebih dari sehari memutus rangkaian.
+- **Hadiah hanya masuk kas, tidak masuk `totalEarned`** (sama alasannya dengan pajak di bagian 38: panduan awal membaca `totalEarned > 0`).
+- State baru `state.daily` (`day, unit, base, targets, picks, seen, claimed, bonus, streak, best, lastClaim, total`); `normalize` membersihkan data rusak, save lama aman. 3 pencapaian baru: Rutin (3 hari), Konsisten (7 hari), Pemburu Misi (10 misi).
+- **UI:** kartu ringkas `#daily` di bawah panduan di tab Peta (tersembunyi selama panduan awal aktif), terlipat secara default, menampilkan "N hadiah siap diambil"; isinya hadiah login dengan penanda 7 hari, 3 misi dengan bar, dan bonus. Aksi `daily-toggle` dan `daily-claim` (`data-id` = id misi, `login`, atau `bonus`). Toast saat misi selesai dan saat hadiah login siap (hanya setelah panduan selesai).
+- **Server nanti (tahap C):** `sync` dan `claim` ikut jadi RPC memakai `now()` server; hari memakai zona WIB.
+
+**Tes:** `tests/daily.test.js` (10 baru). Semua 11 berkas tes Node lolos. Uji browser sekali jalan (Chromium, HP 390 px): kartu tersembunyi saat panduan, muncul setelah panduan disembunyikan, klaim login menambah kas, semua tombol >= 44 px, tanpa galat JS.
+
+**Belum / catatan:** HP dan Safari sungguhan belum dicoba. Skrip uji browser ini tidak disimpan di repo. Angka hadiah (15 menit pemasukan) tebakan awal; hadiah untuk pemain harian terasa besar dibanding pemasukannya, untuk pemain aktif kecil, jadi mungkin perlu disetel. Misi belum memakai jenis yang bergantung wilayah (mis. buka wilayah, kirim ke pulau tertentu).
+
+| Sesi | File yang berubah |
+|---|---|
+| 26 | baru: `js/core/daily.js`, `tests/daily.test.js`; diubah: `index.html`, `css/style.css`, `js/config.js`, `js/main.js`, `js/core/state.js`, `js/core/achievements.js`, `js/ui/panels.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |
+
+
+## 41. Sesi 27: polesan visual aset di peta (8 November 2026)
+
+Permintaan pemilik: aset desain lebih detail, realistis, menyatu dengan UI/teks, dan tajam. Audit visual (lembar kontak semua sprite dan ikon, peta penuh dan diperbesar, Chromium 1280 px dpr 2): sprite dan ikon sudah SVG vektor, jadi **tajam di zoom berapa pun**; masalah ada di keterpaduan, bukan ketajaman.
+
+**Diperbaiki.**
+1. **Jalan tol** (`dynMarkup` di `js/ui/map.js`): sebelumnya kotak abu-abu bergerigi (jalur sel piksel, `.road`). Kini aspal halus berkelok ringan dari pin ke tiap bangunan dan pelabuhan: tepi gelap, badan aspal, marka tengah putus-putus (`.road-edge/.road-top/.road-mark` di akhir `css/style.css`). `linePath` lama tidak lagi dipakai di jalan; kelas `.road` lama dibiarkan.
+2. **Alas sprite** (`mound()` di `tools/art_v2.py`): tepi alas hijau kini memudar bertahap ke warna medan lewat empat cincin elips berlapis (tanpa filter blur). 9 sprite berubah (yang memakai `mound`); `assets/sprites/*.svg` dan `js/ui/assets.js` dibangun ulang dengan `cd tools && python3 make_assets.py`. Ikon komoditas tidak berubah.
+
+**Dicoba lalu dibuang:** mask SVG di waktu render untuk memudarkan alas sprite (`mask` pada `<image>`). Menghasilkan pita gelap di sambungan bagian atas dan alas pada beberapa sprite (kakao, pelabuhan); jangan diulang dengan cara itu. Pemudaran harus di sumber gambar.
+
+**Tes:** semua tes Node lolos. Dicek lewat tangkapan layar Chromium; HP sungguhan dan Safari belum.
+
+**Belum dikerjakan (usulan berikutnya, urut dampak).**
+- Sprite masih berukuran 40-50 px di peta; detail halus (daun, peti) baru terlihat setelah zoom. Opsi: perbesar sedikit sprite tingkat 2/3 atau tambah detail per tingkat.
+- Emoji masih dipakai di toast, log aktivitas, label, dan misi harian (ikon 📦 ⚖️ 🔨 💰 🚢 🎁), tidak seragam dengan ikon garis SVG dan ikon ilustrasi. Perlu ikon SVG untuk semuanya (`js/ui/icons.js`).
+- Gelembung 📦 di peta masih emoji; ganti dengan ikon peti bergaya sprite.
+- Realisme: sprite memakai cahaya dari kiri atas, tetapi bayangan jatuh di peta tidak searah. Bisa diseragamkan di `.art` (drop-shadow) dan sprite.
+- Bangunan belum terkunci/sudah terbuka hanya dibedakan lewat transparansi.
+
+| Sesi | File yang berubah |
+|---|---|
+| 27 | `js/ui/map.js`, `css/style.css`, `tools/art_v2.py`, `assets/sprites/*` (9 berkas), `js/ui/assets.js`, `dist/nusantara-tycoon.html`; `HANDOFF.md` |

@@ -1228,3 +1228,39 @@ body.flash-gold::after {
 @media (prefers-reduced-motion: reduce) {
   .tab-panel.on, body.flash-gold::after, .splash-bar b { animation: none; }
 }
+
+
+/* ---------- Misi harian dan hadiah login ---------- */
+body.guide-on #daily { display: none; }
+.daily { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 12px; overflow: hidden; }
+.daily.has-ready { border-color: var(--gold); }
+.daily-head { display: flex; align-items: center; gap: 10px; width: 100%; min-height: var(--touch); background: transparent; border: 0; padding: 8px 14px; font: inherit; text-align: left; cursor: pointer; color: var(--ink); }
+.daily-ico { color: var(--gold-dark); display: inline-flex; width: 22px; height: 22px; }
+.daily-ico svg { width: 22px; height: 22px; }
+.daily-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.daily-text small { color: var(--gold-dark); font-weight: 800; font-size: var(--fs-s); }
+.daily-text > span { font-size: var(--fs-m); }
+.dy-ready { color: var(--gold-dark); }
+.dy-list { list-style: none; margin: 0; padding: 0 14px 4px; }
+.dy-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); }
+.dy-row.got { opacity: .6; }
+.dy-ico { font-size: 22px; width: 28px; text-align: center; flex: none; }
+.dy-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.dy-txt b { font-size: var(--fs-m); }
+.dy-txt small { color: var(--muted); font-size: var(--fs-s); }
+.dy-row .btn { flex: none; min-width: 92px; min-height: var(--touch); }
+.dy-row .btn[disabled] { opacity: .55; }
+.dy-ok { flex: none; width: 92px; display: inline-flex; justify-content: center; color: var(--green); }
+.dy-ok svg { width: 22px; height: 22px; }
+.dy-days { display: flex; gap: 4px; }
+.dy-days i { font-style: normal; font-size: 11px; font-weight: 800; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--sand); color: var(--muted); border: 1px solid var(--line); }
+.dy-days i.on { background: var(--gold); color: #fff; border-color: var(--gold-dark); }
+.dy-days i.cur { outline: 2px solid var(--gold-dark); outline-offset: 1px; }
+.dy-days i.big { width: 26px; height: 22px; border-radius: 11px; }
+.dy-foot { margin: 0; padding: 0 14px 10px; color: var(--muted); font-size: var(--fs-s); }
+
+/* Jalan tol halus (menggantikan kotak piksel abu-abu) */
+.road-edge { stroke: rgba(22, 26, 32, .55); }
+.road-top { stroke: #565c64; }
+.road-mark { stroke: #f1e3a6; stroke-dasharray: 3 3.4; opacity: .85; }
+.map-scroll.moving .road-edge { stroke: #1d2228; }

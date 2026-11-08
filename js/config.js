@@ -90,6 +90,18 @@
       maxOfflineHours: 72       // waktu pergi yang dihitung paling banyak segini
     },
 
+    // Misi harian dan hadiah login (js/core/daily.js). Hari berganti pukul 00.00 WIB.
+    daily: {
+      enabled: true,
+      missionCount: 3,
+      unitMinutes: 15,        // 1 satuan hadiah = pemasukan sekian menit (dikunci saat hari berganti)
+      unitMin: 100,           // hadiah satuan tidak kurang dari ini
+      bonusUnits: 2,          // bonus bila ketiga misi selesai (x satuan)
+      loginUnits: [1, 1.4, 1.8, 2.2, 2.6, 3, 6],   // hadiah login hari ke-1..7 berturut-turut (x satuan)
+      earnMinutes: 20,        // misi "hasilkan Rp" = pemasukan sekian menit (minimum earnMin)
+      earnMin: 300
+    },
+
     // Zoom peta (js/core/viewport.js)
     map: {
       maxZoom: 4,             // zoom maksimum = 4x dari tampilan "pas layar"

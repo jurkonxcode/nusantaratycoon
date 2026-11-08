@@ -15,6 +15,11 @@
     return o;
   }
 
+  // day = kunci hari WIB 'YYYY-MM-DD'; kosong berarti belum pernah disinkronkan.
+  function freshDaily() {
+    return { day: '', unit: 0, base: {}, targets: {}, picks: [], seen: [], claimed: [], bonus: false, streak: 0, best: 0, lastClaim: '', total: 0 };
+  }
+
   function createInitialState(now) {
     const s = {
       version: VERSION,
@@ -31,7 +36,8 @@
       stats: freshStats(),  // penghitung untuk statistik, panduan, dan pencapaian
       achievements: {},     // id pencapaian -> waktu terbuka (ms)
       log: [],              // aktivitas terbaru: { t, i (ikon), x (teks) }, paling lama di depan
-      guideHidden: false    // panduan awal disembunyikan pemain
+      guideHidden: false,   // panduan awal disembunyikan pemain
+      daily: freshDaily()   // misi harian dan hadiah login (lihat core/daily.js)
     };
 
     Object.keys(D.regions).forEach(function (id) {
@@ -116,6 +122,23 @@
       return e && Number(e.t) > 0 && typeof e.x === 'string';
     }).slice(-LOG_MAX).map(function (e) { return { t: Number(e.t), i: String(e.i || '•').slice(0, 4), x: e.x.slice(0, 160) }; });
     base.guideHidden = !!saved.guideHidden;
+
+    const sd = saved.daily;
+    if (sd && typeof sd === 'object') {
+      const d = base.daily;
+      const ids = function (a) { return (Array.isArray(a) ? a : []).filter(function (x) { return typeof x === 'string'; }).slice(0, 8); };
+      const day = function (v) { return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''; };
+      d.day = day(sd.day);
+      d.unit = Number(sd.unit) > 0 && isFinite(sd.unit) ? Number(sd.unit) : 0;
+      Object.keys(sd.base || {}).forEach(function (k) { const v = Number(sd.base[k]); if (isFinite(v)) d.base[k] = v; });
+      Object.keys(sd.targets || {}).forEach(function (k) { const v = Number(sd.targets[k]); if (v > 0 && isFinite(v)) d.targets[k] = v; });
+      d.picks = ids(sd.picks); d.seen = ids(sd.seen); d.claimed = ids(sd.claimed);
+      d.bonus = !!sd.bonus;
+      d.streak = Math.max(0, Math.floor(Number(sd.streak)) || 0);
+      d.best = Math.max(d.streak, Math.floor(Number(sd.best)) || 0);
+      d.lastClaim = day(sd.lastClaim);
+      d.total = Math.max(0, Math.floor(Number(sd.total)) || 0);
+    }
     return base;
   }
 
