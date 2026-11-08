@@ -704,3 +704,31 @@ Mengikuti resep `HANDOFF-LANJUTAN-3.md` bagian 3, pola sama dengan Fase 2a.
 | Sesi | File yang berubah |
 |---|---|
 | 18 | `js/data/{commodities,buildings,regions,exports}.js`, `js/ui/assets.js`, `tools/{art_sumatra,make_assets,art_tiers}.py` (baru: `art_sumatra.py`), `assets/sprites/{kebun_lada,tambang_timah,sumur_minyak}*.svg`, `assets/commodities/{lada,timah,minyak}.svg`, `tests/sumatra.test.js`, `dist/nusantara-tycoon.html`, `HANDOFF.md` |
+
+## 33. Sesi 19: peta diganti dengan SVG kabupaten/kota MapChart (8 November 2026)
+
+Pemilik meminta peta lama (poligon digambar dari ingatan) digantikan oleh `MapChart_Map.svg` dan `MapChart_CSV_Export..csv` dari `data_nusantara_tycoon.zip`. Ini mengerjakan sebagian **Z3** (garis pantai akurat) lebih awal; `cellDeg` tetap 0,3 dan `cellPx` 6 (belum 0,15), jadi Z2 dan sisa Z3 belum dikerjakan. Sesi ini tidak menyentuh Fase 2c/2d.
+
+**Cara kerja.** `tools/build_geo.py` (baru) membaca `tools/geo_src/MapChart_Map.svg`, mengubah koordinat SVG menjadi bujur/lintang, mengelompokkan 516 kabupaten/kota ke 7 wilayah game, merasterkan, mengambil kontur luar, menyederhanakannya (toleransi 0,03 derajat, pulau < 0,008 derajat persegi dibuang), lalu **menulis ulang `js/data/geo.js`**. Jangan edit `geo.js` dengan tangan; ubah skripnya dan jalankan `python3 tools/build_geo.py` (tambah `--preview` untuk `/tmp/geo_preview.png`). Peta lama disimpan di `tools/geo_src/geo_hand_drawn.js`.
+- **Kalibrasi:** SVG ternyata proyeksi equirectangular. `lon = 0,0576125 x + 93,847`, `lat = 6,99829 - 0,0574196 y`. Galat terhadap 30 koordinat kota yang saya ketahui: rata-rata 0,04 derajat (sekitar 4 km), terburuk 0,18 (Palangka Raya, karena centroid poligon kota bukan titik pusat kota).
+- **Pengelompokan:** Bali, NTB, NTT, Maluku, Maluku Utara, Kep. Seribu, dan Kep. Riau/Bangka-Belitung/Natuna lewat daftar nama; sisanya lewat suara titik-titik cincin terhadap poligon lama, dengan aturan koordinat cadangan (22 kabupaten). Jumlah per wilayah cocok dengan jumlah kabupaten/kota nyata: Sumatra 154, Jawa 121 (119 + 2 waduk), Sulawesi 81, Kalimantan 56, Bali-Nusra 41, Maluku 21, Papua 42.
+- **Tetangga:** Semenanjung Malaya dan Papua Nugini tetap dari peta lama. Sarawak/Sabah/Brunei dan Timor Leste TIDAK ada di SVG, jadi diturunkan dari peta lama dikurangi daratan Indonesia baru (hanya di kotak koordinat yang hilang, lalu dibuka-morfologi). Bentuknya kasar, hiasan saja.
+- **CSV:** isinya hanya 516 nama (semua `#ffff33`, tanpa label), identik dengan id path SVG. Dipakai untuk memeriksa nama, tidak ada atribut lain yang bisa dimasukkan ke game.
+
+**Perubahan lain.** Dua slot jatuh ke laut karena pantai kini akurat; digeser sedikit (aturan jarak >= 22 px tetap lolos): `kebun_tembakau [114.2,-8.3] -> [114.0,-7.9]` (Jawa Timur), `kebun_cengkeh [124.0,1.05] -> [124.7,1.3]` (Minahasa). Pelabuhan dan hub tidak berubah. `dist/` 721 KB -> 767 KB. Atribusi lisensi di `tools/geo_src/ATRIBUSI.txt`.
+
+**Efek yang terlihat.** Bali kini poligon sendiri (bukan menyambung Jawa); Natuna, Anambas, Kep. Riau masuk wilayah Sumatra; Timor Timur jadi daratan tetangga (tidak bisa dimainkan); Kalimantan hanya sisi Indonesia (Sarawak/Sabah jadi tetangga).
+
+**Diuji:** semua tes Node lolos (25, 10, 10, 10, 12, 11, 12, 20). Tes browser: `browser_zoom` 39/0, `browser_paket_c` 33/0, `browser_paket_b` 21/1 (kegagalan lama "Pasar: kas bertambah", bukan dari perubahan ini). Satu tangkapan layar desktop Chromium: peta tampil wajar.
+
+**BELUM diuji / risiko (jujur).**
+- Belum dilihat di HP sungguhan, dan tidak diperbesar di zoom tinggi. Pantai lebih rinci: periksa tumpukan sprite dan label di pulau kecil.
+- Sungai, danau, gunung api di `terrain.js` ditaruh tangan untuk peta lama; tidak saya periksa ulang terhadap pantai baru (sungai dipotong otomatis ke daratan, jadi paling parah tampak lebih pendek).
+- Pantai disederhanakan; sebagian pulau kecil (< 0,008 derajat persegi) hilang. Turunkan `GEO_MINAREA` bila ada yang kurang.
+- Waduk Cirata dan Kedungombo ikut sebagai daratan Jawa (tidak digambar sebagai air).
+- Lisensi CC BY-SA 4.0: turunan ini wajib atribusi dan share-alike; pemilik perlu memutuskan lisensi repo.
+- Fase 2b (Sumatra) di bagian 32 belum dilihat di peta baru: slot minyak/timah/lada lolos tes daratan, tetapi tumpukan sprite belum dilihat.
+
+| Sesi | File yang berubah |
+|---|---|
+| 19 | `js/data/geo.js` (dibangun ulang), `js/data/regions.js` (2 slot), `tools/build_geo.py` (baru), `tools/geo_src/*` (baru), `dist/nusantara-tycoon.html`, `HANDOFF.md` |

@@ -27,7 +27,7 @@
         pin: [110.5, -7.3], label: [110.5, -9.4], port: [106.0, -5.7],
         slots: {
           sawah: [108.4, -7.0], sentra_batik: [112.8, -7.6],
-          tambak_garam: [107.5, -6.2], kebun_teh: [106.8, -7.1], kebun_tebu: [111.6, -8.0], kebun_tembakau: [114.2, -8.3]
+          tambak_garam: [107.5, -6.2], kebun_teh: [106.8, -7.1], kebun_tebu: [111.6, -8.0], kebun_tembakau: [114.0, -7.9]
         }
       }
     },
@@ -38,7 +38,7 @@
       hub: { name: 'Makassar', lon: 119.4, lat: -5.13 },
       map: {
         pin: [120.4, -1.6], label: [122.0, -5.9], port: [117.8, -5.0],
-        slots: { kebun_kakao: [119.8, -3.8], kebun_cengkeh: [124.0, 1.05] }
+        slots: { kebun_kakao: [119.8, -3.8], kebun_cengkeh: [124.7, 1.3] }
       }
     },
     kalimantan: {

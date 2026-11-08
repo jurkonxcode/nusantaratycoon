@@ -1,0 +1,5 @@
+Sumber bentuk pulau: MapChart.net, peta kabupaten/kota Indonesia (MapChart_Map.svg), lisensi CC BY-SA 4.0
+(https://creativecommons.org/licenses/by-sa/4.0/). Berkas turunan (js/data/geo.js) wajib mencantumkan atribusi
+ini dan dibagikan dengan lisensi yang sama. MapChart_CSV_Export.csv = daftar 516 nama kabupaten/kota yang sama
+dengan id path SVG (semua berwarna #ffff33, tanpa label); dipakai tools/build_geo.py hanya untuk pemeriksaan nama.
+Daratan tetangga (Semenanjung Malaya, Papua Nugini) tetap dari peta lama geo_hand_drawn.js (digambar tangan).
